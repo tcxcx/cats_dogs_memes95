@@ -6,7 +6,7 @@ import EmojiLine from "../emoji-line";
 
 export default function Navbar() {
   return (
-    <nav className="w-full px-10">
+    <nav className="w-full px-10 pb-10">
       <div className="max-w-7xl mx-auto flex items-center">
         {/* Left side */}
         <div className="flex items-center flex-1 relative">

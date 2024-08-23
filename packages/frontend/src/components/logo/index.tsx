@@ -52,7 +52,7 @@ export default function Logo() {
           rows={7}
           lightSize={3}
           gap={1}
-          text="DOGS"
+          text="MEMES"
           font="default"
           updateInterval={900}
           controlledDrawState={dogsDrawState}
@@ -71,7 +71,7 @@ export default function Logo() {
         <LightBoard
           lightSize={2}
           gap={1}
-          text="MEMES"
+          text="DOGS"
           font="default"
           updateInterval={600}
           controlledDrawState={memesDrawState}
