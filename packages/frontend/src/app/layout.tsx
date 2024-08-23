@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 import { DM_Sans as FontSans } from "next/font/google";
 import { cn } from "@/lib/utils";
-
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
+import EmojiLine from "@/components/emoji-line";
 export const metadata: Metadata = {
   title: "Cats, Dogs & Memes",
   description: "Memestic memes",
@@ -27,7 +29,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
           fontSans.variable
         )}
       >
+        <Navbar />
+
         {children}
+        <EmojiLine />
       </body>
     </html>
   );
