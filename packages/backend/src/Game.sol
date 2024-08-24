@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
 
-contract Counter {
+// Manages game flow
+
+pragma solidity 0.8.26;
+
+contract Game {
     uint256 public number;
 
     function setNumber(uint256 newNumber) public {
