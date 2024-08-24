@@ -22,3 +22,6 @@
 [submodule "packages/backend/lib/openzeppelin-contracts"]
 	path = packages/backend/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "packages/backend/lib/hardhat-deploy"]
+	path = packages/backend/lib/hardhat-deploy
+	url = https://github.com/wighawag/hardhat-deploy
