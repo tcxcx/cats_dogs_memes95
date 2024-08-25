@@ -6,7 +6,7 @@
 
 pragma solidity 0.8.26;
 
-contract Tournament {
+contract Tournaments {
     uint256 public number;
 
     function setNumber(uint256 newNumber) public {
