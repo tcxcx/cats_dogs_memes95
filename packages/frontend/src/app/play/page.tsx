@@ -7,7 +7,6 @@ import {
   WindowContent,
   Button,
   Toolbar,
-  Panel,
   MenuList,
   MenuListItem,
   Separator,
@@ -101,7 +100,7 @@ export default function Play() {
             </MenuList>
           )}
           <WindowContent>
-            <Panel
+            <Frame
               variant="well"
               style={{ padding: "1rem", marginBottom: "1rem" }}
             >
@@ -120,7 +119,7 @@ export default function Play() {
                 <CardWrapper style={{ marginRight: "0.5rem" }}>🂠</CardWrapper>
                 <CardWrapper>A♠</CardWrapper>
               </div>
-            </Panel>
+            </Frame>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Button onClick={() => alert("Dealing cards...")}>Deal</Button>
               <Button onClick={() => alert("Shuffling...")}>Shuffle</Button>
@@ -129,12 +128,12 @@ export default function Play() {
               </Button>
             </div>
           </WindowContent>
-          <Panel
+          <Frame
             variant="well"
             style={{ margin: "0.25rem", padding: "0.25rem", height: "30px" }}
           >
             <p style={{ fontSize: "12px" }}>Score: 0 | Time: 00:00</p>
-          </Panel>
+          </Frame>
         </Window>
       )}
     </>

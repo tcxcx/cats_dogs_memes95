@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import Button from "@/components/ui/button";
+import Web3AuthDialog from "@/components/web3auth-dialog";
 import Logo from "../logo";
 
 export default function Navbar() {
@@ -25,14 +25,7 @@ export default function Navbar() {
         <div className="flex items-center flex-1 justify-end relative">
           <div className="w-full h-[1px] bg-black" />
           <div className="absolute right-0 top-1/2 transform -translate-y-1/2 flex items-center z-10">
-            <Button
-              onClick={() => {
-                console.log("click");
-              }}
-              className="bg-[#D8B4FE] text-black ml-4"
-            >
-              Connect Wallet
-            </Button>
+            <Web3AuthDialog />
           </div>
         </div>
       </div>
