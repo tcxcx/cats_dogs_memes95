@@ -3,7 +3,7 @@
 pragma solidity ^0.8.22;
 
 import { Packet } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ISendLib.sol";
-import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol"; //£But report?: docs have incorrect path name oapp-evm instead of lz-evm-oapp-v2. See https://docs.layerzero.network/cookbook/using-foundry
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol"; //£bug report?: docs have incorrect path name oapp-evm instead of lz-evm-oapp-v2. See https://docs.layerzero.network/cookbook/using-foundry
 import { MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 // The unique path location of your OApp

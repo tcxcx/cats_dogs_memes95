@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+// £ CONTINUE HERE. See https://docs.layerzero.network/cookbook/using-foundry. Placing it in the make file, something went wrong. fix. 
+
 pragma solidity ^0.8.22;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
