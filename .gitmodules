@@ -25,3 +25,6 @@
 [submodule "packages/backend/lib/openzeppelin-contracts"]
 	path = packages/backend/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "packages/backend/lib/reference"]
+	path = packages/backend/lib/reference
+	url = https://github.com/erc6551/reference
