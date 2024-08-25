@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 
 // NB: this will also deploy Cards, Coins, Game, Actions. Deploying tournament means deploying the protocol. 
 
-contract DeployTournamentScript is Script {
+contract DeployTournaments is Script {
     function setUp() public {}
 
     function run() public {

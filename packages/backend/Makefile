@@ -14,7 +14,10 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 #&& git commit -m "modules"
 
 # Install modules
-install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && forge install openzeppelin/openzeppelin-contracts@v5.0.2 --no-commit && forge install eth-infinitism/account-abstraction@v0.7.0 --no-commit && forge install bokkypoobah/BokkyPooBahsDateTimeLibrary --no-commit
+install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && \
+	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-commit && \
+	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-commit && \
+	forge install https://github.com/erc6551/reference --no-commit
 
 # Update Dependencies
 update:; forge update
