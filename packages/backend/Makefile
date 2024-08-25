@@ -17,10 +17,12 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-commit && \
-	forge install LayerZero-Labs/LayerZero-v2 --no-commit && \
-	forge install LayerZero-Labs/LayerZero --no-commit && \
-	forge install GNSPS/solidity-bytes-utils --no-commit && \
-	forge install wighawag/hardhat-deploy --no-commit 
+	# forge install LayerZero-Labs/LayerZero --no-commit && \
+	# forge install LayerZero-Labs/LayerZero-v2 --no-commit && \
+	# forge install GNSPS/solidity-bytes-utils --no-commit && \
+	# forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-commit && \
+	# forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-commit && \
+	# forge install wighawag/hardhat-deploy --no-commit 
 
 # Update Dependencies
 update:; forge update
