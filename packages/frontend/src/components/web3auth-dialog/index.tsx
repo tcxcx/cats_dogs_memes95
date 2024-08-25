@@ -10,15 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -28,199 +19,133 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useWeb3Auth } from "@/lib/context/web3auth";
 
-export default function Web3AuthLoginDialog() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showMFA, setShowMFA] = useState(false);
+export default function Web3AuthDialog() {
+  const { isLoggedIn, login, logout, getUserInfo, rpc } = useWeb3Auth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
 
-  const handleEmailLogin = async () => {
+  const handleLogin = async () => {
     setIsLoading(true);
     try {
-      // Simulating login process
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setShowMFA(true);
+      await login();
+      const user = await getUserInfo();
+      setUserInfo(user);
     } catch (error) {
-      console.error("Error during email login:", error);
+      console.error("Login failed:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleMFASubmit = async () => {
+  const handleLogout = async () => {
     setIsLoading(true);
     try {
-      // Simulating MFA verification process
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Logged in successfully with email and MFA");
-      setIsOpen(false);
+      await logout();
+      setUserInfo(null);
+      setAddress(null);
+      setBalance(null);
     } catch (error) {
-      console.error("Error during MFA verification:", error);
+      console.error("Logout failed:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider: string) => {
-    setIsLoading(true);
+  const getAccounts = async () => {
+    if (!isLoggedIn || !rpc) {
+      console.log("User is not logged in or RPC is not available");
+      return;
+    }
     try {
-      // Simulating social login process
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log(`Logged in successfully with ${provider}`);
-      setIsOpen(false);
+      const accounts = await rpc.getAccounts();
+      setAddress(accounts[0]);
+      console.log("User's address:", accounts[0]);
     } catch (error) {
-      console.error(`Error during ${provider} login:`, error);
-    } finally {
-      setIsLoading(false);
+      console.error("Failed to get accounts:", error);
+    }
+  };
+
+  const getBalance = async () => {
+    if (!isLoggedIn || !rpc) {
+      console.log("User is not logged in or RPC is not available");
+      return;
+    }
+    try {
+      const balance = await rpc.getBalance();
+      setBalance(balance);
+      console.log("User's balance:", balance);
+    } catch (error) {
+      console.error("Failed to get balance:", error);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#D8B4FE] text-black ml-4">Connect Wallet</Button>
+        <Button className="bg-[#D8B4FE] text-black ml-4">
+          {isLoggedIn ? "Disconnect" : "Connect Wallet"}
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" title="Web3Auth Login">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
+          <DialogTitle>Web3Auth MPC Login</DialogTitle>
           <DialogDescription>
-            Connect your wallet using Web3Auth. Choose between email login or
-            social login.
+            Connect your wallet using Web3Auth MPC. Choose a social login
+            method.
           </DialogDescription>
         </DialogHeader>
-        {!showMFA ? (
-          <Tabs defaultValue="email" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="social">Social</TabsTrigger>
-            </TabsList>
-            <TabsContent value="email">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Login</CardTitle>
-                  <CardDescription>
-                    Login using your email and password.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
-                    onClick={handleEmailLogin}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Login with Email
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            <TabsContent value="social">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Social Login</CardTitle>
-                  <CardDescription>
-                    Login using your social media accounts.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
-                    onClick={() => handleSocialLogin("google")}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Login with Google
-                  </Button>
-                  <Button
-                    className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
-                    onClick={() => handleSocialLogin("facebook")}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Login with Facebook
-                  </Button>
-                  <Button
-                    className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
-                    onClick={() => handleSocialLogin("twitter")}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Login with Twitter
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        ) : (
+        {!isLoggedIn ? (
           <Card>
             <CardHeader>
-              <CardTitle>MFA Verification</CardTitle>
+              <CardTitle>Social Login</CardTitle>
               <CardDescription>
-                Enter the 6-digit code sent to your email.
+                Login using your Google account.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="otp">MFA Code</Label>
-                <InputOTP
-                  maxLength={6}
-                  value={otp}
-                  onChange={(value) => setOtp(value)}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                  </InputOTPGroup>
-                  <InputOTPSeparator />
-                  <InputOTPGroup>
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-            </CardContent>
-            <CardFooter>
               <Button
                 className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
-                onClick={handleMFASubmit}
-                disabled={isLoading || otp.length !== 6}
+                onClick={handleLogin}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Verify MFA
+                Login with Google
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>User Info</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre>{JSON.stringify(userInfo, null, 2)}</pre>
+              {address && <p>Address: {address}</p>}
+              {balance && <p>Balance: {balance} ETH</p>}
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2">
+              <Button onClick={getAccounts} className="w-full">
+                Get Accounts
+              </Button>
+              <Button onClick={getBalance} className="w-full">
+                Get Balance
+              </Button>
+              <Button
+                onClick={handleLogout}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Logout
               </Button>
             </CardFooter>
           </Card>
