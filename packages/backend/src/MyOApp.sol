@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-// £ CONTINUE HERE. See https://docs.layerzero.network/cookbook/using-foundry. Placing it in the make file, something went wrong. fix. 
-
 pragma solidity ^0.8.22;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -9,7 +7,7 @@ import { OApp, MessagingFee, Origin } from "@layerzerolabs/lz-evm-oapp-v2/contra
 import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 
 contract MyOApp is OApp {
-    constructor(address _endpoint, address _delegate) OApp(_endpoint, _delegate) {}
+    constructor(address _endpoint, address _delegate) OApp(_endpoint, _delegate) Ownable(_delegate) {}
 
     string public data = "Nothing received yet.";
 
