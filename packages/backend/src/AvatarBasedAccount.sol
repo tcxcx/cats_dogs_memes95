@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-interface IERC6551Account {
+interface IAvatarAccount {
     receive() external payable;
 
     function token()
@@ -27,14 +27,14 @@ interface IERC6551Account {
         returns (bytes4 magicValue);
 }
 
-interface IERC6551Executable {
+interface IAvatarExecutable {
     function execute(address to, uint256 value, bytes calldata data, uint8 operation)
         external
         payable
         returns (bytes memory);
 }
 
-contract AvatarBasedAccount is IERC165, IERC1271, IERC6551Account, IERC6551Executable {
+contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
     uint256 public state;
 
     receive() external payable {}
@@ -62,7 +62,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IERC6551Account, IERC6551Execu
 
     function isValidSigner(address signer, bytes calldata) external view virtual returns (bytes4) {
         if (_isValidSigner(signer)) {
-            return IERC6551Account.isValidSigner.selector;
+            return IAvatarAccount.isValidSigner.selector;
         }
 
         return bytes4(0);
@@ -85,8 +85,8 @@ contract AvatarBasedAccount is IERC165, IERC1271, IERC6551Account, IERC6551Execu
 
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
         return interfaceId == type(IERC165).interfaceId
-            || interfaceId == type(IERC6551Account).interfaceId
-            || interfaceId == type(IERC6551Executable).interfaceId;
+            || interfaceId == type(IAvatarAccount).interfaceId
+            || interfaceId == type(IAvatarExecutable).interfaceId;
     }
 
     function token() public view virtual returns (uint256, address, uint256) {
@@ -108,5 +108,23 @@ contract AvatarBasedAccount is IERC165, IERC1271, IERC6551Account, IERC6551Execu
 
     function _isValidSigner(address signer) internal view virtual returns (bool) {
         return signer == owner();
+    }
+
+        /**
+     * @dev added onERC1155Received function to make single transfers of ERC1155 tokens to TBA possible.  
+     */
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    /**
+     * @dev added onERC1155Received function to make batch transfers of ERC1155 tokens to TBA possible.  
+     */
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory)
+        public
+        virtual
+        returns (bytes4)
+    {
+        return this.onERC1155BatchReceived.selector;
     }
 }
