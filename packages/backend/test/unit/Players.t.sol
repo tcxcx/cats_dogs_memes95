@@ -42,9 +42,8 @@ contract PlayersTest is Test {
         vm.prank(userOne);
         (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
 
-        console2.logString("avatarId and avatarAccountAddress:"); 
-        console2.logUint(avatarId); 
-        console2.logAddress(avatarAccountAddress); 
+        console2.log("avatarId:", avatarId); 
+        console2.log("avatarAccountAddress:", avatarAccountAddress); 
 
         // assert 
         assertNotEq(address(0), avatarAccountAddress);

@@ -3,7 +3,8 @@
 
 .PHONY: all test clean deploy fund help install snapshot format anvil 
 
-all: clean remove install update build
+all: clean remove install build
+# removed 'update'
 
 # Clean the repo
 clean  :; forge clean
@@ -20,7 +21,7 @@ install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && \
 	forge install https://github.com/erc6551/reference --no-commit
 
 # Update Dependencies
-update:; forge update
+# update:; forge update
 
 # Build
 build:; forge build
