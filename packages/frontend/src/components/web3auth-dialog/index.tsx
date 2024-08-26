@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
+import { Info, Loader2, ShoppingCart, Lock, Unlock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, ShoppingCart } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,11 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useWeb3Auth } from "@/lib/context/web3auth";
-import { Avatar, WindowContent } from "react95";
+import { Avatar } from "react95";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+  REGEXP_ONLY_DIGITS,
+} from "@/components/ui/input-otp";
 import {
   Tooltip,
   TooltipContent,
@@ -36,45 +42,62 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Button as Button95, GroupBox, Window, Counter, Frame } from "react95";
+import {
+  Button as Button95,
+  GroupBox,
+  Window,
+  Frame,
+  Counter,
+  WindowContent,
+} from "react95";
+import { generateOtp, sendOtpToEmail, verifyOtp } from "@/lib/otp-utils";
+import { MFARenderContent } from "./MFARenderContent";
 
 export default function Web3AuthDialog() {
-  const { isLoggedIn, login, logout, getUserInfo, rpc, setupMFA, verifyMFA } =
+  const { isLoggedIn, login, logout, getUserInfo, rpc, enableMFA, verifyMFA } =
     useWeb3Auth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [address, setAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string | null>(null);
-  const [mfaStep, setMfaStep] = useState<"initial" | "setup" | "verify">(
-    "initial"
-  );
+  const [userInfo, setUserInfo] = useState(null);
+  const [address, setAddress] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaStep, setMfaStep] = useState("initial");
+  const [factorKey, setFactorKey] = useState(null);
   const [otpCode, setOtpCode] = useState("");
   const [mfaError, setMfaError] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     if (isLoggedIn) {
-      const fetchData = async () => {
-        try {
-          const user = await getUserInfo();
-          setUserInfo(user);
-
-          if (rpc) {
-            const accounts = await rpc.getAccounts();
-            setAddress(accounts[0]);
-
-            const userBalance = await rpc.getBalance();
-            setBalance(userBalance);
-          }
-        } catch (error) {
-          console.error("Failed to fetch user data:", error);
-        }
-      };
-
-      fetchData();
+      fetchUserData();
     }
-  }, [isLoggedIn, getUserInfo, rpc]);
+  }, [isLoggedIn]);
+
+  const fetchUserData = async () => {
+    try {
+      const user = await getUserInfo();
+      setUserInfo(user);
+
+      if (rpc) {
+        const accounts = await rpc.getAccounts();
+        if (accounts.length > 0) {
+          setAddress(accounts[0]);
+          const userBalance = await rpc.getBalance();
+          setBalance(userBalance);
+        } else {
+          setAddress(null);
+          setBalance("0");
+        }
+      }
+
+      // Check if MFA is enabled
+      const keyDetails = await coreKitInstance.getKeyDetails();
+      setMfaEnabled(keyDetails.totalFactors > 1);
+    } catch (error) {
+      console.error("Failed to fetch user data:", error);
+    }
+  };
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -95,6 +118,7 @@ export default function Web3AuthDialog() {
       setAddress(null);
       setBalance(null);
       setMfaStep("initial");
+      setMfaEnabled(false);
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -102,44 +126,117 @@ export default function Web3AuthDialog() {
     }
   };
 
+  const handleOTPChange = (value: string) => {
+    setOtpCode(value);
+  };
+
   const handleSetupMFA = async () => {
     setIsLoading(true);
     try {
-      await setupMFA();
-      setMfaStep("setup");
+      const email = userInfo?.email;
+      const otp = generateOtp(); // Generate a new OTP
+      await sendOtpToEmail(email, userInfo?.name || "User", otp); // Send OTP via email
+      setMfaStep("otpVerification"); // Move to the next step
     } catch (error) {
-      console.error("MFA setup failed:", error);
-      setMfaError("Failed to set up MFA. Please try again.");
-    } finally {
+      console.error("Failed to initiate MFA setup:", error);
+      setMfaError("Failed to initiate MFA setup. Please try again.");
       setIsLoading(false);
     }
   };
 
-  const handleVerifyMFA = async () => {
+  const handleOTPVerification = async () => {
     setIsLoading(true);
     try {
-      await verifyMFA(otpCode);
-      setMfaStep("initial");
-      setMfaError("");
+      const email = userInfo?.email;
+
+      // Use the enableMFA function to verify OTP and enable MFA
+      const generatedFactorKey = await enableMFA(email, otpCode); // Enable MFA
+      setFactorKey(generatedFactorKey);
+      setMfaStep("setupComplete");
     } catch (error) {
-      console.error("MFA verification failed:", error);
+      console.error("MFA setup failed:", error);
       setMfaError("Invalid OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleBuyAvatar = async () => {
+  const renderMFAContent = () => {
+    switch (mfaStep) {
+      case "initial":
+        return (
+          <Button onClick={handleSetupMFA} disabled={mfaEnabled} fullWidth>
+            {mfaEnabled ? "MFA Enabled" : "Set up MFA"}
+          </Button>
+        );
+      case "otpVerification":
+        return (
+          <div className="space-y-4">
+            <Label htmlFor="otpCode">Enter OTP Code</Label>
+            <InputOTP
+              maxLength={6}
+              pattern={REGEXP_ONLY_DIGITS}
+              onChange={handleOTPChange}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+            <Button onClick={handleOTPVerification} className="w-full">
+              Verify OTP and Enable MFA
+            </Button>
+            {mfaError && <p className="text-red-500">{mfaError}</p>}
+          </div>
+        );
+      case "setupComplete":
+        return (
+          <div className="space-y-4">
+            <Alert>
+              <AlertTitle>MFA Setup Complete</AlertTitle>
+              <AlertDescription>
+                Your MFA setup is complete. Please save the following factor key
+                securely:
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="factorKey">Factor Key</Label>
+              <Input
+                id="factorKey"
+                value={factorKey}
+                readOnly
+                className="cursor-pointer"
+                onClick={() => navigator.clipboard.writeText(factorKey)}
+              />
+              <p className="text-sm text-gray-500">
+                Click on the key to copy it to your clipboard.
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const handleBuyAvatar = () => {
     console.log("Buying avatar...");
   };
 
-  const handleCarouselSelect = useCallback((_, index: number) => {
+  const handleCarouselSelect = (_, index) => {
     setCurrentSlide(index);
-  }, []);
+  };
 
-  const handleSelectAvatar = useCallback(() => {
+  const handleSelectAvatar = () => {
     console.log(`Selected avatar ${currentSlide + 1} as game avatar`);
-  }, [currentSlide]);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -155,50 +252,6 @@ export default function Web3AuthDialog() {
             {isLoggedIn
               ? "Welcome! Manage your wallet and game assets here."
               : "Connect your wallet using Web3Auth MPC. Choose a social login method."}
-            {isLoggedIn && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar
-                    src={userInfo?.picture}
-                    alt="Profile"
-                    className="w-12 h-12"
-                  />
-                  <div>
-                    <p className="font-bold">{userInfo?.name}</p>
-                    <p className="text-sm">
-                      Address:{" "}
-                      {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                    </p>
-                    <p className="text-sm">Balance: {balance} ETH</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="mb-2 flex items-center cursor-help">
-                          Set up Multi-factor Authentication (MFA)
-                          <Info size={16} className="ml-2" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          MFA is a two-factor authentication method to recover
-                          your blockchain non-custodial account.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Button95
-                    onClick={handleSetupMFA}
-                    disabled={mfaStep !== "initial"}
-                    fullWidth
-                  >
-                    Set up MFA
-                  </Button95>
-                </div>
-              </div>
-            )}
           </DialogDescription>
         </DialogHeader>
         {!isLoggedIn ? (
@@ -225,8 +278,53 @@ export default function Web3AuthDialog() {
         ) : (
           <Card>
             <CardContent>
-              <div className="flex space-x-4 pt-4">
-                <div className="flex-1 space-y-12">
+              <div className="flex items-center justify-between mt-4 mb-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar
+                    src={userInfo?.picture}
+                    alt="Profile"
+                    className="w-12 h-12"
+                  />
+                  <div>
+                    <p className="font-bold">{userInfo?.name}</p>
+                    <p className="text-sm">
+                      Address:{" "}
+                      {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                    </p>
+                    <p className="text-sm">Balance: {balance} ETH</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="mb-2 flex items-center cursor-help">
+                          Multi-factor Authentication (MFA)
+                          <Info size={16} className="ml-2" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          MFA is a two-factor authentication method to recover
+                          your blockchain non-custodial account.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <MFARenderContent
+                    mfaStep={mfaStep}
+                    mfaEnabled={mfaEnabled}
+                    factorKey={factorKey}
+                    otpCode={otpCode}
+                    mfaError={mfaError}
+                    handleSetupMFA={handleSetupMFA}
+                    handleOTPChange={handleOTPChange}
+                    handleOTPVerification={handleOTPVerification}
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <div className="flex-1 space-y-6">
                   <GroupBox label="Buy Avatar">
                     <CardContent>
                       <TooltipProvider>
@@ -297,44 +395,16 @@ export default function Web3AuthDialog() {
                 </div>
               </div>
               <Separator className="my-4" />
-              {mfaStep === "initial" && (
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleLogout}
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Logout
-                  </Button>
-                </div>
-              )}
-              {mfaStep === "setup" && (
-                <div className="space-y-4">
-                  <Alert>
-                    <AlertTitle>Important</AlertTitle>
-                    <AlertDescription>
-                      Setting up MFA gives you total custody of your account.
-                      You can use this to recover access to your account.
-                    </AlertDescription>
-                  </Alert>
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Enter OTP</Label>
-                    <Input
-                      id="otp"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="Enter OTP"
-                    />
-                  </div>
-                  <Button onClick={handleVerifyMFA} className="w-full">
-                    Verify OTP
-                  </Button>
-                  {mfaError && <p className="text-red-500">{mfaError}</p>}
-                </div>
-              )}
+              <Button
+                onClick={handleLogout}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Logout
+              </Button>
             </CardContent>
           </Card>
         )}

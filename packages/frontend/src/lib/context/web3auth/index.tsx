@@ -7,6 +7,10 @@ import {
   WEB3AUTH_NETWORK,
   JWTLoginParams,
   parseToken,
+  generateFactorKey,
+  TssShareType,
+  makeEthereumSigner,
+  mnemonicToKey,
 } from "@web3auth/mpc-core-kit";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
 import { EthereumSigningProvider } from "@web3auth/ethereum-mpc-provider";
@@ -19,7 +23,7 @@ import {
   UserCredential,
 } from "firebase/auth";
 import EthereumRpc from "@/lib/viemRPC";
-import { makeEthereumSigner } from "@web3auth/mpc-core-kit";
+import { verifyOtp } from "@/lib/otp-utils";
 
 interface Web3AuthContextType {
   coreKitInstance: Web3AuthMPCCoreKit | null;
@@ -30,8 +34,9 @@ interface Web3AuthContextType {
   getUserInfo: () => Promise<any>;
   getAccounts: () => Promise<string[]>;
   getBalance: () => Promise<string>;
+  enableMFA: () => Promise<void>;
+  verifyMFA: (otpCode: string) => Promise<void>;
 }
-
 const Web3AuthContext = createContext<Web3AuthContextType | null>(null);
 
 export const useWeb3Auth = () => {
@@ -172,6 +177,45 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return await rpc.getBalance();
   };
 
+  const enableMFA = async (email: string, otpCode: string) => {
+    if (!coreKitInstance) {
+      throw new Error("coreKitInstance is not set");
+    }
+    try {
+      const isOtpValid = verifyOtp(email, otpCode);
+      if (!isOtpValid) {
+        throw new Error("OTP verification failed");
+      }
+
+      const factorKey = generateFactorKey();
+      await coreKitInstance.createFactor({
+        shareType: TssShareType.RECOVERY,
+        factorKey: factorKey.private,
+      });
+
+      if (coreKitInstance.status === COREKIT_STATUS.LOGGED_IN) {
+        await coreKitInstance.commitChanges();
+      }
+
+      console.log("MFA enabled.");
+      return factorKey.private.toString("hex");
+    } catch (error) {
+      console.error("Failed to enable MFA:", error);
+      throw new Error("MFA enablement failed.");
+    }
+  };
+  const verifyMFA = async (otpCode: string) => {
+    if (!coreKitInstance) return;
+    try {
+      const factorKey = await mnemonicToKey(otpCode);
+      await coreKitInstance.inputFactorKey(factorKey);
+      console.log("MFA verified.");
+    } catch (error) {
+      console.error("Failed to verify MFA:", error);
+      throw new Error("MFA verification failed.");
+    }
+  };
+
   return (
     <Web3AuthContext.Provider
       value={{
@@ -183,6 +227,8 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         getUserInfo,
         getAccounts,
         getBalance,
+        enableMFA,
+        verifyMFA,
       }}
     >
       {children}
