@@ -80,7 +80,7 @@ export default function Component() {
             {/* Grid with 3 Columns */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Game Info */}
-              <Card className="bg-secondary/10 p-4">
+              <Card className="bg-primary/10 p-4">
                 <h2 className="text-2xl font-bold mb-2">Game Info:</h2>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Blockchain-based collectible cards</li>
@@ -90,7 +90,7 @@ export default function Component() {
                 </ul>
               </Card>
               {/* Banner Image */}
-              <div className="relative h-52 w-full bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 rounded-lg overflow-hidden group">
+              <div className="relative h-full w-full bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 rounded-lg overflow-hidden group">
                 <Image
                   src="/Season1_1.jpg"
                   alt="Banner"
@@ -101,8 +101,8 @@ export default function Component() {
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:animate-pulse group-hover:opacity-100">
                   <Cat className="w-24 h-24 text-white animate-bounce" />
-                  <Dog className="w-24 h-24 text-white animate-bounce delay-100" />
-                  <Smile className="w-24 h-24 text-white animate-bounce delay-200" />
+                  <Dog className="w-24 h-24 text-white animate-bounce delay-150" />
+                  <Smile className="w-24 h-24 text-white animate-bounce delay-300" />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   Collect, Trade, Battle!
@@ -110,7 +110,7 @@ export default function Component() {
               </div>
 
               {/* How to Play */}
-              <Card className="bg-primary/10 p-4 h-52">
+              <Card className="bg-primary/10 p-4">
                 <h2 className="text-2xl font-bold mb-2">How to Play:</h2>
                 <ol className="list-decimal list-inside space-y-2">
                   <li>
