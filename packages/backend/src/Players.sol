@@ -51,7 +51,7 @@ contract Players is ERC721URIStorage {
         string memory _version,
         address _erc6551_account, 
         address _erc6551_registry
-    ) ERC721("Cats, Dogs and Memes Avatar", "CDM") {
+    ) ERC721("Cats, Memes and Dogs Avatar", "CMD") {
         s_owner = msg.sender;
         i_erc6551_account = _erc6551_account; 
         i_erc6551_registry = _erc6551_registry; 
