@@ -1,5 +1,7 @@
 import { CardData } from "../types";
 
+// Split this into a global mock card list and a user card list
+
 export const userCards: CardData[] = [
   {
     id: 1,
