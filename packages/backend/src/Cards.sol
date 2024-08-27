@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
+import {Coins} from "./Coins.sol"; 
 
 /** 
 * ERC-1155 based contract that stores cards structs and manages their distribution. 
@@ -35,11 +36,14 @@ contract Cards is ERC1155 {
     /* State variables */
     uint256[] public s_cardIds;
     mapping(uint256 cardId => Card card) public s_cards; // maps cardId to its characteristics. 
-    address public s_owner;
-    uint256 public s_priceCardPack; 
-    
+    uint256 public s_priceCardPack;
+    address public s_owner; 
+    Coins public s_coins; 
+    bool public s_mintCoinsAllowed; // intiates to false. 
+
     /* Events */
     event Log(string func, uint256 gas);
+    event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);  
     event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);  
 
     /* modifiers */
@@ -69,7 +73,10 @@ contract Cards is ERC1155 {
         uint256 priceCardPack
         ) ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") {
             s_owner = msg.sender;
+            s_coins = new Coins(); 
             s_priceCardPack = priceCardPack; 
+
+            emit DeployedCardsContract(s_owner, address(s_coins), s_priceCardPack); 
     }
 
     /* receive & fallback */ 
@@ -124,7 +131,7 @@ contract Cards is ERC1155 {
     /**
      * note function to buy a pack of five random cards.
      * 
-     * @param cardPackNo The sequence number of the cardPack the player choose. It is used as salt in picking a random set of cards.   
+     * @param cardPackNumber The sequence number of the cardPack the player choose. It is used as salt in picking a random set of cards.   
      * 
      * note: the chance of a card appearing in a pack is defined by the amount of avaialble cards. In other words, rare cards are selected fewer times.
      * There is a (tiny) chance that a card that has been minted less than five times will be selected more than it exists. 
@@ -134,7 +141,7 @@ contract Cards is ERC1155 {
      * 
      * dev For now, payment occurs in native currency. Should this be in a ERC-20 coin instead? 
      */
-    function openCardPack(uint256 cardPackNo) public payable onlyAvatarBasedAccount(msg.sender) {
+    function openCardPack(uint256 cardPackNumber) public payable onlyAvatarBasedAccount(msg.sender) {
         uint256[] memory selectedCards = new uint256[](5); 
         uint256[] memory cardsValues = new uint256[](5); 
         uint256[] memory cardIds = s_cardIds; 
@@ -160,7 +167,7 @@ contract Cards is ERC1155 {
 
         // step 3: for each of the five cards, we retrieve a value between 0 and total amount of cards. This is used to select the cardId and add it to the CardPack object.
         for (uint256 i; i < 5; i++) {
-            uint256 pseudoRandomNumber = _pseudoRandomiser(i + cardPackNo) % incrementedArray[incrementedArray.length - 1]; 
+            uint256 pseudoRandomNumber = _pseudoRandomiser(i + cardPackNumber) % incrementedArray[incrementedArray.length - 1]; 
             uint256 cardId; 
             while (incrementedArray[cardId] < pseudoRandomNumber) {
                 cardId++;
@@ -177,7 +184,11 @@ contract Cards is ERC1155 {
             cardsValues, // uint256[] memory values,
             '' // bytes memory data
         );
-        
+
+        // step 5, mint the coins allocation for this pack of cards. 
+        s_mintCoinsAllowed = true; 
+            Coins(s_coins).mintCoinShare(msg.sender); 
+        s_mintCoinsAllowed = false; 
     } 
 
     /**
@@ -234,33 +245,6 @@ contract Cards is ERC1155 {
             }
         }
         return incrementArray;
-    }
-
-    /** 
-    * Overrides the internal _setUri function from ERC-1155. It allows the function to be called in this contract. 
-    * 
-    * This is necessary to make updating the uri at a later date possible. 
-    */
-    function _setURI(string memory newuri) internal override {
-        super._setURI(newuri);
-    }
-    
-    /** 
-    * Overrides the internal _safeBatchTransferFrom function from ERC-1155. It allows the function to be called in this contract. 
-    * 
-    * This is necessary to make transfer of cards without authorisation from the contract to the userAvatar possible. 
-    * The lack of authorisation is not a problem, because the function that calls this internalfunction ('openCardPack') has the necessary checks.  
-    */
-    function _safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal override {
-        super._safeBatchTransferFrom(
-            from, to, ids, amounts, data
-        ); 
     }
 
     /* getter functions */

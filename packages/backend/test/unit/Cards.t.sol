@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Test, console, console2} from "lib/forge-std/src/Test.sol"; // remappings do not work correctly in my vscode. 
+import {Test, console, console2} from "@forge-std/Test.sol";
 import {Players} from "../../src/Players.sol";
 import {Cards} from "../../src/Cards.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployCards} from "../../script/DeployCards.s.sol"; 
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-import {DeployRegistry} from "lib/reference/script/DeployRegistry.s.sol";  
+import {DeployRegistry} from "@erc6551/script/DeployRegistry.s.sol";  
 
 contract CardsTest is Test {
     /* Type declarations */
@@ -50,13 +50,13 @@ contract CardsTest is Test {
       assert(price != 0);
     }
 
-    function testCardsContractCanReceiveFunds() public {
-      // £TODO test emit event + balance increase. 
-    }
+    // function testCardsContractCanReceiveFunds() public {
+    //   // £TODO test emit event + balance increase. 
+    // }
 
-    function testOwnerCanRetrieveFunds() public {
-      //  £TODO  test emit event + balance increase. 
-    }
+    // function testOwnerCanRetrieveFunds() public {
+    //   //  £TODO  test emit event + balance increase. 
+    // }
 
     function testCardsCanBeUpdated() public {
         address ownerCards = cards.s_owner(); 
@@ -105,16 +105,16 @@ contract CardsTest is Test {
       
     }
 
-    function testOpenCardPackRevertsIfNotFromAvatarBasedAccount() public {
+    // function testOpenCardPackRevertsIfNotFromAvatarBasedAccount() public {
 
-    }
+    // }
 
-    function testOpenCardPackRevertsIfInssufficientPayment() public {
+    // function testOpenCardPackRevertsIfInssufficientPayment() public {
       
-    }
+    // }
 
-    function testGetCollectionReturnsCorrectCollection() public {
+    // function testGetCollectionReturnsCorrectCollection() public {
       
-    }
+    // }
 
 }

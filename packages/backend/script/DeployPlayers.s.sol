@@ -21,7 +21,7 @@ contract DeployPlayers is Script {
         string memory version = "alpha.1";
         address registry; 
         if (block.chainid == 31337) {
-            registry = 0xa020dA0F9FE092a6E3Ea86B9eAEeE25a5aD41917;  
+            registry = 0x9914875e25092EB2A50ABF3aCD3295c7ab65c846;  
         } else { 
             registry = 0x000000006551c19487814612e58FE06813775758;  
         }
