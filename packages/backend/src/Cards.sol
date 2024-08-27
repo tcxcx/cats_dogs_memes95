@@ -21,12 +21,6 @@ contract Cards is ERC1155 {
     error Cards__NoCardsExist(); 
     
     /* Type declarations */
-    enum CardType { 
-        Cat, 
-        Dog, 
-        Meme
-    } 
-
     // struct has been taken from overview Itu: https://docs.google.com/spreadsheets/d/1aNNvr-jrMtzJW7glVkGedl47kQESOx0Vs02NA0MqMfs/edit?gid=0#gid=0
     struct Card {
         string name;
@@ -34,14 +28,9 @@ contract Cards is ERC1155 {
         uint16 atk; 
         uint16 hp; 
         uint16 spd; 
-        int16 volumeThreshold; 
-        int16 areaThreshold; 
-        int16 perimeterThreshold; 
-        uint16 ProbPull; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
-        uint16 InfRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
-        uint16 SupRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
+        uint16 infRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
+        uint16 supRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
     }
-    
 
     /* State variables */
     uint256[] public s_cardIds;
@@ -117,10 +106,8 @@ contract Cards is ERC1155 {
             revert Cards__ArraysNotSameLength(cards.length, mintAmounts.length); 
         }
         // delete the array of cardIds; 
-        if (s_cardIds.length > 0) {
-            for (uint256 i; i < s_cardIds.length; i++) {
-                s_cardIds.pop(); 
-            }
+        while (s_cardIds.length > 0) {
+            s_cardIds.pop(); 
         }
         // save cards to storage. 
         for (uint256 i; i < cards.length; i++) {

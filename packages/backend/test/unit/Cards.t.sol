@@ -18,37 +18,6 @@ contract CardsTest is Test {
     address userOne = makeAddr("UserOne"); 
     address userTwo = makeAddr("UserTwo"); 
     string avatarUri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
-
-
-    /////////////////////////////////////////////// 
-    ///                 Modifiers               ///
-    ///////////////////////////////////////////////
-
-    modifier createCards() {
-        address ownerCards = cards.s_owner(); 
-        uint256[] memory mintAmounts = new uint256[](9); 
-        Cards.Card[] memory CardData = new Cards.Card[](9); 
-        string memory newuri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json"; 
-        for (uint256 i; i < 9; i++) { 
-          mintAmounts[i] = i * 2; 
-        }  
-        CardData[0] = Cards.Card({name: "Abyssinian", cardType: 'Cat', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307}); 
-        CardData[1] = Cards.Card({name: "American Shorthair", cardType: 'Cat', atk: 3, hp: 4, spd: 10, volumeThreshold: -5, areaThreshold: 14, perimeterThreshold: 8, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[2] = Cards.Card({name: "Bengal", cardType: 'Cat', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[3] = Cards.Card({name: "Australian Shepherd", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[4] = Cards.Card({name: "Beagle", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[5] = Cards.Card({name: "Boxer", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[6] = Cards.Card({name: "Baby Doge Coin", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[7] = Cards.Card({name: "Bonk", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[8] = Cards.Card({name: "Book Of Meme", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-
-        // act 
-        vm.prank(ownerCards); 
-        cards.createCards(CardData, mintAmounts, newuri);
-
-      _;
-    }
-
   
     ///////////////////////////////////////////////
     ///                   Setup                 ///
@@ -89,7 +58,7 @@ contract CardsTest is Test {
       //  £TODO  test emit event + balance increase. 
     }
 
-    function testCardsCanBeCreated() public {
+    function testCardsCanBeUpdated() public {
         address ownerCards = cards.s_owner(); 
         uint256[] memory mintAmounts = new uint256[](9); 
         Cards.Card[] memory CardData = new Cards.Card[](9); 
@@ -97,16 +66,15 @@ contract CardsTest is Test {
         for (uint256 i; i < 9; i++) { 
           mintAmounts[i] = i * 2; 
         }  
-        CardData[0] = Cards.Card({name: "Abyssinian", cardType: 'Cat', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307}); 
-        CardData[1] = Cards.Card({name: "American Shorthair", cardType: 'Cat', atk: 3, hp: 4, spd: 10, volumeThreshold: -5, areaThreshold: 14, perimeterThreshold: 8, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[2] = Cards.Card({name: "Bengal", cardType: 'Cat', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[3] = Cards.Card({name: "Australian Shepherd", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[4] = Cards.Card({name: "Beagle", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[5] = Cards.Card({name: "Boxer", cardType: 'Dog', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[6] = Cards.Card({name: "Baby Doge Coin", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[7] = Cards.Card({name: "Bonk", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-        CardData[8] = Cards.Card({name: "Book Of Meme", cardType: 'Meme', atk: 7, hp: 10, spd: 2, volumeThreshold: 15, areaThreshold: 58, perimeterThreshold: 16, ProbPull: 6, InfRange: 301, SupRange: 307});
-
+        CardData[0] = Cards.Card({name: 'Ragamuffin' , cardType:'Cat'	, atk: 5	, hp: 4	, spd:5	, infRange:0	, supRange:93}); 
+        CardData[1] = Cards.Card({name: 'Burmese' , cardType:'Cat'	, atk: 6	, hp: 2	, spd:9	, infRange:93	, supRange:139}); 
+        CardData[2] = Cards.Card({name: 'Tonkinese' , cardType:'Cat'	, atk: 4	, hp: 7	, spd:4	, infRange:139	, supRange:170}); 
+        CardData[3] = Cards.Card({name: 'Siberian' , cardType:'Cat'	, atk: 8	, hp: 7	, spd:2	, infRange:170	, supRange:193}); 
+        CardData[4] = Cards.Card({name: 'Russian Blue' , cardType:'Cat'	, atk: 5	, hp: 6	, spd:4	, infRange:193	, supRange:212}); 
+        CardData[5] = Cards.Card({name: 'Norwegian Forest Cat' , cardType:'Cat'	, atk: 4	, hp: 5	, spd:6	, infRange:212	, supRange:227}); 
+        CardData[6] = Cards.Card({name: 'American Shorthair' , cardType:'Cat'	, atk: 3	, hp: 4	, spd:10	, infRange:227	, supRange:240}); 
+        CardData[7] = Cards.Card({name: 'Devon Rex' , cardType:'Cat'	, atk: 4	, hp: 3	, spd:10	, infRange:240	, supRange:252}); 
+        CardData[8] = Cards.Card({name: 'Oriental Shorthair' , cardType:'Cat'	, atk: 6	, hp: 7	, spd:3	, infRange:252	, supRange:262}); 
         // act 
         vm.prank(ownerCards); 
         cards.createCards(CardData, mintAmounts, newuri);
@@ -116,12 +84,14 @@ contract CardsTest is Test {
         assert(cardId == 7); 
     }
 
-    function testOpenCardPackAssignsFiveRandomCards() public createCards {
+    function testOpenCardPackAssignsFiveRandomCards() public {
         // prep
+        uint256 cardPackNumber = 1; 
+        
         // 1: create Avatar Based Account
         vm.prank(userOne);
         (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector);
+        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         // 2: get price pack
         uint256 priceCardPack = cards.s_priceCardPack();  
         // 3: give userOne funds. 
