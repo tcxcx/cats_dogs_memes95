@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
-
+// ONLY FOR DEV 
+import {Test, console, console2} from "lib/forge-std/src/Test.sol"; 
 /** 
 * ERC-1155 based contract that stores cards structs and manages their distribution. 
 * Integretation with chainlink VRF for randomisation is tbd.  
@@ -34,12 +35,8 @@ contract Cards is ERC1155 {
         uint16 atk; 
         uint16 hp; 
         uint16 spd; 
-        int16 volumeThreshold; 
-        int16 areaThreshold; 
-        int16 perimeterThreshold; 
-        uint16 ProbPull; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
-        uint16 InfRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
-        uint16 SupRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
+        uint16 infRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
+        uint16 supRange; // NB! in solidity nothing behing the comma. So we have to deal with this as full integers
     }
     
 
@@ -105,9 +102,11 @@ contract Cards is ERC1155 {
     * @param mintAmounts an array of uint256s. The amount of cards that needs to be minted.  
     * @param newuri a uri string to the folder that holds the uri to the image of the card. See the ERC-1155 explanation at openzeppeling for more info: https://docs.openzeppelin.com/contracts/4.x/erc1155 
     *
-    * note: the cards and mintAmounts arrays need to be of the same length. 
-    * note: the folder of uri data needs to have the same amount of items as the length of cards and mintAmount arrays. 
-    * note: cards are owned by this contract. Not the owner of the contract. 
+    * dev: the cards and mintAmounts arrays need to be of the same length. 
+    * dev: the folder of uri data needs to have the same amount of items as the length of cards and mintAmount arrays. 
+    * dev: cards are owned by this contract. Not the owner of the contract. 
+    * 
+    * NB: when updating cards, the mint amounts are NOT reset. any minted amounts are ADDED to the cards that already exist. 
     *
     * emits a transferBatch event. 
     */
@@ -116,21 +115,22 @@ contract Cards is ERC1155 {
         if (cards.length != mintAmounts.length) {
             revert Cards__ArraysNotSameLength(cards.length, mintAmounts.length); 
         }
-        // delete the array of cardIds; 
-        if (s_cardIds.length > 0) {
-            for (uint256 i; i < s_cardIds.length; i++) {
-                s_cardIds.pop(); 
-            }
+        // If a cards exist, delete them; 
+        while (s_cardIds.length > 0) {
+            s_cardIds.pop(); 
         }
+        
+        console2.log("after deleting array, length s_cardIds:" , s_cardIds.length); 
+
         // save cards to storage. 
         for (uint256 i; i < cards.length; i++) {
             s_cardIds.push(i); // this creates an array with the ids of our cards: [0, 1, 2, 3, ...]
             s_cards[i] = cards[i]; // mapping the cardId to card characteristics.  
         }
-        // set the uri; 
+        // set the uri to the metadata (images) of cards; 
         _setURI(newuri);
 
-        // mint cards
+        // mint cards. 
         _mintBatch(address(this), s_cardIds, mintAmounts, ''); 
     } 
 
