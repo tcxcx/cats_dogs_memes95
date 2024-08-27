@@ -1,7 +1,11 @@
-export default function Collection() {
+import { Suspense } from "react";
+import GalleryComponent from "@/components/gallery";
+import GallerySkeleton from "@/components/skeletons/gallery-skeleton";
+
+export default function Gallery() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between px-24">
-      Collection Content here
-    </main>
+    <Suspense fallback={<GallerySkeleton />}>
+      <GalleryComponent />
+    </Suspense>
   );
 }

@@ -59,15 +59,11 @@ const Sidebar = () => {
       route: "/",
       label: "Home",
     },
-    {
-      icon: <ShoppingBasket />,
-      route: "/buy-packs",
-      label: "Buy Packs",
-    },
+
     {
       icon: <PackageOpen />,
       route: "/open-packs",
-      label: "Open Packs",
+      label: "Buy/Open Packs",
     },
     {
       icon: <BookMarked />,

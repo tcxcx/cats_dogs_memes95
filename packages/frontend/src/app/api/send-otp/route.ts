@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const emailContent = OtpEmailTemplate({ firstName, otpCode });
 
     const { data, error } = await resend.emails.send({
-      from: "Cats, Memes & Dogs <onboarding@resend.dev>",
+      from: "Cats, Memes & Dogs, etc. <onboarding@resend.dev>",
       to: [recipientEmail],
       subject: "Your One-Time Password (OTP)",
       react: emailContent,

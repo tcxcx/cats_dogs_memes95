@@ -36,7 +36,7 @@ export const MFARenderContent: React.FC<MFARenderContentProps> = ({
   switch (mfaStep) {
     case "initial":
       return (
-        <Button onClick={handleSetupMFA} disabled={mfaEnabled} fullWidth>
+        <Button onClick={handleSetupMFA} disabled={mfaEnabled}>
           {mfaEnabled ? "MFA Enabled" : "Set up MFA"}
         </Button>
       );

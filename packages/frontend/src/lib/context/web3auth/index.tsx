@@ -34,7 +34,7 @@ interface Web3AuthContextType {
   getUserInfo: () => Promise<any>;
   getAccounts: () => Promise<string[]>;
   getBalance: () => Promise<string>;
-  enableMFA: () => Promise<void>;
+  enableMFA: (email: string, otpCode: string) => Promise<string>;
   verifyMFA: (otpCode: string) => Promise<void>;
 }
 const Web3AuthContext = createContext<Web3AuthContextType | null>(null);
@@ -177,7 +177,7 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return await rpc.getBalance();
   };
 
-  const enableMFA = async (email: string, otpCode: string) => {
+  const enableMFA = async (email: string, otpCode: string): Promise<string> => {
     if (!coreKitInstance) {
       throw new Error("coreKitInstance is not set");
     }
@@ -204,11 +204,12 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       throw new Error("MFA enablement failed.");
     }
   };
+
   const verifyMFA = async (otpCode: string) => {
     if (!coreKitInstance) return;
     try {
       const factorKey = await mnemonicToKey(otpCode);
-      await coreKitInstance.inputFactorKey(factorKey);
+      await coreKitInstance.inputFactorKey(factorKey as any);
       console.log("MFA verified.");
     } catch (error) {
       console.error("Failed to verify MFA:", error);

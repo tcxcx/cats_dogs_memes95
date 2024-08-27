@@ -9,9 +9,10 @@ import AltContainer from "@/components/container/alternate-bg";
 import DashboardSidebar from "@/components/sidebar/index";
 import React95App from "@/lib/context/react95";
 import { Web3AuthProvider } from "@/lib/context/web3auth";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Cats, Memes & Dogs",
+  title: "Cats, Memes & Dogs, etc., etc.",
   description: "Memestic memes",
 };
 
@@ -41,19 +42,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 </AltContainer>
               </div>
               <main className="flex-grow">
-                <div className="relative min-h-[calc(100vh-64px)]">
+                <div className="relative">
                   {" "}
-                  {/* Adjust 64px to match your Navbar height */}
-                  <div className="absolute inset-0 z-0">
+                  <div className="absolute inset-0 z-0 ">
                     <FlickeringGrid />
                   </div>
-                  <div className="relative z-10 p-4">{children}</div>
+                  <div className="relative z-1 p-4">{children}</div>
                 </div>
               </main>
             </div>
             <EmojiLine />
           </React95App>
         </Web3AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -18,7 +18,9 @@ export default function Navbar() {
         {/* Center content */}
         <div className="flex flex-col items-center mx-4 z-20">
           <Logo />
-          <code className="font-mono font-bold mt-2">Cats, Memes & Dogs</code>
+          <code className="font-mono font-bold mt-2">
+            Cats, Memes & Dogs, etc.
+          </code>
         </div>
 
         {/* Right side */}

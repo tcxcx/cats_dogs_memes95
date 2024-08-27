@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, ReactEventHandler } from "react";
 import { Button } from "@/components/ui/button";
-import { Info, Loader2, ShoppingCart, Lock, Unlock } from "lucide-react";
+import { Info, Loader2, ShoppingCart } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,8 +27,8 @@ import {
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-  REGEXP_ONLY_DIGITS,
 } from "@/components/ui/input-otp";
+import REGEXP_ONLY_DIGITS from "input-otp";
 import {
   Tooltip,
   TooltipContent,
@@ -53,20 +53,37 @@ import {
 import { generateOtp, sendOtpToEmail, verifyOtp } from "@/lib/otp-utils";
 import { MFARenderContent } from "./MFARenderContent";
 
+interface UserInfo {
+  email: string;
+  name: string;
+  picture: string;
+}
+
+type MfaStep = "initial" | "otpVerification" | "setupComplete";
+
 export default function Web3AuthDialog() {
-  const { isLoggedIn, login, logout, getUserInfo, rpc, enableMFA, verifyMFA } =
-    useWeb3Auth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [address, setAddress] = useState(null);
-  const [balance, setBalance] = useState(null);
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [mfaStep, setMfaStep] = useState("initial");
-  const [factorKey, setFactorKey] = useState(null);
-  const [otpCode, setOtpCode] = useState("");
-  const [mfaError, setMfaError] = useState("");
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const {
+    isLoggedIn,
+    login,
+    logout,
+    getUserInfo,
+    rpc,
+    enableMFA,
+    verifyMFA,
+    coreKitInstance,
+  } = useWeb3Auth();
+
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [mfaEnabled, setMfaEnabled] = useState<boolean>(false);
+  const [mfaStep, setMfaStep] = useState<MfaStep>("initial");
+  const [factorKey, setFactorKey] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState<string>("");
+  const [mfaError, setMfaError] = useState<string>("");
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -91,9 +108,10 @@ export default function Web3AuthDialog() {
         }
       }
 
-      // Check if MFA is enabled
-      const keyDetails = await coreKitInstance.getKeyDetails();
-      setMfaEnabled(keyDetails.totalFactors > 1);
+      if (coreKitInstance) {
+        const keyDetails = await coreKitInstance.getKeyDetails();
+        setMfaEnabled(keyDetails.totalFactors > 1);
+      }
     } catch (error) {
       console.error("Failed to fetch user data:", error);
     }
@@ -133,7 +151,7 @@ export default function Web3AuthDialog() {
   const handleSetupMFA = async () => {
     setIsLoading(true);
     try {
-      const email = userInfo?.email;
+      const email = userInfo?.email ?? "";
       const otp = generateOtp(); // Generate a new OTP
       await sendOtpToEmail(email, userInfo?.name || "User", otp); // Send OTP via email
       setMfaStep("otpVerification"); // Move to the next step
@@ -147,11 +165,9 @@ export default function Web3AuthDialog() {
   const handleOTPVerification = async () => {
     setIsLoading(true);
     try {
-      const email = userInfo?.email;
-
-      // Use the enableMFA function to verify OTP and enable MFA
-      const generatedFactorKey = await enableMFA(email, otpCode); // Enable MFA
-      setFactorKey(generatedFactorKey);
+      const email = userInfo?.email ?? "";
+      const generatedFactorKey = await enableMFA(email, otpCode);
+      setFactorKey(generatedFactorKey as any);
       setMfaStep("setupComplete");
     } catch (error) {
       console.error("MFA setup failed:", error);
@@ -165,7 +181,11 @@ export default function Web3AuthDialog() {
     switch (mfaStep) {
       case "initial":
         return (
-          <Button onClick={handleSetupMFA} disabled={mfaEnabled} fullWidth>
+          <Button
+            onClick={handleSetupMFA}
+            disabled={mfaEnabled}
+            className="w-full"
+          >
             {mfaEnabled ? "MFA Enabled" : "Set up MFA"}
           </Button>
         );
@@ -175,7 +195,7 @@ export default function Web3AuthDialog() {
             <Label htmlFor="otpCode">Enter OTP Code</Label>
             <InputOTP
               maxLength={6}
-              pattern={REGEXP_ONLY_DIGITS}
+              pattern={REGEXP_ONLY_DIGITS as any}
               onChange={handleOTPChange}
             >
               <InputOTPGroup>
@@ -210,10 +230,12 @@ export default function Web3AuthDialog() {
               <Label htmlFor="factorKey">Factor Key</Label>
               <Input
                 id="factorKey"
-                value={factorKey}
+                value={factorKey || ""}
                 readOnly
                 className="cursor-pointer"
-                onClick={() => navigator.clipboard.writeText(factorKey)}
+                onClick={() =>
+                  factorKey && navigator.clipboard.writeText(factorKey)
+                }
               />
               <p className="text-sm text-gray-500">
                 Click on the key to copy it to your clipboard.
@@ -230,8 +252,11 @@ export default function Web3AuthDialog() {
     console.log("Buying avatar...");
   };
 
-  const handleCarouselSelect = (_, index) => {
-    setCurrentSlide(index);
+  const handleCarouselSelect = (
+    event: React.SyntheticEvent,
+    index: number | null
+  ) => {
+    setCurrentSlide(index as number);
   };
 
   const handleSelectAvatar = () => {
@@ -311,16 +336,7 @@ export default function Web3AuthDialog() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <MFARenderContent
-                    mfaStep={mfaStep}
-                    mfaEnabled={mfaEnabled}
-                    factorKey={factorKey}
-                    otpCode={otpCode}
-                    mfaError={mfaError}
-                    handleSetupMFA={handleSetupMFA}
-                    handleOTPChange={handleOTPChange}
-                    handleOTPVerification={handleOTPVerification}
-                  />
+                  {renderMFAContent()}
                 </div>
               </div>
               <div className="flex space-x-4">
@@ -345,7 +361,7 @@ export default function Web3AuthDialog() {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Button95 onClick={handleBuyAvatar} fullWidth>
+                      <Button95 onClick={handleBuyAvatar} className="w-full">
                         <ShoppingCart size={16} className="mr-2" />
                         Buy
                       </Button95>
@@ -365,7 +381,7 @@ export default function Web3AuthDialog() {
                   <GroupBox label="GAME AVATAR ERC6551">
                     <Window>
                       <WindowContent>
-                        <Carousel onSelect={handleCarouselSelect}>
+                        <Carousel onSelect={handleCarouselSelect as any}>
                           <CarouselContent>
                             {Array.from({ length: 5 }).map((_, index) => (
                               <CarouselItem key={index}>
@@ -385,7 +401,10 @@ export default function Web3AuthDialog() {
                           <CarouselNext />
                         </Carousel>
                         <div className="mt-4">
-                          <Button95 onClick={handleSelectAvatar} fullWidth>
+                          <Button95
+                            onClick={handleSelectAvatar}
+                            className="w-full"
+                          >
                             Select Avatar {currentSlide + 1}
                           </Button95>
                         </div>
