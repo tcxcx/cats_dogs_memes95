@@ -6,6 +6,13 @@ pragma solidity ^0.8.0;
 * I copied it (instead of importing) because we might add bespoke logics later on.
 */ 
 
+/** 
+* Copied from TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
+* Two small changes: 
+* 1 - changed names of contracts. This ensure that the interfaceId of AvatarBasedAccounts is unique. 
+* 2 - added onERC1155Received and onERC1155BatchReceived. This allows receiving of ERC-1155 tokens. 
+*/ 
+
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
