@@ -72,6 +72,7 @@ const chainConfig = {
   blockExplorer: "https://sepolia.etherscan.io",
   ticker: "ETH",
   tickerName: "Ethereum",
+  logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
 };
 
 let coreKitInstance: Web3AuthMPCCoreKit;

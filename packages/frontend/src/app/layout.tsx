@@ -10,6 +10,7 @@ import DashboardSidebar from "@/components/sidebar/index";
 import React95App from "@/lib/context/react95";
 import { Web3AuthProvider } from "@/lib/context/web3auth";
 import { Toaster } from "@/components/ui/toaster";
+import { Room } from "./Room";
 
 export const metadata: Metadata = {
   title: "Cats, Memes & Dogs, etc., etc.",
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         <Web3AuthProvider>
           <React95App>
+          <Room>
             <Navbar />
             <div className="flex">
               <div className="flex-shrink-1 pr-3">
@@ -52,6 +54,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               </main>
             </div>
             <EmojiLine />
+            </Room>
           </React95App>
         </Web3AuthProvider>
         <Toaster />
