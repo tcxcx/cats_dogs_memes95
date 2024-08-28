@@ -29,14 +29,9 @@ export function CardGame({
     typeColors[card.type[0]?.type as keyof typeof typeColors] || "bg-gray-200";
 
   return (
-    <div className="relative w-64 mx-auto">
-      <div
-        className={`absolute text-xs top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-cyan-200 px-4 py-1 rounded-full border-2 border-black z-10`}
-      >
-        <span className="hidden">1st Edition</span>
-      </div>
+    <div className="relative w-full h-fit aspect-[3/4] mx-auto flex justify-center items-center">
       <Card2
-        className={`relative w-full h-96 ${cardColor} border-4 border-black/5 rounded-2xl overflow-hidden`}
+        className={"relative w-full max-h-fit aspect-[2/3] ${cardColor} border-4 border-black/5 rounded-2xl overflow-hidden"}
       >
         {card.count > 1 && !inDeck && (
           <div className="absolute top-1 right-1 bg-white rounded-full w-8 h-8 flex items-center justify-center text-black font-bold border-2 border-black">
@@ -53,7 +48,7 @@ export function CardGame({
             />
           </div>
           <div
-            className={`flex-grow ${cardColor} -mb-1 border-2 border-gray-700 flex justify-center items-center`}
+            className={"flex-grow ${cardColor} -mb-1 border-2 border-gray-700 flex justify-center items-center"}
           >
             <AspectRatio ratio={1} className="bg-blue-200">
               <img

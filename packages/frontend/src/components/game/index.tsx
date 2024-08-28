@@ -278,9 +278,14 @@ export default function Component() {
   };
 
   return (
-    <DynamicIslandProvider initialSize="default">
-      <div className="container p-4 bg-transparent min-h-screen max-w-full"> 
+    <DynamicIslandProvider initialSize="compact">
+      <motion.div className="flex items-start justify-center min-h-screen">
+      <div className="container p-3 bg-transparent h-fit max-w-full"> 
         <motion.div
+          style={{
+            alignSelf: 'center',
+            scale: 0.7,
+          }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-between mb-4 center"
@@ -289,34 +294,17 @@ export default function Component() {
           <div className="text-4xl font-bold"> Opponent Score: {opponentScore}  </div>
         </motion.div>
 
-        <div className="relative w-full aspect-[6/5] bg-transparent rounded-3xl p-8 shadow-xl">
+        <motion.div  
+          style={{
+            backgroundImage: 'url(/BoardBG.jpg)',
+            backgroundSize: "cover",
+            backgroundPosition: 'center'
+          }}
+          className="relative h-fit aspect-[6/5] bg-pink-300 bg-opacity-90 rounded-2xl p-8 shadow-2xl"
+        >
           {/* Playing Field */}
-            <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 rounded-xl p-4 shadow-md">
-            <AnimatePresence>
-              {playerActiveCard && (
-                <motion.div
-                  style={{
-                    alignSelf: 'center',
-                  }}
-                  key="player-active"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -50 }}
-                  transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-blue-200 rounded-lg p-2 shadow-md center h-fit w-fit"
-                >
-                  <div className="text-center text-xs font-semibold text-blue-700 mb-1">
-                    Your Card
-                  </div>
-                  <CardGame card={playerActiveCard} />
-                  {selectedPower && (
-                    <div className="mt-2 text-center font-bold">
-                      {selectedPower.type}: {selectedPower.value}
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 bg-opacity-30 rounded-xl p-4 shadow-md">
+
             <AnimatePresence>
               {opponentActiveCard && (
                 <motion.div
@@ -328,7 +316,7 @@ export default function Component() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 50 }}
                   transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-red-200 rounded-lg p-2 shadow-md center h-fit w-fit"
+                  className="transform scale-75 bg-red-100 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
                 >
                   <div className="text-center text-xs font-semibold text-red-700 mb-1">
                     Opponent`s Card
@@ -344,19 +332,45 @@ export default function Component() {
               )}
             </AnimatePresence>
             
+            <AnimatePresence>
+              {playerActiveCard && (
+                <motion.div
+                  style={{
+                    alignSelf: 'center',
+                    scale: 1,
+                  }}
+                  key="player-active"
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -50 }}
+                  transition={{ duration: 0.5 }}
+                  className="transform scale-75 bg-blue-100 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
+                >
+                  <div className="text-center text-xs font-semibold text-blue-700 mb-1">
+                    Your Card
+                  </div>
+                  <CardGame card={playerActiveCard} />
+                  {selectedPower && (
+                    <div className="mt-2 text-center font-bold">
+                      {selectedPower.type}: {selectedPower.value}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Opponent's Hand */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
+          <div className="absolute h-1/5 top-2 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
             <AnimatePresence>
               {opponentHand.map((icon_type, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  animate={{ opacity: 1, scale: 1, animationDelay: '2s' }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.3 }}
-                  className="w-48 h-64 bg-red-400 rounded-lg shadow-2xl flex items-center justify-center"
+                  className="aspect-[3/4] bg-red-400 rounded-lg shadow-2xl flex items-center justify-center"
                 >
                   {getTypeIcon(icon_type as any)} 
                   <Image 
@@ -376,16 +390,57 @@ export default function Component() {
           {/* Opponent's Deck */}
           <motion.div
             style={{
-              backgroundImage: 'url(/CardbackS1_2.png',
+              backgroundImage: 'url(/CardbackS1_2.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="absolute top-4 right-4 h-64 w-48 bg-red-500 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+            className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+            initial={{ x: '350%', y: '-100%' , animationDelay: '1s' }}
+            animate={{ x: '50%', y: '-250%' }}
           >
             Opponent`s Deck
           </motion.div>
+
+          {/* Player's Deck */}
+          <motion.div
+            style={{
+              backgroundImage: 'url(/CardbackS1_2.png)',
+              backgroundSize: "cover",
+              backgroundPosition: 'center',
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative h-1/5 aspect-[3/4] bg-blue-400 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+            initial={{ x: '350%', y: '-200%', animationDelay: '1s' }}
+            animate={{ x: '650%', y: '-50%' }}
+          >
+            Deck
+          </motion.div>
+
+          {/* Player's Hand */}
+          <div className="absolute h-1/4 left-1/2 transform -translate-x-1/2 -translate-y-full flex justify-center space-x-2">
+            <AnimatePresence>
+              {playerHand.map((card, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1, y: '-5%', animationDelay: '1.5s'}}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() =>
+                    gamePhase === "prep" && playCard(card, "player")
+                  }
+                  className="aspect-[3/4] transform scale-75 flex cursor-pointer"
+                >
+                  <CardGame card={card} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
 
           {/* Next Phase Button */}
           <motion.div
@@ -406,44 +461,7 @@ export default function Component() {
                 : "Next Turn"}
             </Button>
           </motion.div>
-
-          {/* Player's Deck */}
-          <motion.div
-            style={{
-              backgroundImage: 'url(/CardbackS1_2.png',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute bottom-4 left-4 h-96 aspect-[3/4] bg-blue-500 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
-          >
-            Deck
-          </motion.div>
-
-          {/* Player's Hand */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
-            <AnimatePresence>
-              {playerHand.map((card, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() =>
-                    gamePhase === "prep" && playCard(card, "player")
-                  }
-                  className="transform scale-75 cursor-pointer"
-                >
-                  <CardGame card={card} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
+        </motion.div>
 
         <AnimatePresence>
           {playerActiveCard && gamePhase === "prep" && !selectedPower && (
@@ -502,6 +520,7 @@ export default function Component() {
           {renderDynamicIslandState()}
         </DynamicIsland>
       </div>
+      </motion.div>
     </DynamicIslandProvider>
   );
 }
