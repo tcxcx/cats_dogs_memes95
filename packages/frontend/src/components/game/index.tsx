@@ -304,7 +304,7 @@ export default function Component() {
         >
           {/* Playing Field */}
             <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 bg-opacity-30 rounded-xl p-4 shadow-md">
-
+            {/*Opponent Active CArd */}
             <AnimatePresence>
               {opponentActiveCard && (
                 <motion.div
@@ -312,11 +312,11 @@ export default function Component() {
                     alignSelf: 'center',
                   }}
                   key="opponent-active"
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: -50 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 50 }}
+                  exit={{ opacity: 0, y: -50 }}
                   transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-red-100 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
+                  className="transform scale-75 bg-red-100 bg-opacity-50 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
                 >
                   <div className="text-center text-xs font-semibold text-red-700 mb-1">
                     Opponent`s Card
@@ -331,7 +331,9 @@ export default function Component() {
                 </motion.div>
               )}
             </AnimatePresence>
-            
+            {/*Divider*/}
+            <div className="w-full max-w-6 h-fit bg-transparent my-2 flex-grow"></div>
+            {/*Player Active Card*/}
             <AnimatePresence>
               {playerActiveCard && (
                 <motion.div
@@ -342,9 +344,9 @@ export default function Component() {
                   key="player-active"
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -50 }}
+                  exit={{ opacity: 0, y: 50 }}
                   transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-blue-100 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
+                  className="transform scale-75 bg-blue-100 bg-opacity-50 rounded-lg p-2 shadow-sm w-1/2 h-4/5 justify-self-end"
                 >
                   <div className="text-center text-xs font-semibold text-blue-700 mb-1">
                     Your Card
