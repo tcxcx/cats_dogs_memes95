@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CardSingle } from "@/components/cards/card";
+import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@/components/ui/button";
-import { CardData, Power } from "@/lib/types";
+import { CardData, Power, Type } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
 import { Cat, Dog, Smile } from "lucide-react";
 import {
@@ -14,10 +14,11 @@ import {
   DynamicTitle,
   useDynamicIslandSize,
 } from "@/components/ui/dynamic-island";
+import Image from "next/image";
 
 type Player = "player" | "opponent";
 type GamePhase = "draw" | "prep" | "combat" | "end";
-type CardType = "CAT" | "DOG" | "MEME";
+//type CardType = "CAT" | "DOG" | "MEME";
 
 export default function Component() {
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
@@ -87,13 +88,13 @@ export default function Component() {
   };
 
   const calculateTypeAdvantage = (
-    playerType: CardType,
-    opponentType: CardType
+    playerType: Type,
+    opponentType: Type
   ) => {
     if (
-      (playerType === "CAT" && opponentType === "MEME") ||
-      (playerType === "MEME" && opponentType === "DOG") ||
-      (playerType === "DOG" && opponentType === "CAT")
+      (playerType.type === "Cat" && opponentType.type === "Meme") ||
+      (playerType.type === "Meme" && opponentType.type === "Dog") ||
+      (playerType.type === "Dog" && opponentType.type === "Cat")
     ) {
       return 8;
     }
@@ -105,9 +106,9 @@ export default function Component() {
     opponentPower: Power
   ) => {
     if (
-      (playerPower.type === "Attack" && opponentPower.type === "HP") ||
-      (playerPower.type === "HP" && opponentPower.type === "Speed") ||
-      (playerPower.type === "Speed" && opponentPower.type === "Attack")
+      (playerPower.type === "attack" && opponentPower.type === "defense") ||
+      (playerPower.type === "defense" && opponentPower.type === "speed") ||
+      (playerPower.type === "speed" && opponentPower.type === "attack")
     ) {
       return 4;
     }
@@ -125,12 +126,12 @@ export default function Component() {
       let opponentValue = opponentSelectedPower.value;
 
       playerValue += calculateTypeAdvantage(
-        playerActiveCard.type as CardType,
-        opponentActiveCard.type as CardType
+        playerActiveCard.type as any,
+        opponentActiveCard.type as any
       );
       opponentValue += calculateTypeAdvantage(
-        opponentActiveCard.type as CardType,
-        playerActiveCard.type as CardType
+        opponentActiveCard.type as any,
+        playerActiveCard.type as any
       );
 
       playerValue += calculateCombatAdvantage(
@@ -214,13 +215,13 @@ export default function Component() {
     }
   };
 
-  const getTypeIcon = (type: CardType) => {
-    switch (type) {
-      case "CAT":
+  const getTypeIcon = (icon_type: Type) => {
+    switch (icon_type.type) {
+      case "Cat":
         return <Cat className="w-6 h-6" />;
-      case "DOG":
+      case "Dog":
         return <Dog className="w-6 h-6" />;
-      case "MEME":
+      case "Meme":
         return <Smile className="w-6 h-6" />;
       default:
         return null;
@@ -232,7 +233,7 @@ export default function Component() {
       case "large":
         return (
           <DynamicContainer className="flex items-center justify-center h-full w-full">
-            <DynamicTitle className="text-2xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               Drawing Cards...
             </DynamicTitle>
           </DynamicContainer>
@@ -240,7 +241,7 @@ export default function Component() {
       case "medium":
         return (
           <DynamicContainer className="flex items-center justify-center h-full w-full">
-            <DynamicTitle className="text-2xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {gamePhase === "prep"
                 ? "Preparing for Battle"
                 : gamePhase === "combat"
@@ -252,7 +253,7 @@ export default function Component() {
       case "tall":
         return (
           <DynamicContainer className="flex items-center justify-center h-full w-full">
-            <DynamicTitle className="text-2xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {playerScore > opponentScore
                 ? "You Win This Round!"
                 : "Opponent Wins This Round!"}
@@ -267,7 +268,7 @@ export default function Component() {
                 ? winner === "player"
                   ? "You Win the Game!"
                   : "Opponent Wins the Game!"
-                : `Current Turn: ${
+                : `Current Phase: ${
                     currentTurn === "player" ? "Your Turn" : "Opponent's Turn"
                   }`}
             </DynamicTitle>
@@ -277,70 +278,62 @@ export default function Component() {
   };
 
   return (
-    <DynamicIslandProvider initialSize="compact">
-      <div className="container mx-auto p-4 bg-gradient-to-b from-orange-100 to-orange-200 min-h-screen">
+    <DynamicIslandProvider initialSize="default">
+      <div className="container p-4 bg-transparent min-h-screen max-w-full"> 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex justify-between mb-4"
+          className="flex justify-between mb-4 center"
         >
-          <div className="text-2xl font-bold">Player Score: {playerScore}</div>
-          <div className="text-2xl font-bold">
-            Opponent Score: {opponentScore}
-          </div>
+          <div className="text-4xl font-bold"> Player Score: {playerScore}  </div>
+          <div className="text-4xl font-bold"> Opponent Score: {opponentScore}  </div>
         </motion.div>
 
-        <div className="text-center mb-4 text-xl font-semibold">
-          {`Current Turn: ${
-            currentTurn === "player" ? "Your Turn" : "Opponent's Turn"
-          }`}
-        </div>
-
-        <div className="relative w-full aspect-[16/9] bg-orange-300 rounded-3xl p-8 shadow-2xl">
-          {/* Opponent's Hand */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
-            <AnimatePresence>
-              {opponentHand.map((card, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-16 h-24 bg-red-400 rounded-lg shadow-md flex items-center justify-center"
-                >
-                  {getTypeIcon(card.type as CardType)}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Opponent's Deck */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute top-4 right-4 w-16 h-24 bg-red-500 rounded-lg shadow-md flex items-center justify-center text-white font-bold"
-          >
-            Deck
-          </motion.div>
-
+        <div className="relative w-full aspect-[6/5] bg-transparent rounded-3xl p-8 shadow-xl">
           {/* Playing Field */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-80 h-48 bg-orange-400 rounded-xl p-4">
+            <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 rounded-xl p-4 shadow-md">
+            <AnimatePresence>
+              {playerActiveCard && (
+                <motion.div
+                  style={{
+                    alignSelf: 'center',
+                  }}
+                  key="player-active"
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -50 }}
+                  transition={{ duration: 0.5 }}
+                  className="transform scale-75 bg-blue-200 rounded-lg p-2 shadow-md center h-fit w-fit"
+                >
+                  <div className="text-center text-xs font-semibold text-blue-700 mb-1">
+                    Your Card
+                  </div>
+                  <CardGame card={playerActiveCard} />
+                  {selectedPower && (
+                    <div className="mt-2 text-center font-bold">
+                      {selectedPower.type}: {selectedPower.value}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <AnimatePresence>
               {opponentActiveCard && (
                 <motion.div
+                  style={{
+                    alignSelf: 'center',
+                  }}
                   key="opponent-active"
-                  initial={{ opacity: 0, y: -50 }}
+                  initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 50 }}
                   transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-red-200 rounded-lg p-2 shadow-md"
+                  className="transform scale-75 bg-red-200 rounded-lg p-2 shadow-md center h-fit w-fit"
                 >
                   <div className="text-center text-xs font-semibold text-red-700 mb-1">
                     Opponent's Card
                   </div>
-                  <CardSingle card={opponentActiveCard} />
+                  <CardGame card={opponentActiveCard} />
                   {opponentSelectedPower && (
                     <div className="mt-2 text-center font-bold">
                       {opponentSelectedPower.type}:{" "}
@@ -350,39 +343,59 @@ export default function Component() {
                 </motion.div>
               )}
             </AnimatePresence>
+            
+          </div>
+
+          {/* Opponent's Hand */}
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
             <AnimatePresence>
-              {playerActiveCard && (
+              {opponentHand.map((icon_type, index) => (
                 <motion.div
-                  key="player-active"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -50 }}
-                  transition={{ duration: 0.5 }}
-                  className="transform scale-75 bg-blue-200 rounded-lg p-2 shadow-md"
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-48 h-64 bg-red-400 rounded-lg shadow-2xl flex items-center justify-center"
                 >
-                  <div className="text-center text-xs font-semibold text-blue-700 mb-1">
-                    Your Card
-                  </div>
-                  <CardSingle card={playerActiveCard} />
-                  {selectedPower && (
-                    <div className="mt-2 text-center font-bold">
-                      {selectedPower.type}: {selectedPower.value}
-                    </div>
-                  )}
+                  {getTypeIcon(icon_type as any)} 
+                  <Image 
+                    src={"/CardbackS1_2.png"}
+                    alt="Banner"
+                    objectFit="cover"
+                    priority
+                    width={200}
+                    height={300} 
+                  />
                 </motion.div>
-              )}
+              ))}
+            
             </AnimatePresence>
           </div>
 
-          {/* Next Phase Button */}
+          {/* Opponent's Deck */}
           <motion.div
+            style={{
+              backgroundImage: 'url(/CardbackS1_2.png',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            className="absolute top-4 right-4 h-64 w-48 bg-red-500 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+          >
+            Opponent's Deck
+          </motion.div>
+
+          {/* Next Phase Button */}
+          <motion.div
+            whileHover={{ translateY: -5, translateX: -5 , scale: 1.05 , rotate: 0 }}
+            whileTap={{ translateY: -5, translateX: -5 , scale: 0.95 }}
             className="absolute top-1/2 right-4 transform -translate-y-1/2"
           >
             <Button
               onClick={nextPhase}
-              className="bg-yellow-400 text-black hover:bg-yellow-500 font-bold py-2 px-4 rounded-full shadow-md"
+              className="bg-yellow-400 text-black hover:bg-yellow-200 font-bold px-4 rounded-full shadow-md"
             >
               {gamePhase === "draw"
                 ? "Draw"
@@ -396,9 +409,14 @@ export default function Component() {
 
           {/* Player's Deck */}
           <motion.div
+            style={{
+              backgroundImage: 'url(/CardbackS1_2.png',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="absolute bottom-4 left-4 w-16 h-24 bg-blue-500 rounded-lg shadow-md flex items-center justify-center text-white font-bold"
+            className="absolute bottom-4 left-4 h-96 aspect-[3/4] bg-blue-500 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
           >
             Deck
           </motion.div>
@@ -420,7 +438,7 @@ export default function Component() {
                   }
                   className="transform scale-75 cursor-pointer"
                 >
-                  <CardSingle card={card} />
+                  <CardGame card={card} />
                 </motion.div>
               ))}
             </AnimatePresence>

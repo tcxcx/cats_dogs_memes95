@@ -36,7 +36,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <React95App>
             <Navbar />
             <div className="flex">
-              <div className="flex-shrink-1 pr-4">
+              <div className="flex-shrink-1 pr-3">
                 <AltContainer>
                   <DashboardSidebar />
                 </AltContainer>
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   <div className="absolute inset-0 z-0 ">
                     <FlickeringGrid />
                   </div>
-                  <div className="relative z-1 p-4">{children}</div>
+                  <div className="relative z-1 p-3">{children}</div>
                 </div>
               </main>
             </div>
