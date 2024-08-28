@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Test, console, console2} from "forge-std/Test.sol";
+import {Test, console, console2} from "@forge-std/Test.sol";
 import {Players} from "../../src/Players.sol";
 import {Cards} from "../../src/Cards.sol";
+import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-import {DeployCards} from "../../script/DeployCards.s.sol"; 
-import {DeployRegistry} from "lib/reference/script/DeployRegistry.s.sol";  
+import {DeployGames} from "../../script/DeployGames.s.sol"; 
+import {DeployRegistry} from "@erc6551/script/DeployRegistry.s.sol";  
 
 contract AvatarBasedAccountTest is Test {
-    AvatarBasedAccount avatarBasedAccount;
-    Players players;
+    /* Type declarations */
     Cards cards;
-    
+    Games games;
+    Players players;  
+    AvatarBasedAccount avatarBasedAccount;
+
     address userOne = makeAddr("UserOne"); 
     address userTwo = makeAddr("UserTwo"); 
     string avatarUri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
@@ -22,14 +25,15 @@ contract AvatarBasedAccountTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        // deploying the ERC-6551 registry... 
         DeployRegistry deployerRegistry = new DeployRegistry(); 
         deployerRegistry.run(); 
 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();
 
-        DeployCards deployerCards = new DeployCards();
-        cards = deployerCards.run();
+        DeployGames deployerGames = new DeployGames();
+        (cards, games) = deployerGames.run();
     }
 
     ///////////////////////////////////////////////
