@@ -18,17 +18,23 @@ import {Cards} from "./Cards.sol";
 */
 contract Coins is ERC20 {
     /* errors */
-    error Coins__IncorrectInterface(address playerAccount); 
-    error Coins__MintNotAllowed(); 
+    error Coins__OnlyAvatarBasedAccount(address playerAccount); 
+    error Coins__MintExceedsAllowance(); 
     
     /* state vars */
-    uint256 public constant MAX_FOREVER_SUPPLY = 42 * (10 ** 18); 
-    uint256 public constant PERCENT_MINT = 5;
-    uint256 public constant DECIMALS = 100;
     address public immutable i_cardsAddress; 
+    mapping(address avatarBasedAccount => uint256 coinsMinted) public s_coinsMinted;
 
     /* Events */
     event DeployedCoinsContract(address indexed parentContract); 
+
+    /* Modifiers */
+    modifier onlyAvatarBasedAccount(address playerAccount) {
+        if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
+            revert Coins__OnlyAvatarBasedAccount(playerAccount);
+        }
+        _;
+    }
 
     /* FUNCTIONS: */
     /* constructor */
@@ -39,15 +45,21 @@ contract Coins is ERC20 {
     }
 
     /* public */
-    function mintCoinShare(address recipient) public {
-        uint256 totalMinted = totalSupply(); 
-        uint256 totalToMint = (MAX_FOREVER_SUPPLY - totalMinted) / DECIMALS * PERCENT_MINT; 
+    function mintCoins(uint256 coinsToMint) public onlyAvatarBasedAccount(msg.sender) {
+        uint256 allowance = Cards(payable(i_cardsAddress)).s_coinAllowance(msg.sender);  
 
-        if (!Cards(payable(i_cardsAddress)).s_mintCoinsAllowed()) {
-            revert Coins__MintNotAllowed(); 
+        if (coinsToMint + s_coinsMinted[msg.sender] > allowance) {
+            revert Coins__MintExceedsAllowance(); 
         }
+        s_coinsMinted[msg.sender] = s_coinsMinted[msg.sender] + coinsToMint; 
+        _mint(msg.sender, coinsToMint);
+    }
 
-        _mint(recipient, totalToMint);
+    /* getters */ 
+    function getRemainingAllowance(address playerAccount) external view returns (uint256 remainingAllowance) {
+        uint256 allowance = Cards(payable(i_cardsAddress)).s_coinAllowance(playerAccount);
+
+        return (allowance - s_coinsMinted[playerAccount]); 
     }
 }
 

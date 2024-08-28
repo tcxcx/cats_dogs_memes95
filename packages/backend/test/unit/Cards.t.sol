@@ -2,16 +2,20 @@
 pragma solidity ^0.8.0;
 
 import {Test, console, console2} from "@forge-std/Test.sol";
+
 import {Players} from "../../src/Players.sol";
 import {Cards} from "../../src/Cards.sol";
+import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
-import {DeployCards} from "../../script/DeployCards.s.sol"; 
+
+import {DeployGames} from "../../script/DeployGames.s.sol"; 
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
 import {DeployRegistry} from "@erc6551/script/DeployRegistry.s.sol";  
 
 contract CardsTest is Test {
     /* Type declarations */
     Cards cards;
+    Games games;
     Players players;  
     AvatarBasedAccount avatarBasedAccount;
 
@@ -30,33 +34,77 @@ contract CardsTest is Test {
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();
 
-        DeployCards deployerCards = new DeployCards();
-        cards = deployerCards.run();
+        DeployGames deployerGames = new DeployGames();
+        (cards, games) = deployerGames.run();
     }
 
     ///////////////////////////////////////////////
     ///                   Tests                 ///
     ///////////////////////////////////////////////
 
-    function testCardsContractHasOwner() public { 
+    function testCardsContractHasOwner() public view { 
       address owner = cards.s_owner(); 
       assert(owner != address(0));  
     }
 
-    function testCardsPackHasPrice() public { 
+    function testCardsPackHasPrice() public view { 
       uint256 price = cards.s_priceCardPack(); 
       
-      console.log("price cardsPack:" , price);
+      console.log("price cardsPack:", price);
       assert(price != 0);
     }
 
-    // function testCardsContractCanReceiveFunds() public {
-    //   // £TODO test emit event + balance increase. 
-    // }
+    function testCardsContractCanReceiveFunds() public {
+      vm.deal(userOne, 1 ether); 
+      vm.prank(userOne); 
+      (bool success, ) = address(cards).call{value: 5000}(""); 
+      if (success) {
+        assert(address(cards).balance == 5000); 
+      }
+    }
 
-    // function testOwnerCanRetrieveFunds() public {
-    //   //  £TODO  test emit event + balance increase. 
-    // }
+    function testWhenPackOFCardsBoughtBalanceContractIncreases() public {
+      // PREP
+      uint256 cardPackNumber = 2;
+      // 1: create Avatar Based Account
+      vm.prank(userOne);
+      (, address avatarAccountAddress) = players.createPlayer(avatarUri);
+      // 2: get price pack
+      uint256 priceCardPack = cards.s_priceCardPack();  
+      // 3: give userOne funds. 
+
+      vm.deal(avatarAccountAddress, 1 ether);  
+      // 4: open pack of cards. 
+      bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+      vm.prank(userOne);
+      AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+
+      console2.log("balance contract:", address(cards).balance); 
+
+      assert(address(cards).balance == priceCardPack); 
+    }
+
+    function testOwnerCanRetrieveFunds() public {
+      address ownerCardsContract = cards.s_owner(); 
+      uint256 amountToTransfer = 5000; 
+
+      vm.deal(userOne, 1 ether); 
+      vm.prank(userOne); 
+      (bool success, ) = address(cards).call{value: amountToTransfer}(""); 
+      // check if funds arrived. 
+      if (success) {
+        assert(address(cards).balance == amountToTransfer); 
+      }
+
+      uint256 balanceBefore = ownerCardsContract.balance; 
+      vm.prank(ownerCardsContract);
+      cards.retrieveFunds();
+      uint256 balanceAfter = ownerCardsContract.balance;
+      uint256 balanceChange = balanceAfter - balanceBefore; 
+      console2.log("balanceChange: ", balanceChange); 
+
+      assert((balanceAfter - balanceBefore) == amountToTransfer); 
+    }
 
     function testCardsCanBeUpdated() public {
         address ownerCards = cards.s_owner(); 
@@ -90,7 +138,7 @@ contract CardsTest is Test {
         
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         // 2: get price pack
         uint256 priceCardPack = cards.s_priceCardPack();  

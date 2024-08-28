@@ -81,12 +81,12 @@ contract Players is ERC721URIStorage {
         returns (uint256, address)
     {
         uint256 newAvatarId = _avatarCounter;
+        _avatarCounter++;
+
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
-
         address AvatarAddress = _createAvatarAddress(newAvatarId);
-
-        _avatarCounter = _avatarCounter++;
+    
         emit CreatedPlayer(newAvatarId, AvatarAddress); 
         
         return (newAvatarId, AvatarAddress);

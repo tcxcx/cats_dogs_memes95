@@ -3,24 +3,36 @@ pragma solidity ^0.8.0;
 
 import {Script, console2} from "@forge-std/Script.sol";
 import {Cards} from "../src/Cards.sol";
+import {Games} from "../src/Games.sol";
 
 /**
-* This deploy contract ALSO saves cards to cards.sol. 
+* This deploys the Games, Cards and Coins contracts. It ALSO saves cards to cards.sol. 
 */ 
-contract DeployCards is Script {
+contract DeployGames is Script {
+  uint256 CardPackPrice = 50_000; 
+  uint256[] packThresholds = [5, 15, 30, 100]; // £todo what happens after 1000 packs sold? CHECK! 
+  uint256[] packCoinAmounts = [500, 100, 25, 5]; 
   Cards cardsContract; 
+  Games gamesContract; 
 
-  function run() external returns (Cards) {
-    uint256 CardPackPrice = 50_000; 
-
+  function run() external returns (Cards, Games) {
     vm.startBroadcast();
-      cardsContract = new Cards(CardPackPrice);
+      // deploy cards contract, which also deploys the coins address. 
+      cardsContract = new Cards(
+        CardPackPrice, 
+        packThresholds, 
+        packCoinAmounts
+        );
       createCards(); // saves cards to blockchain
+
+      gamesContract = new Games(
+        address(cardsContract)  
+      ); 
     vm.stopBroadcast();
 
     console2.log("cards deployed at: ", address(cardsContract));
 
-    return cardsContract; 
+    return (cardsContract, gamesContract); 
   }
 
   function createCards() public {
