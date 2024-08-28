@@ -3,7 +3,7 @@ import { DynamicIslandProvider } from "@/components/ui/dynamic-island";
 
 export default function OpenPacks() {
   return (
-    <DynamicIslandProvider initialSize="tiny">
+    <DynamicIslandProvider initialSize="compact">
       <main className="flex min-h-screen max-w-full flex-col items-center justify-center">
         <CardsDeckViewer />{" "}
       </main>
