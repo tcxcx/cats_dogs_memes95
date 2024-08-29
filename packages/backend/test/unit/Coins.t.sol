@@ -42,7 +42,7 @@ contract CoinsTest is Test {
 
         DeployGames deployerGames = new DeployGames();
         (cards, games) = deployerGames.run();
-        coins = cards.s_coins();
+        coins = Coins(cards.s_coins());
     }
 
     function testCoinAllowanceIsGivenWhenOpeningPackOfCards() public {

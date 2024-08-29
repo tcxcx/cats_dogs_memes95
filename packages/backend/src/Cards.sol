@@ -7,8 +7,10 @@ import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 import {Coins} from "./Coins.sol"; 
 
 /** 
-* ERC-1155 based contract that stores cards structs and manages their distribution. 
-* Integretation with chainlink VRF for randomisation is tbd.  
+* ERC-1155 based contract that stores cards structs and manages their distribution through the sell of card packs. 
+* It integrates a Coins.sol contract to distributed coins on every sell of a card pack. 
+* 
+* Integretation with chainlink VRF for randomisation is tbi.  
 *
 * authors: Argos, CriptoPoeta, 7cedars
 */ 
@@ -22,7 +24,6 @@ contract Cards is ERC1155 {
     error Cards__NoCardsExist(); 
     
     /* Type declarations */
-    // struct has been taken from overview Itu: https://docs.google.com/spreadsheets/d/1aNNvr-jrMtzJW7glVkGedl47kQESOx0Vs02NA0MqMfs/edit?gid=0#gid=0
     struct Card {
         string name;
         string cardType; 
@@ -37,11 +38,11 @@ contract Cards is ERC1155 {
     uint256[] public s_cardIds;
     mapping(uint256 cardId => Card card) public s_cards; // maps cardId to its characteristics. 
     uint256 public s_cardPackCounter; // tracks how many card packs have been bought. 
-    uint256 public s_priceCardPack;
-    uint256[] public s_packThresholds;
-    uint256[] public s_packCoinAmounts;
-    address public s_owner; 
-    Coins public s_coins;
+    uint256 public s_priceCardPack; // is the price for each pack. 
+    uint256[] public s_packThresholds; // an array that holds the thresholds for decreasing amount of coins to be distributed on sell of card pack.  
+    uint256[] public s_packCoinAmounts; // an array that holds the amount of coins to be distributed per threshold on sell of card pack.
+    address public s_owner; // owner of contract 
+    address public s_coins; // This allows the Coins.sol address to be read through the functions 's_coins()'. 
     mapping(address avatarBasedAccount => uint256 allowance) public s_coinAllowance;
 
     /* Events */
@@ -74,19 +75,19 @@ contract Cards is ERC1155 {
      */
     constructor(
         uint256 priceCardPack,
-        uint256[] memory packThresholds, // needs to be an incrementing array to work properly. 
+        uint256[] memory packThresholds, // needs to be an incrementing array. 
         uint256[] memory packCoinAmounts
         ) ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") {
             if (packThresholds.length != packCoinAmounts.length) {
                 revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
             }
             s_owner = msg.sender;
-            s_coins = new Coins(); // this saves the WHOLE contract to chain. Maybe do differently? 
+            s_coins = address(new Coins());  
             s_priceCardPack = priceCardPack; 
             s_packThresholds = packThresholds; 
             s_packCoinAmounts = packCoinAmounts; 
 
-            emit DeployedCardsContract(s_owner, address(s_coins), s_priceCardPack); 
+            emit DeployedCardsContract(s_owner, s_coins, s_priceCardPack); 
     }
 
     /* receive & fallback */ 
@@ -148,8 +149,11 @@ contract Cards is ERC1155 {
      * This can be fixed later.  
      *
      * emits a TransferBatch event. 
+     *
+     * @dev On every sale a coin allowance is given to the buyer. This amount is taken by reading 's_packThresholds' and 's_packCoinAmounts'. 
+     * If a player has an allowance, they can mint coins using 'Coins.sol::mintCoins'. 
      * 
-     * dev For now, payment occurs in native currency. Should this be in a ERC-20 coin instead? 
+     * @dev For now, payment occurs in native currency. Should this be in a ERC-20 coin instead? 
      */
     function openCardPack(uint256 cardPackNumber) public payable onlyAvatarBasedAccount(msg.sender) {
         uint256[] memory selectedCards = new uint256[](5); 
@@ -196,16 +200,20 @@ contract Cards is ERC1155 {
             cardsValues, // uint256[] memory values,
             '' // bytes memory data
         );
-
-        // step 5, add coin allowance for the user.
-        // if the above did not revert: add allowance to avatarBasedAccount
+        
+        // if above did not revert: 
+        // step 5, add coin allowance to the avatar based account.
+        // 
         uint256 allowanceIndex;
+        // step 1: read the index of the 's_cardPackCounter' (= number of sold packs) at 's_packThresholds'. 
         if (s_cardPackCounter < s_packThresholds[s_packThresholds.length - 1]) {
             while (s_packThresholds[allowanceIndex] < s_cardPackCounter) {
                 allowanceIndex++;
             }
+            // step 2: add the matched allowance at index to the avatar based account. 
             s_coinAllowance[msg.sender] = s_coinAllowance[msg.sender] + s_packCoinAmounts[allowanceIndex]; 
         } else {
+            // step 3: if 's_cardPackCounter' was higher than the highest amount in 's_packThresholds', add 1 to the allowance. 
             s_coinAllowance[msg.sender]++; 
         }
     } 
@@ -310,9 +318,6 @@ contract Cards is ERC1155 {
         return this.onERC1155BatchReceived.selector;
     }
 }
-
-
-
 
 // £Notes to self  
 // When reviewing this code, check: https://github.com/transmissions11/solcurity

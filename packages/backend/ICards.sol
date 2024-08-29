@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-interface ICards {
+interface Interface {
     struct Card {
         string name;
         string cardType;
@@ -12,26 +12,28 @@ interface ICards {
         uint16 supRange;
     }
 
-    // error Cards__ArraysNotSameLength(uint256 lengthOne, uint256 lengthTwo);
-    // error Cards__FundRetrievalUnsuccessful();
-    // error Cards__InsufficientPayment();
-    // error Cards__NoCardsExist();
-    // error Cards__OnlyAvatarBasedAccount(address playerAccount);
-    // error Cards__OnlyOwner();
+    error Cards__ArraysNotSameLength(uint256 lengthOne, uint256 lengthTwo);
+    error Cards__FundRetrievalUnsuccessful();
+    error Cards__InsufficientPayment();
+    error Cards__NoCardsExist();
+    error Cards__OnlyAvatarBasedAccount(address playerAccount);
+    error Cards__OnlyOwner();
 
-    // event ApprovalForAll(address indexed account, address indexed operator, bool approved);
-    // event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);
-    // event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);
-    // event Log(string func, uint256 gas);
-    // event TransferBatch(
-    //     address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values
-    // );
-    // event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
-    // event URI(string value, uint256 indexed id);
+    event ApprovalForAll(address indexed account, address indexed operator, bool approved);
+    event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);
+    event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);
+    event Log(string func, uint256 gas);
+    event TransferBatch(
+        address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values
+    );
+    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+    event URI(string value, uint256 indexed id);
 
-    // fallback() external payable;
+    constructor(uint256 priceCardPack, uint256[] packThresholds, uint256[] packCoinAmounts);
 
-    // receive() external payable;
+    fallback() external payable;
+
+    receive() external payable;
 
     function addToCoinAllowance(uint256 coins, address recipient) external;
     function balanceOf(address account, uint256 id) external view returns (uint256);
