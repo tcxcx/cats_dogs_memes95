@@ -7,8 +7,6 @@ pragma solidity ^0.8.0;
 *
 * authors: Argos, CriptoPoeta, 7cedars
 */ 
-
-// £todo I have some issues with remappings in vscode. For now I just avoid using them. To be fixed. 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import { ERC6551Registry } from "@erc6551/src/ERC6551Registry.sol"; 

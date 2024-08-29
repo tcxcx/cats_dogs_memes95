@@ -43,7 +43,7 @@ contract CardsTest is Test {
     ///////////////////////////////////////////////
 
     function testCardsContractHasOwner() public view { 
-      address owner = cards.s_owner(); 
+      address owner = cards.i_owner(); 
       assert(owner != address(0));  
     }
 
@@ -85,7 +85,7 @@ contract CardsTest is Test {
     }
 
     function testOwnerCanRetrieveFunds() public {
-      address ownerCardsContract = cards.s_owner(); 
+      address ownerCardsContract = cards.i_owner(); 
       uint256 amountToTransfer = 5000; 
 
       vm.deal(userOne, 1 ether); 
@@ -107,7 +107,7 @@ contract CardsTest is Test {
     }
 
     function testCardsCanBeUpdated() public {
-        address ownerCards = cards.s_owner(); 
+        address ownerCards = cards.i_owner(); 
         uint256[] memory mintAmounts = new uint256[](9); 
         Cards.Card[] memory CardData = new Cards.Card[](9); 
         string memory newuri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json"; 

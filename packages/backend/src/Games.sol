@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
-// Manages create of games, setting up players (and their decks) against each other. etc. 
-// NOTE: the detailed functioning of this contract will be developed later. 
-// in early stages, the only thing that this contract should do is to initiate a game when two players and their decks have entered. 
-
-
+/** 
+* Manages creattion of tournaments and games, setting up players (and their decks) against each other.  
+* Only Avatar Based Accounts can call this function, but they can do so ay any time for as many time as they want. 
+* An allowance of coins is set at its parent 'Cards.sol' contract. 
+* It is not possible to mint more than your allowance.  
+*
+* Authors: Argos, CriptoPoeta, 7cedars
+*/
 import {Cards} from "./Cards.sol"; 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
@@ -15,20 +17,23 @@ contract Games {
     /* errors */
     error Games__OnlyAvatarBasedAccount(); 
     error Games__OnlyOwner(); 
-    error Games__OnlyDuringActiveSeason(); 
-    error Games__SeasonStillActiveOrPending(); 
-    error Games__PlayerAlreadyEnteredSeason();
-    error Games__GameNotRecognised(); 
+    error Games__OnlyDuringActiveTournament(); 
+
+    error Games__TournamentNotIdleOrCompleted(); 
+    
+    error Games__PlayerAlreadyEnteredTournament();
     error Games__PlayerNotRegistered(); 
     error Games__PlayerNotIdle(); 
     error Games__PlayerNotPending();
     error Games__PlayerNotActive(); 
+    error Games__MsgSenderNotInGame(); 
+    
+    error Games__GameNotRecognised(); 
     error Games__GameNotPending(); 
     error Games__GameNotActiveOrPaused(); 
-    error Games__MsgSenderNotInGame(); 
 
     /* Type declarations */  
-    enum Status {
+    enum Status { // The Status enum manages the state of Player, Game and Tournament. 
         Idle,
         Pending,
         Active,
@@ -36,39 +41,41 @@ contract Games {
         Cancelled,
         Completed
     }
-    struct Game {
+
+    struct Game { // The Game struct stores the two Players that challenges each other, store the state of the game, its winner and a unique nonce.   
         address playerOne;
         address playerTwo;
-        Status status; 
         uint256 winner;
         uint256 nonce;  
+        Status status; 
     }
-    struct Player {
-        uint256[10] cardDeck; // note: only one cardDeck per player. This is correct, right? 
-        uint256 season; 
+
+    struct Player { // The Player struct stores the cardDeck to the player, the tournament their playing in, accumulated score and state. 
+        uint256[10] cardDeck; 
+        uint256 tournament; 
         uint256 score; 
         Status status; 
     }
     
     /* State variables */
-    uint256 public s_nonce = 1; // used set render games unique. 0 used as 'undefined'. 
-    address public immutable i_owner; 
-    address public immutable i_cards; 
+    uint256 public s_nonce = 1; // used set render games unique. Starts at 1, so that 0 can be used as 'undefined'. 
+    address public immutable i_owner; // owner of contract. 
+    address public immutable i_cards; // address of cards contract. 
     mapping(bytes32 => Game) public s_games; // £note: you need to know the address of your opponent to enter in a game with them.  
-    mapping(address => Player) public s_players; // £note: you cannot save a mapping in a struct. Hence the mapping needs to 
-    address[] s_PlayersInSeason; 
-    uint256 s_seasonsCounter;
-    Status seasonStatus;
-    uint256[3] s_prices; 
-
+    mapping(address => Player) public s_players; // £note: you cannot save a mapping in a struct. Hence the 'Game' struct only store the address. This mapping is used to store the actucal 'Player' struct. 
+    address[] public s_PlayersInTournament; // an array of player participating in the current tournament. Acts as counter and ...  
+    uint256 public s_tournamentCounter; // The tournament number, keeps each tournament (sequentially) unique. NOTE: It is impossible to hold two tournaments at the same time within one 'Games.sol' contract. 
+    Status public s_statusTournament; // the status of the tournament. 
+    uint256[3] public s_prices; // prices for first, second and third place in coins to be distributed to the Avatar Based Account of the player. 
+    
     /* Events */
-    event DeployedSeasonsContract(address indexed owner); 
-    event StartedNewSeason(uint256 indexed season); 
-    event EndedSeason(uint256 indexed season, address indexed winner, address second, address third); 
+    event DeployedGamesContract(address indexed owner);
+    event PlayerEnteredTournament(address indexed playerAccount); 
+    event StartedNewTournament(uint256 indexed tournament); 
+    event EndedTournament(uint256 indexed tournament, address indexed winner, address second, address third); 
     event InitialisedGame(address indexed playerOne, uint256 indexed nonce); 
     event JoinedGame(address indexed playerTwo, bytes32 indexed gameHash);  
     event CancelledPendingGame(address indexed playerOne, bytes32 indexed gameHash); 
-    event PlayerEnteredSeason(address indexed playerAccount); 
     
     /* Modifiers */
     modifier onlyOwner() {
@@ -78,15 +85,15 @@ contract Games {
         _;
     }
 
-    modifier onlyDuringActiveSeason() {
-        if (seasonStatus != Status.Active) { 
-            revert Games__OnlyDuringActiveSeason(); 
+    modifier onlyDuringActiveTournament() {
+        if (s_statusTournament != Status.Active) { 
+            revert Games__OnlyDuringActiveTournament(); 
         }
         _;
     }
 
     modifier onlyRegisteredPlayer() {
-        if (s_players[msg.sender].season != s_seasonsCounter) {
+        if (s_players[msg.sender].tournament != s_tournamentCounter) {
             revert Games__PlayerNotRegistered(); 
         }
         _;
@@ -101,94 +108,101 @@ contract Games {
 
     /* FUNCTIONS: */
     /* constructor */
+    /**
+     * Note Sets up the Games contract. 
+     *
+     * @param cardsContract the cards contract to be used in the contract. 
+     * 
+     * dev: It does NOT upload any cards yet, this is done later through the 'createCards' function. 
+     *
+     */
     constructor(address cardsContract) {
         i_owner = msg.sender; 
         i_cards = cardsContract; 
-        emit DeployedSeasonsContract(msg.sender);
+        s_statusTournament = Status.Idle;
+        
+        emit DeployedGamesContract(msg.sender);
     }
 
     /* public */
-    function startSeason(uint256 firstPrice, uint256 secondPrice, uint256 thirdPrice) public onlyOwner {
+    function startTournament(uint256 firstPrice, uint256 secondPrice, uint256 thirdPrice) public onlyOwner {
         if (
-            seasonStatus != Status.Idle || 
-            seasonStatus != Status.Completed
+            s_statusTournament != Status.Idle && 
+            s_statusTournament != Status.Completed
             ) {
-            revert Games__SeasonStillActiveOrPending(); 
+            revert Games__TournamentNotIdleOrCompleted(); 
         }
         
-        // delete array of players active in season. 
-        while (s_PlayersInSeason.length > 0) {
-            s_PlayersInSeason.pop(); 
+        // delete array of players active in tournament. 
+        while (s_PlayersInTournament.length > 0) {
+            s_PlayersInTournament.pop(); 
         }
-        s_seasonsCounter++;
+        s_tournamentCounter++;
         s_prices[0] = firstPrice;  
         s_prices[1] = secondPrice; 
         s_prices[2] = thirdPrice; 
 
-        seasonStatus = Status.Active; 
+        s_statusTournament = Status.Active; 
 
-        emit StartedNewSeason(s_seasonsCounter); 
+        emit StartedNewTournament(s_tournamentCounter); 
     }
 
-    function stopSeason() public onlyOwner {
-        seasonStatus = Status.Completed; 
+    function stopTournament() public onlyOwner {
+        s_statusTournament = Status.Completed; 
         (address[] memory avatarAccount, , uint256[] memory rankings) = getRankings(); 
         address winner; 
         address second; 
         address third;
 
-        // Note I do not check if call are succesful. possibly adapt later on. 
+        // Note I do not check if calls are succesful. possibly adapt later on. 
         for (uint256 i; i < rankings.length; i++) {
-            if (rankings[i] == 1) { 
+            if (rankings[i] == 1 && avatarAccount[i] != address(0)) { // if there is no winner, address remains at address(0) - and no price will be transferred.
                 bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[0], avatarAccount[i]);
                 i_cards.call{value: 0}(functionCall); 
                 winner = avatarAccount[i]; 
             }
-            if (rankings[i] == 2) { 
+            if (rankings[i] == 2 && avatarAccount[i] != address(0)) { // same as above. 
                 bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[1], avatarAccount[i]);
                 i_cards.call{value: 0}(functionCall); 
                 second = avatarAccount[i]; 
             }
-            if (rankings[i] == 3) { 
+            if (rankings[i] == 3 && avatarAccount[i] != address(0)) { // same as above. 
                 bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[2], avatarAccount[i]);
                 i_cards.call{value: 0}(functionCall); 
                 third = avatarAccount[i]; 
             }
         }
 
-        emit EndedSeason(s_seasonsCounter, winner, second, third); 
+        emit EndedTournament(s_tournamentCounter, winner, second, third); 
     }
 
-    function enterPlayerInSeason(uint256[10] memory cardDeck) public onlyDuringActiveSeason {
+    // NB: DOES NOT CHECK IF CARDS ARE ACTUALLY OWNED BY PLAYER.  
+    function enterPlayerInTournament(uint256[10] memory cardDeck) public onlyDuringActiveTournament {
         if (!ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)) {
             revert Games__OnlyAvatarBasedAccount();
         }
-        if (s_players[msg.sender].season == s_seasonsCounter) {
-            revert Games__PlayerAlreadyEnteredSeason(); 
+        if (s_players[msg.sender].tournament == s_tournamentCounter) {
+            revert Games__PlayerAlreadyEnteredTournament(); 
         }
 
         Player memory player = Player({
             cardDeck: cardDeck,
-            season: s_seasonsCounter, 
+            tournament: s_tournamentCounter, 
             score: 0, 
             status: Status.Idle
         }); 
 
         s_players[msg.sender] = player; 
-        s_PlayersInSeason.push(msg.sender); 
+        s_PlayersInTournament.push(msg.sender); 
 
-        emit PlayerEnteredSeason(msg.sender); 
+        emit PlayerEnteredTournament(msg.sender); 
     }
 
-    // Not a crucial funcion, do later. £TODO
-    // function updateCardDeck(uint256[10] memory cardDeck) public onlyAvatarBasedAccount(msg.sender) onlyDuringActiveSeason {
-    //      uint256 season = s_seasons.length - 1; 
-    //     if (s_seasons[season].players[msg.sender] == Player({})) { // I have to check how this initiates! 
-    //         revert Games__PlayerNotRegistered(); 
-    //     }
+    // function updateCardDeck(uint256[10] memory cardDeck) public onlyAvatarBasedAccount(msg.sender) onlyDuringActiveTournament {
+    //  Not a crucial funcion, do later. £TODO
     // }
 
-    function initialiseGame() public onlyRegisteredPlayer onlyDuringActiveSeason onlyIdlePlayer {
+    function initialiseGame() public onlyRegisteredPlayer onlyDuringActiveTournament onlyIdlePlayer {
         bytes32 gameHash = keccak256(abi.encode(msg.sender, s_nonce)); 
 
         Game memory game = Game({
@@ -206,7 +220,7 @@ contract Games {
         emit InitialisedGame(msg.sender, s_nonce);
     } 
 
-    function joinGame(uint256 nonce, address opponent) public onlyRegisteredPlayer onlyDuringActiveSeason onlyIdlePlayer {
+    function joinGame(uint256 nonce, address opponent) public onlyRegisteredPlayer onlyDuringActiveTournament onlyIdlePlayer {
         bytes32 gameHash = keccak256(abi.encode(opponent, nonce));  
         if (s_games[gameHash].nonce == 0) {
             revert Games__GameNotRecognised(); 
@@ -223,7 +237,7 @@ contract Games {
         emit JoinedGame(msg.sender, gameHash);        
     }
 
-    function cancelPendingGame(uint256 nonce) public onlyRegisteredPlayer onlyDuringActiveSeason {
+    function cancelPendingGame(uint256 nonce) public onlyRegisteredPlayer onlyDuringActiveTournament {
         bytes32 gameHash = keccak256(abi.encode(msg.sender, nonce));  
         if (s_players[msg.sender].status != Status.Pending) {
             revert Games__PlayerNotPending(); 
@@ -237,7 +251,7 @@ contract Games {
         emit CancelledPendingGame(msg.sender, gameHash);  
     }
 
-    function exitGame(uint256 nonce, address playerOne, uint256 winner) public onlyDuringActiveSeason {
+    function exitGame(uint256 nonce, address playerOne, uint256 winner) public onlyDuringActiveTournament {
         bytes32 gameHash = keccak256(abi.encode(playerOne, nonce));  
         if (
             s_games[gameHash].status != Status.Active &&
@@ -291,18 +305,18 @@ contract Games {
             uint256[] memory rankings
         ) { 
     
-        uint256 numberPlayers = s_PlayersInSeason.length; 
+        uint256 numberPlayers = s_PlayersInTournament.length; 
         scores = new uint256[](numberPlayers);
         rankings = new uint256[](numberPlayers);
 
         for (uint256 i; i < numberPlayers; i++) {
-            scores[i] = s_players[s_PlayersInSeason[i]].score;
+            scores[i] = s_players[s_PlayersInTournament[i]].score;
             rankings[i] = 1;  
             for (uint256 j; j < numberPlayers; j++) {
                 if (scores[i] > scores[j]){ rankings[i]++; } 
             }
         }
-        return (s_PlayersInSeason, scores, rankings); 
+        return (s_PlayersInTournament, scores, rankings); 
     }
 }
 

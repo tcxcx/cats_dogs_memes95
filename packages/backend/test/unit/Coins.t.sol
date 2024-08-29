@@ -42,8 +42,12 @@ contract CoinsTest is Test {
 
         DeployGames deployerGames = new DeployGames();
         (cards, games) = deployerGames.run();
-        coins = Coins(cards.s_coins());
+        coins = Coins(cards.i_coins());
     }
+
+    ///////////////////////////////////////////////
+    ///                   Tests                 ///
+    ///////////////////////////////////////////////
 
     function testCoinAllowanceIsGivenWhenOpeningPackOfCards() public {
         // prep
@@ -56,7 +60,7 @@ contract CoinsTest is Test {
         uint256 priceCardPack = cards.s_priceCardPack();  
         // 3: give userOne funds. 
         vm.deal(userOne, 1 ether);
-        vm.deal(avatarAccountAddress, 1 ether);  
+        vm.deal(avatarAccountAddress, 1 ether);
 
         // act: opening pack of cards
         vm.prank(userOne);

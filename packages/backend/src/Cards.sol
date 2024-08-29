@@ -41,9 +41,10 @@ contract Cards is ERC1155 {
     uint256 public s_priceCardPack; // is the price for each pack. 
     uint256[] public s_packThresholds; // an array that holds the thresholds for decreasing amount of coins to be distributed on sell of card pack.  
     uint256[] public s_packCoinAmounts; // an array that holds the amount of coins to be distributed per threshold on sell of card pack.
-    address public s_owner; // owner of contract 
-    address public s_coins; // This allows the Coins.sol address to be read through the functions 's_coins()'. 
     mapping(address avatarBasedAccount => uint256 allowance) public s_coinAllowance;
+
+    address public immutable i_owner; // owner of contract. For now set as immutable, can be changed later. 
+    address public immutable i_coins; // This allows the Coins.sol address to be read through the functions 'i_coins()'. 
 
     /* Events */
     event Log(string func, uint256 gas);
@@ -52,7 +53,7 @@ contract Cards is ERC1155 {
 
     /* modifiers */
     modifier onlyOwner() {
-        if (msg.sender != s_owner) {
+        if (msg.sender != i_owner) {
             revert Cards__OnlyOwner();
         }
         _;
@@ -81,13 +82,14 @@ contract Cards is ERC1155 {
             if (packThresholds.length != packCoinAmounts.length) {
                 revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
             }
-            s_owner = msg.sender;
-            s_coins = address(new Coins());  
+            i_coins = address(new Coins());  
+
+            i_owner = msg.sender;
             s_priceCardPack = priceCardPack; 
             s_packThresholds = packThresholds; 
             s_packCoinAmounts = packCoinAmounts; 
 
-            emit DeployedCardsContract(s_owner, s_coins, s_priceCardPack); 
+            emit DeployedCardsContract(i_owner, i_coins, s_priceCardPack); 
     }
 
     /* receive & fallback */ 
