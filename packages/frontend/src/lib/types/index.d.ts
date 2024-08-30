@@ -43,6 +43,7 @@ export declare type Type = {
 };
 export const TypeList: Type["type"][];
 
+// === COLLECTION TYPES ===
 // ========================================
 
 // Collection of cards, keyed by card names
@@ -50,6 +51,7 @@ export type CardCollection = Record<string, CardData>;
 
 // ========================================
 
+// === GAME TYPES ===
 // A Deck is an array of card names (strings) representing the cards in a player's deck
 export type Deck = string[];
 
@@ -86,3 +88,28 @@ export type TurnResult = {
 };
 
 // ========================================
+
+export type GamePhase = "draw" | "prep" | "combat" | "check";
+
+// ========================================
+
+export type GameLog = {
+  initialDecks: {
+    deckP1: Deck;
+    deckP2: Deck;
+  };
+  turns: {
+    turnNumber: number;
+    playedCards: {
+      cardP1: CardData;
+      cardP2: CardData;
+      powerP1: Power;
+      powerP2: Power;
+    };
+    currentScore: {
+      player1Points: number;
+      player2Points: number;
+    }
+  }[];
+    winner: Player | null;
+};

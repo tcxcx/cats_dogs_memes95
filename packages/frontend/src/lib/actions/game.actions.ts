@@ -10,14 +10,11 @@ import {
     TypeList,
     Type,
     PowerList,
+    GameLog
 } from '@/lib/types'; // Assuming these types exist based on your project structure
 import { userCards } from '@/lib/mock-cards';
 
-// Utility functions based on the Python logic
-// Ensure you have access to the current game state in your backend
-
 // Mock deck for demonstration purposes
-// Assuming userCards is of type CardData[]
 const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
 const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
 const cardCollection: CardCollection = userCards.reduce((collection, card) => {
@@ -25,7 +22,7 @@ const cardCollection: CardCollection = userCards.reduce((collection, card) => {
     return collection;
   }, {} as CardCollection);
 
-// Mock state for demonstration purposes
+// Mock Game state for demonstration purposes
 let currentGameState: GameState = {
   deckP1: Deck1, // Replace with actual deck initialization
   deckP2: Deck2, // Replace with actual deck initialization
@@ -37,6 +34,16 @@ let currentGameState: GameState = {
   powerList: ["attack", "defense", "speed"], // Populate with Power type data
   typeList: ['Cat', 'Dog', 'Meme'], // Assuming these are the types
 };
+
+// Mock Game log
+let gameLog: GameLog = {
+    initialDecks: {
+        deckP1: [],
+        deckP2: [],
+    },
+    turns: [],
+    winner: null,
+}
 
 // Function to fetch the current game state
 export async function fetchGameState(): Promise<GameState> {
@@ -116,22 +123,55 @@ function buildCardCollection(cards: CardData[]): CardCollection {
 // Game management
 export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
     console.log("initializing game");
-    console.log(deckP1);
-    console.log(deckP2);
+    const sDeckP1 = shuffleDeck(deckP1);
+    const sDeckP2 = shuffleDeck(deckP2);
+    console.log(sDeckP1);
+    //console.log(sDeckP2);
     //console.log(drawInitialHand(deckP1), drawInitialHand(deckP2));
     //console.log(buildCardCollection(userCards));
-    return {
-        deckP1: shuffleDeck(deckP1),
-        deckP2: shuffleDeck(deckP2),
-        handP1: drawInitialHand(deckP1),
-        handP2: drawInitialHand(deckP2),
+    
+    const initialGameState: GameState = {
+        deckP1: sDeckP1,
+        deckP2: sDeckP2,
+        handP1: drawInitialHand(sDeckP1),
+        handP2: drawInitialHand(sDeckP2),
         score: [0, 0],
         turnCount: 0,
         cardCollection: buildCardCollection(userCards),
         powerList: ["attack", "defense", "speed"],
         typeList: ["Cat", "Dog", "Meme"],
     };
+
+    gameLog = {
+        initialDecks: {
+            deckP1: sDeckP1,
+            deckP2: sDeckP2,
+        },
+        turns: [],
+        winner: null,
+    };
+    console.log(gameLog);
+    return initialGameState;
 }
+
+// Function to update the game log after each turn
+function updateGameLog(
+    turnNumber: number,
+    cardP1: CardData,
+    cardP2: CardData,
+    powerP1: Power,
+    powerP2: Power,
+    currentScore: Score
+  ) {
+    gameLog.turns.push({
+      turnNumber,
+      playedCards: { cardP1, cardP2, powerP1, powerP2 },
+      currentScore: {
+        player1Points: currentScore[0],
+        player2Points: currentScore[1],
+      },
+    });
+  }
 
 export function playTurn(
     gameState: GameState,
@@ -173,7 +213,9 @@ export function playTurn(
     const finalHandP1: CardData[] = updatedHandP1.length ? updatedHandP1 : [...updatedHandP1, newCardP1!].filter(card => card !== undefined);
     const finalHandP2: CardData[] = updatedHandP2.length ? updatedHandP2 : [...updatedHandP2, newCardP2!].filter(card => card !== undefined);
     
-    console.log(powIndexP1, powIndexP2, handIndexP1, handIndexP2);
+    updateGameLog(turnCount + 1, playerCardP1, playerCardP2, gameState.powerList[powIndexP1], gameState.powerList[powIndexP2], updatedScore);
+
+    console.log(gameLog);
 
     return {
         ...gameState,
@@ -191,7 +233,9 @@ export function checkGameOver(gameState: GameState): boolean {
 
 export function determineWinner(gameState: GameState): number {
     const [scoreP1, scoreP2] = gameState.score;
-    return scoreP1 > scoreP2 ? 1 : scoreP2 > scoreP1 ? 2 : 0;
+    const winner = scoreP1 > scoreP2 ? 1 : scoreP2 > scoreP1 ? 2 : 0;
+    gameLog.winner = winner;
+    return winner;
 }
 
 ///// DUMP

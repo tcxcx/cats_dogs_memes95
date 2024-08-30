@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@/components/ui/button";
 import { initializeGame, playTurn, fetchGameState, determineWinner } from "@/lib/actions/game.actions";
-import { CardData, Power, Type, GameState, Deck } from "@/lib/types";
+import { CardData, Power, Type, GameState, Deck, GameLog } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
 import { Cat, Dog, Smile } from "lucide-react";
 import {
@@ -84,6 +84,12 @@ export default function Game() {
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
       setOpponentHand(initialGameState.handP2); // Reset the opponent hand
+      setWinner(null); // Reset the winner to null
+      setPlayerActiveCard(null);
+      setOpponentActiveCard(null);
+      setGamePhase("draw");
+      setPlayerScore(0);
+      setOpponentScore(0);
     } catch (error) {
       console.error('Failed to initialize game:', error);
     }
