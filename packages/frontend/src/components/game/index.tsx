@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@/components/ui/button";
-import { CardData, Power, Type } from "@/lib/types";
+import { initializeGame, playTurn, fetchGameState, determineWinner } from "@/lib/actions/game.actions";
+import { CardData, Power, Type, GameState, Deck } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
 import { Cat, Dog, Smile } from "lucide-react";
 import {
@@ -17,10 +18,17 @@ import {
 import Image from "next/image";
 
 type Player = "player" | "opponent";
-type GamePhase = "draw" | "prep" | "combat" | "end";
+type GamePhase = "draw" | "prep" | "combat" | "check";
 //type CardType = "CAT" | "DOG" | "MEME";
 
-export default function Component() {
+export default function Game() {
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [playerMove, setPlayerMove] = useState<{
+    cardIndexP1: number;
+    powerIndexP1: number;
+    cardIndexP2?: number;
+    powerIndexP2?: number } | null>(null);
+
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
   const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
@@ -35,25 +43,74 @@ export default function Component() {
   const [opponentSelectedPower, setOpponentSelectedPower] =
     useState<Power | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
-  const [currentTurn, setCurrentTurn] = useState<Player>("player");
   const [winner, setWinner] = useState<Player | null>(null);
 
   const { state: blobState, setSize } = useDynamicIslandSize();
 
+  // Shuffle Functions
+  function shuffleDeck(array: any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+    }
+    return array;
+  }
+  // Mock deck for demonstration purposes Assuming userCards is of type CardData[]
+  const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10)
+    .map((card) => card.name); // Or use card.id if Deck should contain IDs
+  
+  const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10)
+    .map((card) => card.name); // Or use card.id if Deck should contain IDs
+
   useEffect(() => {
-    initializeGame();
+    // Fetch the initial game state when the component mounts
+    async function fetchInitialGameState() {
+      try {
+        const initialGameState = await initializeGame( Deck1, Deck2);
+        setGameState(initialGameState); // Set the game state from the backend response
+        setPlayerHand(initialGameState.handP1); // Set the player's hand from the backend response
+        setOpponentHand(initialGameState.handP2); // Set the opponent's hand from the backend response
+      } catch (error) {
+        console.error('Failed to initialize game:', error);
+      }
+    }
+    fetchInitialGameState();
   }, []);
 
-  const initializeGame = () => {
-    const shuffledDeck = [...userCards].sort(() => Math.random() - 0.5);
-    setPlayerHand(shuffledDeck.slice(0, 2));
-    setOpponentHand(shuffledDeck.slice(2, 4));
-    setGamePhase("draw");
-    setCurrentTurn("player");
-    setPlayerScore(0);
-    setOpponentScore(0);
-    setWinner(null);
-    setSize("compact");
+  // New handler for initializing game on button click
+  const initializeGameHandler = async () => {
+    try {
+      const initialGameState = await initializeGame(Deck1, Deck2);
+      setGameState(initialGameState); // Reset the game state
+      setPlayerHand(initialGameState.handP1); // Reset the player hand
+      setOpponentHand(initialGameState.handP2); // Reset the opponent hand
+    } catch (error) {
+      console.error('Failed to initialize game:', error);
+    }
+  };
+
+  // Play Turn Function Handler
+  const handlePlayTurn = async () => {
+    if (playerMove && gameState) {
+      // Ensure Player 2 makes a random choice if none is selected
+      const cardIndexP2 = playerMove.cardIndexP2 ?? Math.floor(Math.random() * gameState.handP2.length);
+      const powerIndexP2 = playerMove.powerIndexP2 ?? Math.floor(Math.random() * gameState.powerList.length);
+  
+      try {
+        const result = await playTurn(
+          gameState,
+          playerMove.cardIndexP1,
+          playerMove.powerIndexP1,
+          cardIndexP2,
+          powerIndexP2,
+          gameState.typeList,
+          gameState.powerList
+        );
+        setGameState(result); // Update the game state after the turn is played
+      } catch (error) {
+        console.error('Failed to play turn:', error);
+      }
+    }
   };
 
   const drawCard = (player: Player) => {
@@ -67,6 +124,23 @@ export default function Component() {
     setTimeout(() => setSize("compact"), 1500);
   };
 
+  
+  const chooseCard = (player: 'P1' | 'P2', index: number) => {
+    setPlayerMove((prevMove) => {
+      // Ensure prevMove is not null and has the necessary structure
+      if (!prevMove) {
+        return player === 'P1'
+          ? { cardIndexP1: index, powerIndexP1: 0 } // Initialize P1 values
+          : { cardIndexP1: 0, powerIndexP1: 0, cardIndexP2: index }; // Initialize P2 values
+      }
+      return {
+        ...prevMove,
+        cardIndexP1: player === 'P1' ? index : prevMove.cardIndexP1,
+        cardIndexP2: player === 'P2' ? index : prevMove.cardIndexP2,
+      };
+    });
+  };
+
   const playCard = (card: CardData, player: Player) => {
     if (player === "player") {
       setPlayerActiveCard(card);
@@ -77,6 +151,23 @@ export default function Component() {
     }
     setSize("medium");
     setTimeout(() => setSize("compact"), 1000);
+  };
+
+    
+  const choosePower = (player: 'P1' | 'P2', index: number) => {
+    setPlayerMove((prevMove) => {
+      // Ensure prevMove is not null and has the necessary structure
+      if (!prevMove) {
+        return player === 'P1'
+          ? { cardIndexP1: 0, powerIndexP1: index } // Initialize P1 values
+          : { cardIndexP1: 0, powerIndexP1: 0, powerIndexP2: index }; // Initialize P2 values
+      }
+      return {
+        ...prevMove,
+        powerIndexP1: player === 'P1' ? index : prevMove.powerIndexP1,
+        powerIndexP2: player === 'P2' ? index : prevMove.powerIndexP2,
+      };
+    });
   };
 
   const selectPower = (power: Power, player: Player) => {
@@ -178,11 +269,25 @@ export default function Component() {
           const randomCard =
             playerHand[Math.floor(Math.random() * playerHand.length)];
           playCard(randomCard, "player");
+          if (!selectedPower) {
+            const randomPower =
+              randomCard.powers[
+                Math.floor(Math.random() * randomCard.powers.length)
+              ];
+            selectPower(randomPower, "player");
+          }
         }
         if (!opponentActiveCard) {
           const randomCard =
             opponentHand[Math.floor(Math.random() * opponentHand.length)];
           playCard(randomCard, "opponent");
+          if (!opponentSelectedPower) {
+            const randomPower =
+              randomCard.powers[
+                Math.floor(Math.random() * randomCard.powers.length)
+              ];
+            selectPower(randomPower, "opponent");
+          }
         }
         if (!selectedPower && playerActiveCard) {
           const randomPower =
@@ -191,26 +296,18 @@ export default function Component() {
             ];
           selectPower(randomPower, "player");
         }
-        if (!opponentSelectedPower && opponentActiveCard) {
-          const randomPower =
-            opponentActiveCard.powers[
-              Math.floor(Math.random() * opponentActiveCard.powers.length)
-            ];
-          selectPower(randomPower, "opponent");
-        }
         setGamePhase("combat");
         break;
       case "combat":
         resolveCombat();
-        setGamePhase("end");
+        setGamePhase("check");
         break;
-      case "end":
+      case "check":
         setPlayerActiveCard(null);
         setOpponentActiveCard(null);
         setSelectedPower(null);
         setOpponentSelectedPower(null);
         setGamePhase("draw");
-        setCurrentTurn(currentTurn === "player" ? "opponent" : "player");
         break;
     }
   };
@@ -232,7 +329,7 @@ export default function Component() {
     switch (blobState.size) {
       case "large":
         return (
-          <DynamicContainer className="flex items-center justify-center h-full w-full">
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               Drawing Cards...
             </DynamicTitle>
@@ -240,7 +337,7 @@ export default function Component() {
         );
       case "medium":
         return (
-          <DynamicContainer className="flex items-center justify-center h-full w-full">
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {gamePhase === "prep"
                 ? "Preparing for Battle"
@@ -252,7 +349,7 @@ export default function Component() {
         );
       case "tall":
         return (
-          <DynamicContainer className="flex items-center justify-center h-full w-full">
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {playerScore > opponentScore
                 ? "You Win This Round!"
@@ -262,15 +359,13 @@ export default function Component() {
         );
       default:
         return (
-          <DynamicContainer className="flex items-center justify-center h-full w-full">
-            <DynamicTitle className="text-lg font-black tracking-tighter text-white">
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {winner
                 ? winner === "player"
                   ? "You Win the Game!"
                   : "Opponent Wins the Game!"
-                : `Current Phase: ${
-                    currentTurn === "player" ? "Your Turn" : "Opponent's Turn"
-                  }`}
+                : "Waiting..."}
             </DynamicTitle>
           </DynamicContainer>
         );
@@ -278,8 +373,8 @@ export default function Component() {
   };
 
   return (
-    <DynamicIslandProvider initialSize="compact">
-      <motion.div className="flex items-start justify-center min-h-screen">
+    <DynamicIslandProvider initialSize="medium">
+      <motion.div className="flex items-start justify-center h-full">
       <div className="container p-3 bg-transparent h-fit max-w-full"> 
         <motion.div
           style={{
@@ -290,8 +385,14 @@ export default function Component() {
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-between mb-4 center"
         >
-          <div className="text-4xl font-bold"> Player Score: {playerScore}  </div>
-          <div className="text-4xl font-bold"> Opponent Score: {opponentScore}  </div>
+          {/* Scores */}
+          <div className="text-3xl text-center font-bold"> Player{"\n"}{playerScore}  </div>
+          <div className="flex max-h-12 overflow-visible">
+            <DynamicIsland id="game-status">
+              {renderDynamicIslandState()}
+            </DynamicIsland>
+          </div>
+          <div className="text-3xl text-center font-bold"> Opponent{"\n"}{opponentScore}  </div>
         </motion.div>
 
         <motion.div  
@@ -392,13 +493,14 @@ export default function Component() {
           {/* Opponent's Deck */}
           <motion.div
             style={{
+              aspectRatio: '3/4',
               backgroundImage: 'url(/CardbackS1_2.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+            className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-center font-bold shadow-stone-900"
             initial={{ x: '350%', y: '-100%' , animationDelay: '1s' }}
             animate={{ x: '50%', y: '-250%' }}
           >
@@ -408,6 +510,7 @@ export default function Component() {
           {/* Player's Deck */}
           <motion.div
             style={{
+              aspectRatio: '3/4',
               backgroundImage: 'url(/CardbackS1_2.png)',
               backgroundSize: "cover",
               backgroundPosition: 'center',
@@ -509,20 +612,39 @@ export default function Component() {
                   : "Opponent Wins the Game!"}
               </h2>
               <Button
-                onClick={initializeGame}
-                className="bg-green-500 text-white hover:bg-green-600"
+                className = "bg-green-500 text-white hover:bg-green-600"
+                onClick = {initializeGameHandler}
               >
                 Play Again
               </Button>
             </div>
           </motion.div>
         )}
-
-        <DynamicIsland id="game-status">
-          {renderDynamicIslandState()}
-        </DynamicIsland>
       </div>
       </motion.div>
     </DynamicIslandProvider>
   );
 }
+
+
+//// DUMP
+  /*
+  const initializeGame = () => {
+    const shuffledDeck = [...userCards].sort(() => Math.random() - 0.5);
+    setPlayerHand(shuffledDeck.slice(0, 2));
+    setOpponentHand(shuffledDeck.slice(2, 4));
+    setGamePhase("draw");
+    setPlayerScore(0);
+    setOpponentScore(0);
+    setWinner(null);
+    setSize("compact");
+  };
+  */
+/* Play Again Button
+              <Button
+                onClick = {initializeGame( Deck1, Deck2)}
+                className="bg-green-500 text-white hover:bg-green-600"
+              
+                Play Again
+              </Button>
+              >*/

@@ -1,20 +1,63 @@
-//use my game logic to create a game action file that will be used to constantly check the game engine and update the game state as per the rules
-// which are written in python and I just translated them to typescript
-// make sure you export all this functions to be used in next js app router using the API attach route in which the game logic is present
-// needs to be separated as concerns and not mixed with the UI nor the API fetching
-import { CardCollection, Deck, Hand, GameState, Score, TurnResult, CardData, Power } from '@/lib/types'; // Assuming these types exist based on your project structure
+import {
+    CardCollection,
+    Deck,
+    Hand,
+    GameState,
+    Score,
+    TurnResult,
+    CardData,
+    Power,
+    TypeList,
+    Type,
+    PowerList,
+} from '@/lib/types'; // Assuming these types exist based on your project structure
 import { userCards } from '@/lib/mock-cards';
 
 // Utility functions based on the Python logic
+// Ensure you have access to the current game state in your backend
+
+// Mock deck for demonstration purposes
+// Assuming userCards is of type CardData[]
+const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
+const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
+const cardCollection: CardCollection = userCards.reduce((collection, card) => {
+    collection[card.name] = card; // Use card.name or card.id as the key, depending on your needs
+    return collection;
+  }, {} as CardCollection);
+
+// Mock state for demonstration purposes
+let currentGameState: GameState = {
+  deckP1: Deck1, // Replace with actual deck initialization
+  deckP2: Deck2, // Replace with actual deck initialization
+  handP1: [cardCollection[Deck1[0]], cardCollection[Deck1[1]], cardCollection[Deck1[2]]],
+  handP2: [cardCollection[Deck2[0]], cardCollection[Deck2[1]], cardCollection[Deck2[2]]],
+  score: [0, 0], // Initial score
+  turnCount: 0, // Start of the game
+  cardCollection: cardCollection, // Your full card collection or subset as needed
+  powerList: ["attack", "defense", "speed"], // Populate with Power type data
+  typeList: ['Cat', 'Dog', 'Meme'], // Assuming these are the types
+};
+
+// Function to fetch the current game state
+export async function fetchGameState(): Promise<GameState> {
+  try {
+    console.log("fetching game state");
+    // Logic to retrieve the current game state
+    // For this example, it's returning the mock state
+    // In real scenarios, ensure this pulls from wherever you manage state (e.g., in-memory, database)
+    return currentGameState;
+  } catch (error) {
+    console.error('Error fetching game state:', error);
+    throw error; // Re-throw the error to handle it in the service or calling function
+  }
+}
+
 function shuffleDeck(deck: Deck): Deck {
     return deck.sort(() => Math.random() - 0.5);
 }
 
 function drawInitialHand(deck: Deck): Hand {
-    return deck.slice(0, 3);
-}
-function isValidAttribute(key: string): key is keyof CardData {
-    return key === "Atk" || key === "HP" || key === "Spd" || key === "Type";
+    return deck.slice(0, 2).map((cardNameOrId) => cardCollection[cardNameOrId]).filter((card): card is CardData => card !== undefined);
 }
 
 
@@ -22,13 +65,13 @@ function calculateTurnOutcome(
     coll: CardCollection,
     card1: string,
     card2: string,
-    pow1: Power,  // Now using Power type
-    pow2: Power,
+    pow1: Power["type"],  // Now using Power type
+    pow2: Power["type"],
     types: string[],
     powers: string[]
 ): TurnResult {
-    let val1 = coll[card1].powers.find(power => power.type === pow1.type)?.value || 0;
-    let val2 = coll[card2].powers.find(power => power.type === pow2.type)?.value || 0;
+    let val1 = coll[card1].powers.find(power => power.type === pow1)?.value || 0;
+    let val2 = coll[card2].powers.find(power => power.type === pow2)?.value || 0;
     const type1 = coll[card1].type[0].type;
     const type2 = coll[card2].type[0].type;
     const type1Index = types.indexOf(type1);
@@ -38,8 +81,8 @@ function calculateTurnOutcome(
         throw new Error("Type not found in the type list.");
     }
 
-    const pow1Index = powers.indexOf(pow1.type);
-    const pow2Index = powers.indexOf(pow2.type);
+    const pow1Index = powers.indexOf(pow1);
+    const pow2Index = powers.indexOf(pow2);
 
     // Type balancing
     if ((type1Index - type2Index) % 3 === 1) {
@@ -59,6 +102,7 @@ function calculateTurnOutcome(
         player1Points: val1 > val2 ? 1 : 0,
         player2Points: val2 > val1 ? 1 : 0,
     };
+
 }
 // build Card Collection
 function buildCardCollection(cards: CardData[]): CardCollection {
@@ -71,6 +115,11 @@ function buildCardCollection(cards: CardData[]): CardCollection {
 
 // Game management
 export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
+    console.log("initializing game");
+    console.log(deckP1);
+    console.log(deckP2);
+    //console.log(drawInitialHand(deckP1), drawInitialHand(deckP2));
+    //console.log(buildCardCollection(userCards));
     return {
         deckP1: shuffleDeck(deckP1),
         deckP2: shuffleDeck(deckP2),
@@ -86,19 +135,22 @@ export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
 
 export function playTurn(
     gameState: GameState,
-    handIndexP1: number,
-    powIndexP1: number,
-    handIndexP2: number,
-    powIndexP2: number,
-    types: string[],
-    powers: string[]
+    handIndexP1: number, // Index of the card in the player's hand
+    powIndexP1: number, // Index of the power in the player's hand
+    handIndexP2: number, // Index of the card in the opponent's hand
+    powIndexP2: number, // Index of the power in the opponent's hand
+    types: typeof TypeList,
+    powers: typeof PowerList,
 ): GameState {
     const { deckP1, deckP2, handP1, handP2, score, turnCount } = gameState;
 
+    const playerCardP1 = handP1[handIndexP1]; // CardData object from player's hand
+    const playerCardP2 = handP2[handIndexP2]; // CardData object from opponent's hand
+
     const turnResult = calculateTurnOutcome(
         gameState.cardCollection,
-        handP1[handIndexP1],
-        handP2[handIndexP2],
+        playerCardP1.name, // Use the name property of the CardData object
+        playerCardP2.name, // Use the name property of the CardData object
         gameState.powerList[powIndexP1],
         gameState.powerList[powIndexP2],
         types,
@@ -106,15 +158,28 @@ export function playTurn(
     );
 
     // Update score and hands
-    const updatedScore: Score = [score[0] + turnResult.player1Points, score[1] + turnResult.player2Points];
+    const updatedScore: Score = [
+        score[0] + turnResult.player1Points,
+        score[1] + turnResult.player2Points];
+
     const updatedHandP1 = handP1.filter((_, idx) => idx !== handIndexP1);
     const updatedHandP2 = handP2.filter((_, idx) => idx !== handIndexP2);
+
+    // Draw a new card from the deck if hands are empty
+    const newCardP1: CardData | undefined = deckP1[turnCount + 3] ? cardCollection[deckP1[turnCount + 3]] : undefined;
+    const newCardP2: CardData | undefined = deckP2[turnCount + 3] ? cardCollection[deckP2[turnCount + 3]] : undefined;
+
+    // Update hands to ensure they contain only CardData objects
+    const finalHandP1: CardData[] = updatedHandP1.length ? updatedHandP1 : [...updatedHandP1, newCardP1!].filter(card => card !== undefined);
+    const finalHandP2: CardData[] = updatedHandP2.length ? updatedHandP2 : [...updatedHandP2, newCardP2!].filter(card => card !== undefined);
+    
+    console.log(powIndexP1, powIndexP2, handIndexP1, handIndexP2);
 
     return {
         ...gameState,
         score: updatedScore,
-        handP1: updatedHandP1.length ? updatedHandP1 : [...updatedHandP1, deckP1[turnCount + 3]],
-        handP2: updatedHandP2.length ? updatedHandP2 : [...updatedHandP2, deckP2[turnCount + 3]],
+        handP1: finalHandP1,
+        handP2: finalHandP2,
         turnCount: turnCount + 1,
     };
 }
@@ -128,3 +193,9 @@ export function determineWinner(gameState: GameState): number {
     const [scoreP1, scoreP2] = gameState.score;
     return scoreP1 > scoreP2 ? 1 : scoreP2 > scoreP1 ? 2 : 0;
 }
+
+///// DUMP
+//use my game logic to create a game action file that will be used to constantly check the game engine and update the game state as per the rules
+// which are written in python and I just translated them to typescript
+// make sure you export all this functions to be used in next js app router using the API attach route in which the game logic is present
+// needs to be separated as concerns and not mixed with the UI nor the API fetching

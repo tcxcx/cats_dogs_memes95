@@ -14,20 +14,7 @@ export declare type UserInfo = {
   picture: string;
 };
 
-// ========================================
-
-export declare type Power = {
-  type: "attack" | "defense" | "speed";
-  value: number;
-};
-
-// ========================================
-
-export declare type Type = {
-  type: "Cat" | "Dog" | "Meme";
-  value: number;
-};
-
+// === CARD TYPES ===
 // ========================================
 
 export declare type CardData = {
@@ -42,10 +29,24 @@ export declare type CardData = {
 
 // ========================================
 
-// Collection of cards, keyed by card names
-export type CardCollection = {
-    [cardName: string]: CardData;
+export declare type Power = {
+  type: "attack" | "defense" | "speed";
+  value: number;
 };
+export const PowerList: Power["type"][];
+
+// ========================================
+
+export declare type Type = {
+  type: "Cat" | "Dog" | "Meme";
+  value: number;
+};
+export const TypeList: Type["type"][];
+
+// ========================================
+
+// Collection of cards, keyed by card names
+export type CardCollection = Record<string, CardData>;
 
 // ========================================
 
@@ -55,7 +56,7 @@ export type Deck = string[];
 // ========================================
 
 // A Hand is an array of card names (strings) representing the cards a player has drawn
-export type Hand = string[];
+export type Hand = CardData[];
 
 // ========================================
 
@@ -67,13 +68,13 @@ export type Score = [number, number]; // player1Points, player2Points
 export type GameState = {
     deckP1: Deck;
     deckP2: Deck;
-    handP1: Hand;
-    handP2: Hand;
+    handP1: CardData[];
+    handP2: CardData[];
     score: Score;
     turnCount: number;
     cardCollection: CardCollection;
-    powerList: Power.type[];
-    typeList: string[];
+    powerList: PowerList;
+    typeList: TypeList;
 };
 
 // ========================================
@@ -83,3 +84,5 @@ export type TurnResult = {
     player1Points: number;
     player2Points: number;
 };
+
+// ========================================

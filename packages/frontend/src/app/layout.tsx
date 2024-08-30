@@ -34,23 +34,28 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         <Web3AuthProvider>
           <React95App>
+            {/* NAVBAR */}
             <Navbar />
-            <div className="flex">
-              <div className="flex-shrink-1 pr-3">
+            {/* MAIN LAYOUT */}
+            <div className="flex h-screen">
+              {/* LEFT SIDEBAR */}
+              <div className="flex pr-3">
                 <AltContainer>
                   <DashboardSidebar />
                 </AltContainer>
               </div>
+              {/* MAIN CONTENT */}
               <main className="flex-grow">
-                <div className="relative">
+                <div className="relative flex-shrink h-screen">
                   {" "}
                   <div className="absolute inset-0 z-0 ">
                     <FlickeringGrid />
                   </div>
-                  <div className="relative z-1 p-3">{children}</div>
+                  <div className="relative z-1 px-5 py-2 max-h-fit">{children}</div>
                 </div>
               </main>
             </div>
+            {/* CLOSING LINE */}
             <EmojiLine />
           </React95App>
         </Web3AuthProvider>
