@@ -2,10 +2,21 @@
 pragma solidity ^0.8.0;
 
 /** 
-* Manages creattion of tournaments and games, setting up players (and their decks) against each other.  
-* Only Avatar Based Accounts can call this function, but they can do so ay any time for as many time as they want. 
-* An allowance of coins is set at its parent 'Cards.sol' contract. 
-* It is not possible to mint more than your allowance.  
+* Manages tournaments, games and rankings of players.
+* 
+* The owner of the contract can start and stop a tournament. 
+* If a tournament is active, Avatar Based Accounts can:  
+*    - initialise a game with a deck of ten cards. Setting the game's status to 'Pending'.   
+*    - join a 'pending' game with a deck of ten cards. This will set the game's status to active.
+*    - exit an 'active' game they were a player in, vouching who won. 
+*        - If they are the first one to do so, this will set the game's status to 'pause'.
+*        - If they are the second one to do so, this will set the game's status to 'completed', and calculate score:  
+*            - winner => 3 points
+*            - loser => 1 points
+*            - no agreement on winner? => both 0 points. 
+* When the owner stops a tournament, rankings are calculated and winners, runnerUps and thirdPlaces announced (with equal scores multiple players can be winners, runnerups, or hodl third places).   
+* 
+* The 'getRankings' functions allows to get a list of players, their scores and ranks at any time during an active tournament. 
 *
 * Authors: Argos, CriptoPoeta, 7cedars
 */
@@ -22,9 +33,9 @@ contract Games {
     error Games__TournamentNotIdleOrCompleted(); 
     
     error Games__PlayerAlreadyEnteredTournament();
-    error Games__PlayerNotRegistered(); 
     error Games__PlayerNotIdle(); 
     error Games__PlayerNotPending();
+    error Games__PlayerIsPending();
     error Games__PlayerNotActive(); 
     error Games__CardNotInPlayerCollection(); 
     error Games__SenderNotPlayerInGame(); 
@@ -44,11 +55,11 @@ contract Games {
     }
 
     struct Game { // The Game struct stores the two Players that challenges each other and their cardecks, store the state of the game, its winner and a unique nonce.   
-        address playerOne;
-        uint256[] cardDeckOne; 
+        address playerOne; 
         address playerTwo;
-        uint256[] cardDeckTwo;
-        uint256 winner;
+        uint256[] cardDeckOne; 
+        uint256[] cardDeckTwo; 
+        address winner;
         uint256 nonce;  
         Status status; 
     }
@@ -65,20 +76,23 @@ contract Games {
     address public immutable i_cards; // address of cards contract. 
     mapping(bytes32 => Game) public s_games; // £note: you need to know the address of your opponent to enter in a game with them.  
     mapping(address => Player) public s_players; // £note: you cannot save a mapping in a struct. Hence the 'Game' struct only store the address. This mapping is used to store the actucal 'Player' struct. It is independent from tournament. 
-    address[] public s_PlayersInTournament; // an array of player participating in the current tournament. Acts as counter and used to calculate rankings. 
+    // mapping(address => uint256[]) public s_cardDecks; 
+    address[] public s_playersInTournament; // an array of player participating in the current tournament. Acts as counter and used to calculate rankings. 
+    address[] public s_winners; 
+    address[] public s_runnerUps; 
+    address[] public s_thirdPlace; 
     uint256 public s_tournamentCounter; // The tournament number, keeps each tournament (sequentially) unique. NOTE: It is impossible to hold two tournaments at the same time within one 'Games.sol' contract. 
-    Status public s_statusTournament; // the status of the tournament. 
-    uint256[3] public s_prices; // prices for first, second and third place in coins to be distributed to the Avatar Based Account of the player at the end of a tournament. 
-    
+    Status public s_statusTournament; // the status of the tournament.
+
     /* Events */
     event DeployedGamesContract(address indexed owner);
     event PlayerRegisteredInTournament(address indexed playerAccount); 
-    event PlayerUpdatedCardDeck(address indexed playerAccount); 
     event StartedNewTournament(uint256 indexed tournament); 
-    event EndedTournament(uint256 indexed tournament, address indexed winner, address second, address third); 
+    event EndedTournament(uint256 indexed tournament, address[] winner, address[] runnerUp, address[] thirdPlace); 
     event InitialisedGame(address indexed playerOne, uint256 indexed nonce); 
     event JoinedGame(address indexed playerTwo, bytes32 indexed gameHash);  
     event CancelledPendingGame(address indexed playerOne, bytes32 indexed gameHash); 
+    event CompletedGame(address indexed winner, bytes32 indexed gameHash);  
     
     /* Modifiers */
     modifier onlyOwner() {
@@ -95,16 +109,9 @@ contract Games {
         _;
     }
 
-    modifier onlyRegisteredPlayer() {
-        if (s_players[msg.sender].tournament != s_tournamentCounter) {
-            revert Games__PlayerNotRegistered(); 
-        }
-        _;
-    }
-
-    modifier onlyIdlePlayer() {
-        if (s_players[msg.sender].status != Status.Idle) {
-            revert Games__PlayerNotIdle(); 
+    modifier onlyAvatarBasedAccount() {
+        if (!ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)) {
+            revert Games__OnlyAvatarBasedAccount();
         }
         _;
     }
@@ -129,7 +136,7 @@ contract Games {
 
     /* public */
     // note: prices are set at the start of each tournament. 
-    function startTournament(uint256 firstPrice, uint256 secondPrice, uint256 thirdPrice) public onlyOwner {
+    function startTournament() public onlyOwner {
         if (
             s_statusTournament != Status.Idle && 
             s_statusTournament != Status.Completed
@@ -138,78 +145,78 @@ contract Games {
         }
         
         // delete array of players active in tournament -- used to calculate rankings in tournament. 
-        while (s_PlayersInTournament.length > 0) {
-            s_PlayersInTournament.pop(); 
+        while (s_playersInTournament.length > 0) {
+            s_playersInTournament.pop(); 
+        }
+        // reset arrays of winners, seconds, thirds 
+        while (s_winners.length > 0) {
+            s_winners.pop(); 
+        }
+        while (s_runnerUps.length > 0) {
+            s_runnerUps.pop(); 
+        }
+        while (s_thirdPlace.length > 0) {
+            s_thirdPlace.pop(); 
         }
         s_tournamentCounter++;
-        s_prices[0] = firstPrice;  
-        s_prices[1] = secondPrice; 
-        s_prices[2] = thirdPrice; 
-
         s_statusTournament = Status.Active; 
 
         emit StartedNewTournament(s_tournamentCounter); 
     }
 
     function stopTournament() public onlyOwner {
-        s_statusTournament = Status.Completed; 
         (address[] memory avatarAccount, , uint256[] memory rankings) = getRankings(); 
-        address winner; 
-        address second; 
-        address third;
+        s_statusTournament = Status.Completed; 
 
+        // NB TODO: Change logic: mint coins to this contract; then transfer coins to winners. 
         // Note: prices are now in coins. Can also be in native currency. Pretty much any logic / thing is possible. 
+        // NB! If people have same rank this approach does not work!! 
         for (uint256 i; i < rankings.length; i++) {
             if (rankings[i] == 1 && avatarAccount[i] != address(0)) { // if there is no winner, address remains at address(0) - and no price will be transferred.
-                bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[0], avatarAccount[i]);
-                (bool success, ) =  i_cards.call{value: 0}(functionCall); 
-                success ? winner = avatarAccount[i] : winner = address(1); // note a failed transfer shows up as an address(1) in the EndedTournament event. 
+                s_winners.push(avatarAccount[i]); 
             }
             if (rankings[i] == 2 && avatarAccount[i] != address(0)) { // same as above. 
-                bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[1], avatarAccount[i]);
-                (bool success, ) =  i_cards.call{value: 0}(functionCall); // function call is necessary to get msg.sender correct at cards contract. 
-                success ? second = avatarAccount[i] : second = address(1);
+                s_runnerUps.push(avatarAccount[i]);
             }
             if (rankings[i] == 3 && avatarAccount[i] != address(0)) { // same as above. 
-                bytes memory functionCall = abi.encodeWithSelector(Cards.addToCoinAllowance.selector, s_prices[2], avatarAccount[i]);
-                (bool success, ) =  i_cards.call{value: 0}(functionCall); 
-                success ? third = avatarAccount[i] : third = address(1);
+                s_thirdPlace.push(avatarAccount[i]);
             }
         }
 
-        emit EndedTournament(s_tournamentCounter, winner, second, third); 
+        emit EndedTournament(s_tournamentCounter, s_winners, s_runnerUps, s_thirdPlace); 
     }
 
-    function initialiseGame(uint256[] memory cardDeck) public onlyRegisteredPlayer onlyDuringActiveTournament onlyIdlePlayer {
+    function initialiseGame(uint256[] memory cardDeck) public onlyDuringActiveTournament onlyAvatarBasedAccount {
         bytes32 gameHash = keccak256(abi.encode(msg.sender, s_nonce)); 
-        uint256[] memory cardDeckTwo = new uint256[](10); 
-
+        uint256[] memory cardDeckTwo = new uint256[](10);
         (bool success) = _checkDeckAgainstCollection(msg.sender, cardDeck);
+
         if (!success) {
             revert Games__CardNotInPlayerCollection(); 
+        }
+        if (s_players[msg.sender].status == Status.Pending) {
+            revert Games__PlayerIsPending();
         }
         if (s_players[msg.sender].tournament != s_tournamentCounter) {
             _registerPlayerInTournament(msg.sender);
         } 
 
-        Game memory game = Game({
+        s_games[gameHash] = Game({
             playerOne: msg.sender, 
-            cardDeckOne: cardDeck, 
             playerTwo: address(0), 
-            cardDeckTwo: cardDeckTwo,
-            winner: 0, 
+            cardDeckOne: cardDeck, 
+            cardDeckTwo: cardDeckTwo, 
+            winner: address(0), 
             status: Status.Pending, 
             nonce: s_nonce
         });
-
-        s_games[gameHash] = game; 
         s_players[msg.sender].status = Status.Pending; 
         s_nonce++; 
 
         emit InitialisedGame(msg.sender, s_games[gameHash].nonce);
     } 
 
-    function cancelPendingGame(uint256 nonce) public onlyRegisteredPlayer onlyDuringActiveTournament {
+    function cancelPendingGame(uint256 nonce) public onlyDuringActiveTournament {
         bytes32 gameHash = keccak256(abi.encode(msg.sender, nonce)); // note that only the player themselves is able to cancel the game.
         if (s_players[msg.sender].status != Status.Pending) {
             revert Games__PlayerNotPending(); 
@@ -224,7 +231,7 @@ contract Games {
     }
 
     // 
-    function joinGame(address opponent, uint256 nonce, uint256[] memory cardDeck) public onlyRegisteredPlayer onlyDuringActiveTournament onlyIdlePlayer {
+    function joinGame(address opponent, uint256 nonce, uint256[] memory cardDeck) public onlyDuringActiveTournament onlyAvatarBasedAccount {
         bytes32 gameHash = keccak256(abi.encode(opponent, nonce));  
         if (s_games[gameHash].nonce == 0) {
             revert Games__GameNotRecognised(); 
@@ -240,16 +247,16 @@ contract Games {
             _registerPlayerInTournament(msg.sender);
         } 
 
-        s_games[gameHash].playerTwo = msg.sender; 
-        s_games[gameHash].cardDeckTwo = cardDeck; 
-        s_games[gameHash].status = Status.Active; 
+        s_games[gameHash].playerTwo = msg.sender;
+        s_games[gameHash].status = Status.Active;
+        s_games[gameHash].cardDeckTwo = cardDeck;
         s_players[msg.sender].status = Status.Active; 
         s_players[opponent].status = Status.Active; 
 
         emit JoinedGame(msg.sender, gameHash);
     }
 
-    function exitGame(uint256 nonce, address playerOne, uint256 winner) public onlyDuringActiveTournament {
+    function completeGame(uint256 nonce, address playerOne, address winner) public onlyDuringActiveTournament onlyAvatarBasedAccount {
         bytes32 gameHash = keccak256(abi.encode(playerOne, nonce));  
         if (
             s_games[gameHash].status != Status.Active &&
@@ -269,27 +276,33 @@ contract Games {
                 revert Games__PlayerNotActive(); 
             }
         address playerTwo = s_games[gameHash].playerTwo; 
+        // address loggedWinner = s_games[gameHash].winner; 
         
         // this is the first player to add a winner. Pause the game, set status player to completed, store the winner. 
-        if (s_games[gameHash].winner == 0) {
-            s_games[gameHash].status = Status.Paused; 
-            s_games[gameHash].winner = winner; 
-            s_players[msg.sender].status = Status.Completed; 
-        } else {
-        // this is the second player to add a winner. Complete the game, set player to completed, compare winner, distribute score.
+        if (s_games[gameHash].winner == address(0)) {
+                s_games[gameHash].status = Status.Paused; 
+                s_games[gameHash].winner = winner; 
+                s_players[msg.sender].status = Status.Completed; 
+                emit CompletedGame(address(2), gameHash);
+            } else {
+            // this is the second player to add a winner. Complete the game, set player to completed, compare winner, distribute score.
             s_games[gameHash].status = Status.Completed;
             s_players[msg.sender].status = Status.Completed; 
             if (s_games[gameHash].winner == winner) {
                 // if both players agree on winner. 
-                if (winner == 1) { 
-                    s_players[playerOne].score + 3;
-                    s_players[playerTwo].score + 1;
+                if (winner == playerOne) { 
+                    s_players[playerOne].score += 3;
+                    s_players[playerTwo].score += 1;
                 } else {
-                    s_players[playerOne].score + 1;
-                    s_players[playerTwo].score + 3;
+                    s_players[playerTwo].score += 3;
+                    s_players[playerOne].score += 1;
                 }
-            } 
+                }
+            if (s_games[gameHash].winner != winner) {
+                    s_games[gameHash].winner = address(1); // note address 1 as signal that there was no consensus on winner. 
+                }
             // Note: when players do NOT agree in winner, neither of them get any points. 
+            emit CompletedGame(s_games[gameHash].winner, gameHash);
         }
     }
 
@@ -321,30 +334,32 @@ contract Games {
         }); 
 
         s_players[avatarBasedAccount] = player; 
-        s_PlayersInTournament.push(avatarBasedAccount); 
+        s_playersInTournament.push(avatarBasedAccount); 
 
         emit PlayerRegisteredInTournament(avatarBasedAccount); 
     }
 
     /* getters */
-    function getRankings() public view returns (
+    function getRankings() public view onlyDuringActiveTournament returns (
             address[] memory avatars, 
             uint256[] memory scores, 
             uint256[] memory rankings
         ) { 
     
-        uint256 numberPlayers = s_PlayersInTournament.length; 
+        uint256 numberPlayers = s_playersInTournament.length; 
         scores = new uint256[](numberPlayers);
         rankings = new uint256[](numberPlayers);
 
         for (uint256 i; i < numberPlayers; i++) {
-            scores[i] = s_players[s_PlayersInTournament[i]].score;
+            scores[i] = s_players[s_playersInTournament[i]].score;
+        }
+        for (uint256 i; i < numberPlayers; i++) {
             rankings[i] = 1;  
             for (uint256 j; j < numberPlayers; j++) {
-                if (scores[i] > scores[j]){ rankings[i]++; } 
+                if (scores[i] < scores[j]){ rankings[i]++; }  
             }
         }
-        return (s_PlayersInTournament, scores, rankings); 
+        return (s_playersInTournament, scores, rankings); 
     }
 }
 

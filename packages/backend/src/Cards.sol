@@ -20,7 +20,7 @@ contract Cards is ERC1155 {
     error Cards__OnlyAvatarBasedAccount(address playerAccount); 
     error Cards__FundRetrievalUnsuccessful(); 
     error Cards__InsufficientPayment(); 
-    error Cards__OnlyOwner(); 
+    error Cards__OnlyOwner(address sender); 
     error Cards__NoCardsExist(); 
     
     /* Type declarations */
@@ -54,7 +54,7 @@ contract Cards is ERC1155 {
     /* modifiers */
     modifier onlyOwner() {
         if (msg.sender != i_owner) {
-            revert Cards__OnlyOwner();
+            revert Cards__OnlyOwner(msg.sender);
         }
         _;
     }
@@ -247,7 +247,7 @@ contract Cards is ERC1155 {
     } 
 
     /**
-     * note retrieves all accumulated funds from the contract.   
+     * note  
      */
     function addToCoinAllowance(uint256 coins, address recipient) public onlyOwner {
         uint256 currentAllowance = s_coinAllowance[recipient];  
