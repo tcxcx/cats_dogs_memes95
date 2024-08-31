@@ -8,7 +8,7 @@ import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
-import {DeployRegistry} from "@erc6551/script/DeployRegistry.s.sol";  
+import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
 
 contract AvatarBasedAccountTest is Test {
     /* Type declarations */

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Test, console, console2} from "@forge-std/Test.sol";
+import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
 
 import {Players} from "../../src/Players.sol";
 import {Cards} from "../../src/Cards.sol";
@@ -11,7 +12,7 @@ import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-import {DeployRegistry} from "@erc6551/script/DeployRegistry.s.sol";  
+
 
 contract GamesTest is Test {
     /* State vars */

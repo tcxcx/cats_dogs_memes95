@@ -1,6 +1,9 @@
-@ds-test/=lib/forge-std/lib/ds-test/src/
-@forge-std/=lib/forge-std/src/
-@erc6551/=lib/reference/
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-solidity-bytes-utils/=lib/solidity-bytes-utils/
+openzeppelin/=lib/reference/lib/openzeppelin-contracts/
+chainlink-brownie-contracts/=lib/chainlink-brownie-contracts/
+ds-test/=lib/openzeppelin-contracts/lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
+forge-std/=lib/forge-std/src/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
+openzeppelin/=lib/openzeppelin-contracts/contracts/
+reference/=lib/reference/
