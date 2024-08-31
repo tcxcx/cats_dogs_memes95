@@ -22,3 +22,6 @@
 [submodule "packages/backend/lib/foundry-chainlink-toolkit"]
 	path = packages/backend/lib/foundry-chainlink-toolkit
 	url = https://github.com/smartcontractkit/foundry-chainlink-toolkit
+[submodule "packages/backend/lib/chainlink"]
+	path = packages/backend/lib/chainlink
+	url = https://github.com/smartcontractkit/chainlink
