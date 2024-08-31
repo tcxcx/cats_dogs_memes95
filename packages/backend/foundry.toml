@@ -14,7 +14,7 @@ remappings = [
   "@layerzerolabs/lz-evm-v1-0.7/=lib/LayerZero/",
   "solidity-bytes-utils/=lib/solidity-bytes-utils/",
   "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-  "@chainlink-brownie-contracts/=lib/chainlink-brownie-contracts/", 
+  "@chainlink/=lib/chainlink/", 
 ]
 
 

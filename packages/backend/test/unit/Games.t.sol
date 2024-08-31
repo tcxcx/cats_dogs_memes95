@@ -42,7 +42,7 @@ contract GamesTest is Test {
     event DeployedGamesContract(address indexed owner);
     event PlayerEnteredTournament(address indexed playerAccount); 
     event StartedNewTournament(uint256 indexed tournament); 
-    event EndedTournament(uint256 indexed tournament, address indexed winner, address second, address third); 
+    event EndedTournament(uint256 indexed tournament, address[] indexed winners, address[] runnerUps, address[] thirdPlaces); 
     event InitialisedGame(address indexed playerOne, uint256 indexed nonce); 
     event JoinedGame(address indexed playerTwo, bytes32 indexed gameHash);  
     event CancelledPendingGame(address indexed playerOne, bytes32 indexed gameHash); 
@@ -156,6 +156,7 @@ contract GamesTest is Test {
 
     function testStopTournamentWithoutGamesIsPossible() public {
       uint256 expectedTournamentCounter = 1; 
+      address[] memory emptyArray = new address[](0);
 
       vm.prank(ownerGames); 
       games.startTournament();
@@ -163,9 +164,9 @@ contract GamesTest is Test {
       assert(games.s_statusTournament() == Games.Status.Active); 
 
       // ACT: stop tournament. 
-      vm.expectEmit(true, false, false, false);
-      emit EndedTournament(expectedTournamentCounter, address(0), address(0), address(0));
       vm.prank(ownerGames); 
+      vm.expectEmit(true, false, false, false);
+      emit EndedTournament(expectedTournamentCounter, emptyArray, emptyArray, emptyArray);
       games.stopTournament();
     }
 

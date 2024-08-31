@@ -7,11 +7,13 @@ import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 import {Coins} from "./Coins.sol"; 
 
 // chainlink VRF imports. 
-import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
-import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
-import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
-import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
-
+// NB: many notes from Chainlink VRF are still included. Clean up (and some renaming) will happen later. 
+// see the docs here: https://docs.chain.link/vrf/v2-5/direct-funding/get-a-random-number
+// ps: some issues with the remappings. 
+import {ConfirmedOwner} from "../lib/chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {LinkTokenInterface} from "../lib/chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+import {VRFV2PlusWrapperConsumerBase} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
+import {VRFV2PlusClient} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 /** 
 * ERC-1155 based contract that stores cards structs and manages their distribution through the sell of card packs. 
@@ -21,7 +23,7 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
 *
 * authors: Argos, CriptoPoeta, 7cedars
 */ 
-contract Cards is ERC1155 {
+contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     /* errors */
     error Cards__ArraysNotSameLength(uint256 lengthOne, uint256 lengthTwo);
     error Cards__OnlyAvatarBasedAccount(address playerAccount); 
@@ -52,19 +54,59 @@ contract Cards is ERC1155 {
 
     address public immutable i_owner; // owner of contract. For now set as immutable, can be changed later. 
     address public immutable i_coins; // This allows the Coins.sol address to be read through the functions 'i_coins()'. 
+    // chainlink VRF //  
+    struct RequestStatus {
+        uint256 paid; // amount paid in link
+        bool fulfilled; // whether the request has been successfully fulfilled
+        uint256[] randomWords;
+    }
+    uint256 public s_randomWord; 
+    mapping(uint256 => RequestStatus) public s_requests; /* requestId --> requestStatus */
+
+    // past requests Id.
+    uint256[] public requestIds;
+    uint256 public lastRequestId;
+
+    // Depends on the number of requested values that you want sent to the
+    // fulfillRandomWords() function. Test and adjust
+    // this limit based on the network that you select, the size of the request,
+    // and the processing of the callback request in the fulfillRandomWords()
+    // function.
+    uint32 public callbackGasLimit = 100000;
+
+    // The default is 3, but you can set this higher.
+    uint16 public requestConfirmations = 3;
+
+    // For this example, retrieve 2 random values in one request.
+    // Cannot exceed VRFV2Wrapper.getConfig().maxNumWords.
+    uint32 public numWords = 2;
+
+    // Address LINK - hardcoded for Sepolia
+    address public linkAddress = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
+
+    // address WRAPPER - hardcoded for Sepolia
+    address public wrapperAddress = 0x195f15F2d49d693cE265b4fB0fdDbE15b1850Cc1;
 
     /* Events */
     event Log(string func, uint256 gas);
     event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);  
     event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);  
+    // chainlink VRF //  
+    event RequestSent(uint256 requestId, uint32 numWords);
+    event RequestFulfilled(
+        uint256 requestId,
+        uint256[] randomWords,
+        uint256 payment
+    );
 
     /* modifiers */
-    modifier onlyOwner() {
-        if (msg.sender != i_owner) {
-            revert Cards__OnlyOwner(msg.sender);
-        }
-        _;
-    }
+    // is included in the 
+    // modifier onlyOwner() {
+    //     if (msg.sender != i_owner) {
+    //         revert Cards__OnlyOwner(msg.sender);
+    //     }
+    //     _;
+    // }
 
     modifier onlyAvatarBasedAccount(address playerAccount) {
         if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
@@ -85,19 +127,23 @@ contract Cards is ERC1155 {
         uint256 priceCardPack,
         uint256[] memory packThresholds, // needs to be an incrementing array. 
         uint256[] memory packCoinAmounts
-        ) ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") {
-            if (packThresholds.length != packCoinAmounts.length) {
-                revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
+        ) 
+            ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") 
+            ConfirmedOwner(msg.sender)
+            VRFV2PlusWrapperConsumerBase(wrapperAddress)
+            {
+                if (packThresholds.length != packCoinAmounts.length) {
+                    revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
+                }
+                i_coins = address(new Coins());  
+
+                i_owner = msg.sender;
+                s_priceCardPack = priceCardPack; 
+                s_packThresholds = packThresholds; 
+                s_packCoinAmounts = packCoinAmounts; 
+
+                emit DeployedCardsContract(i_owner, i_coins, s_priceCardPack); 
             }
-            i_coins = address(new Coins());  
-
-            i_owner = msg.sender;
-            s_priceCardPack = priceCardPack; 
-            s_packThresholds = packThresholds; 
-            s_packCoinAmounts = packCoinAmounts; 
-
-            emit DeployedCardsContract(i_owner, i_coins, s_priceCardPack); 
-    }
 
     /* receive & fallback */ 
     /**
@@ -260,6 +306,77 @@ contract Cards is ERC1155 {
         uint256 currentAllowance = s_coinAllowance[recipient];  
         s_coinAllowance[recipient] = currentAllowance + coins; 
     }
+
+    // Chainlink VRF functions.. 
+
+    function requestRandomWords(bool enableNativePayment) external onlyOwner returns (uint256) {
+        bytes memory extraArgs = VRFV2PlusClient._argsToBytes(
+            VRFV2PlusClient.ExtraArgsV1({nativePayment: enableNativePayment})
+        );
+        (uint256 requestId, uint256 reqPrice) = requestRandomnessPayInNative(
+            callbackGasLimit,
+            requestConfirmations,
+            numWords,
+            extraArgs
+        );
+        s_requests[requestId] = RequestStatus({
+            paid: reqPrice,
+            randomWords: new uint256[](0),
+            fulfilled: false
+        });
+        requestIds.push(requestId);
+        lastRequestId = requestId;
+        emit RequestSent(requestId, numWords);
+        return requestId;
+    }
+
+    function fulfillRandomWords(
+        uint256 _requestId,
+        uint256[] memory _randomWords
+    ) internal override {
+        require(s_requests[_requestId].paid > 0, "request not found");
+        s_requests[_requestId].fulfilled = true;
+        s_requests[_requestId].randomWords = _randomWords;
+        s_randomWord = _randomWords[0]; 
+        emit RequestFulfilled(
+            _requestId,
+            _randomWords,
+            s_requests[_requestId].paid
+        );
+    }
+
+    function getRequestStatus(
+        uint256 _requestId
+    )
+        external
+        view
+        returns (uint256 paid, bool fulfilled, uint256[] memory randomWords)
+    {
+        require(s_requests[_requestId].paid > 0, "request not found");
+        RequestStatus memory request = s_requests[_requestId];
+        return (request.paid, request.fulfilled, request.randomWords);
+    }
+
+    // /**
+    //  * Allow withdraw of Link tokens from the contract
+    //  */
+    // function withdrawLink() public onlyOwner {
+    //     LinkTokenInterface link = LinkTokenInterface(linkAddress);
+    //     require(
+    //         link.transfer(msg.sender, link.balanceOf(address(this))),
+    //         "Unable to transfer"
+    //     );
+    // }
+
+    // /// @notice withdrawNative withdraws the amount specified in amount to the owner
+    // /// @param amount the amount to withdraw, in wei
+    // function withdrawNative(uint256 amount) external onlyOwner {
+    //     (bool success, ) = payable(owner()).call{value: amount}("");
+    //     // solhint-disable-next-line gas-custom-errors
+    //     require(success, "withdrawNative failed");
+    // }
+
+
 
     /* internal */
     /**

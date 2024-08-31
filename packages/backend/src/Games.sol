@@ -172,7 +172,7 @@ contract Games {
         // Note: prices are now in coins. Can also be in native currency. Pretty much any logic / thing is possible. 
         // NB! If people have same rank this approach does not work!! 
         for (uint256 i; i < rankings.length; i++) {
-            if (rankings[i] == 1 && avatarAccount[i] != address(0)) { // if there is no winner, address remains at address(0) - and no price will be transferred.
+            if (rankings[i] == 1 && avatarAccount[i] != address(0)) { // if there is no winner, address remains at address(0)
                 s_winners.push(avatarAccount[i]); 
             }
             if (rankings[i] == 2 && avatarAccount[i] != address(0)) { // same as above. 
