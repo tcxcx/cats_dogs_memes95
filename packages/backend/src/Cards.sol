@@ -6,6 +6,13 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
 import {Coins} from "./Coins.sol"; 
 
+// chainlink VRF imports. 
+import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+
+
 /** 
 * ERC-1155 based contract that stores cards structs and manages their distribution through the sell of card packs. 
 * It integrates a Coins.sol contract to distributed coins on every sell of a card pack. 
