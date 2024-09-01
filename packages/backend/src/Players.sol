@@ -11,7 +11,7 @@ pragma solidity ^0.8.0;
 // £todo I have some issues with remappings in vscode. For now I just avoid using them. To be fixed. 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import { ERC6551Registry } from "@erc6551/ERC6551Registry.sol"; 
+import { ERC6551Registry } from "@erc6551/src/ERC6551Registry.sol"; 
 
 contract Players is ERC721URIStorage {
     uint256 private _avatarCounter;
@@ -81,12 +81,12 @@ contract Players is ERC721URIStorage {
         returns (uint256, address)
     {
         uint256 newAvatarId = _avatarCounter;
+        _avatarCounter++;
+
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
-
         address AvatarAddress = _createAvatarAddress(newAvatarId);
-
-        _avatarCounter = _avatarCounter++;
+    
         emit CreatedPlayer(newAvatarId, AvatarAddress); 
         
         return (newAvatarId, AvatarAddress);

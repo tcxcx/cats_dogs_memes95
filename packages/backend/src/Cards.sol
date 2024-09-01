@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
+import {Coins} from "./Coins.sol"; 
 
 /** 
 * ERC-1155 based contract that stores cards structs and manages their distribution. 
@@ -13,8 +14,8 @@ import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 */ 
 contract Cards is ERC1155 {
     /* errors */
-    error Cards__ArraysNotSameLength(uint256 cardsLength, uint256 mintAmountLength);
-    error Cards__IncorrectInterface(address playerAccount); 
+    error Cards__ArraysNotSameLength(uint256 lengthOne, uint256 lengthTwo);
+    error Cards__OnlyAvatarBasedAccount(address playerAccount); 
     error Cards__FundRetrievalUnsuccessful(); 
     error Cards__InsufficientPayment(); 
     error Cards__OnlyOwner(); 
@@ -35,11 +36,17 @@ contract Cards is ERC1155 {
     /* State variables */
     uint256[] public s_cardIds;
     mapping(uint256 cardId => Card card) public s_cards; // maps cardId to its characteristics. 
-    address public s_owner;
-    uint256 public s_priceCardPack; 
-    
+    uint256 public s_cardPackCounter; // tracks how many card packs have been bought. 
+    uint256 public s_priceCardPack;
+    uint256[] public s_packThresholds;
+    uint256[] public s_packCoinAmounts;
+    address public s_owner; 
+    Coins public s_coins;
+    mapping(address avatarBasedAccount => uint256 allowance) public s_coinAllowance;
+
     /* Events */
     event Log(string func, uint256 gas);
+    event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);  
     event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);  
 
     /* modifiers */
@@ -52,7 +59,7 @@ contract Cards is ERC1155 {
 
     modifier onlyAvatarBasedAccount(address playerAccount) {
         if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
-            revert Cards__IncorrectInterface(playerAccount);
+            revert Cards__OnlyAvatarBasedAccount(playerAccount);
         }
         _;
     }
@@ -66,10 +73,20 @@ contract Cards is ERC1155 {
      *
      */
     constructor(
-        uint256 priceCardPack
+        uint256 priceCardPack,
+        uint256[] memory packThresholds, // needs to be an incrementing array to work properly. 
+        uint256[] memory packCoinAmounts
         ) ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") {
+            if (packThresholds.length != packCoinAmounts.length) {
+                revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
+            }
             s_owner = msg.sender;
+            s_coins = new Coins(); // this saves the WHOLE contract to chain. Maybe do differently? 
             s_priceCardPack = priceCardPack; 
+            s_packThresholds = packThresholds; 
+            s_packCoinAmounts = packCoinAmounts; 
+
+            emit DeployedCardsContract(s_owner, address(s_coins), s_priceCardPack); 
     }
 
     /* receive & fallback */ 
@@ -124,7 +141,7 @@ contract Cards is ERC1155 {
     /**
      * note function to buy a pack of five random cards.
      * 
-     * @param cardPackNo The sequence number of the cardPack the player choose. It is used as salt in picking a random set of cards.   
+     * @param cardPackNumber The sequence number of the cardPack the player choose. It is used as salt in picking a random set of cards.   
      * 
      * note: the chance of a card appearing in a pack is defined by the amount of avaialble cards. In other words, rare cards are selected fewer times.
      * There is a (tiny) chance that a card that has been minted less than five times will be selected more than it exists. 
@@ -134,7 +151,7 @@ contract Cards is ERC1155 {
      * 
      * dev For now, payment occurs in native currency. Should this be in a ERC-20 coin instead? 
      */
-    function openCardPack(uint256 cardPackNo) public payable onlyAvatarBasedAccount(msg.sender) {
+    function openCardPack(uint256 cardPackNumber) public payable onlyAvatarBasedAccount(msg.sender) {
         uint256[] memory selectedCards = new uint256[](5); 
         uint256[] memory cardsValues = new uint256[](5); 
         uint256[] memory cardIds = s_cardIds; 
@@ -160,7 +177,7 @@ contract Cards is ERC1155 {
 
         // step 3: for each of the five cards, we retrieve a value between 0 and total amount of cards. This is used to select the cardId and add it to the CardPack object.
         for (uint256 i; i < 5; i++) {
-            uint256 pseudoRandomNumber = _pseudoRandomiser(i + cardPackNo) % incrementedArray[incrementedArray.length - 1]; 
+            uint256 pseudoRandomNumber = _pseudoRandomiser(i + cardPackNumber) % incrementedArray[incrementedArray.length - 1]; 
             uint256 cardId; 
             while (incrementedArray[cardId] < pseudoRandomNumber) {
                 cardId++;
@@ -168,6 +185,8 @@ contract Cards is ERC1155 {
             selectedCards[i] = cardId; 
             cardsValues[i] = 1; 
         }
+        // Before execution, increase the s_cardPackCounter: cardPack is being bought.  
+        s_cardPackCounter++; 
 
         // step 4: transfer selected Cards to Avatar.
         _safeBatchTransferFrom(
@@ -177,7 +196,18 @@ contract Cards is ERC1155 {
             cardsValues, // uint256[] memory values,
             '' // bytes memory data
         );
-        
+
+        // step 5, add coin allowance for the user.
+        // if the above did not revert: add allowance to avatarBasedAccount
+        uint256 allowanceIndex;
+        if (s_cardPackCounter < s_packThresholds[s_packThresholds.length - 1]) {
+            while (s_packThresholds[allowanceIndex] < s_cardPackCounter) {
+                allowanceIndex++;
+            }
+            s_coinAllowance[msg.sender] = s_coinAllowance[msg.sender] + s_packCoinAmounts[allowanceIndex]; 
+        } else {
+            s_coinAllowance[msg.sender]++; 
+        }
     } 
 
     /**
@@ -200,11 +230,19 @@ contract Cards is ERC1155 {
      */
     function retrieveFunds() public onlyOwner {
         uint256 fullBalance = address(this).balance;  
-        (bool success, ) = address(this).call{value: fullBalance}(''); 
+        (bool success, ) = msg.sender.call{value: fullBalance}(''); 
         if (!success) {
             revert Cards__FundRetrievalUnsuccessful(); 
         }
     } 
+
+    /**
+     * note retrieves all accumulated funds from the contract.   
+     */
+    function addToCoinAllowance(uint256 coins, address recipient) public onlyOwner {
+        uint256 currentAllowance = s_coinAllowance[recipient];  
+        s_coinAllowance[recipient] = currentAllowance + coins; 
+    }
 
     /* internal */
     /**
@@ -234,33 +272,6 @@ contract Cards is ERC1155 {
             }
         }
         return incrementArray;
-    }
-
-    /** 
-    * Overrides the internal _setUri function from ERC-1155. It allows the function to be called in this contract. 
-    * 
-    * This is necessary to make updating the uri at a later date possible. 
-    */
-    function _setURI(string memory newuri) internal override {
-        super._setURI(newuri);
-    }
-    
-    /** 
-    * Overrides the internal _safeBatchTransferFrom function from ERC-1155. It allows the function to be called in this contract. 
-    * 
-    * This is necessary to make transfer of cards without authorisation from the contract to the userAvatar possible. 
-    * The lack of authorisation is not a problem, because the function that calls this internalfunction ('openCardPack') has the necessary checks.  
-    */
-    function _safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal override {
-        super._safeBatchTransferFrom(
-            from, to, ids, amounts, data
-        ); 
     }
 
     /* getter functions */
