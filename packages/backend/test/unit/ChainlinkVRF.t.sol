@@ -10,7 +10,7 @@ import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
+// import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
 
 contract ChainLinkVRFTest is Test {
     /* Type declarations */
@@ -27,10 +27,6 @@ contract ChainLinkVRFTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // deploying the ERC-6551 registry... 
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // deployerRegistry.run(); 
-
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();
 

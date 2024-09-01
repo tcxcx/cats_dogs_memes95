@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import {Script, console} from "forge-std/Script.sol";
+import {Script, console, console2} from "forge-std/Script.sol";
+import {VmSafe} from "forge-std/Vm.sol";
+
 import {VRFCoordinatorV2_5Mock} from "../lib/chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol"; 
-// import {DeployRegistry} from "./DeployERC6551Registry.s.sol";  
 import "@openzeppelin/contracts/utils/Create2.sol";
-
-import "../lib/reference/src/ERC6551Registry.sol";
-
+import {ERC6551Registry} from "../lib/reference/src/ERC6551Registry.sol";
 import {DeployRegistry} from "../lib/reference/script/DeployRegistry.s.sol"; 
-
+import {AvatarBasedAccount} from "../src/AvatarBasedAccount.sol"; 
 
 // needed to set up Chainlink VRF testing 
 import {MockLinkToken} from "../lib/chainlink/contracts/src/v0.8/mocks/MockLinkToken.sol";
 import {MockV3Aggregator} from "../lib/chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
-import {ExposedVRFCoordinatorV2_5_Arbitrum} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/testhelpers/ExposedVRFCoordinatorV2_5_Arbitrum.sol";
-import {VRFV2PlusWrapper_Arbitrum} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapper_Arbitrum.sol";
-import {ArbGasInfo} from "../lib/chainlink/contracts/src/v0.8/vendor/@arbitrum/nitro-contracts/src/precompiles/ArbGasInfo.sol";
+import {ExposedVRFCoordinatorV2_5_Optimism} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/testhelpers/ExposedVRFCoordinatorV2_5_Optimism.sol";
+import {VRFV2PlusWrapper_Optimism} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapper_Optimism.sol";
+import {OptimismL1Fees} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/OptimismL1Fees.sol";
+import {GasPriceOracle as OVM_GasPriceOracle} from "../../vendor/@eth-optimism/contracts-bedrock/v0.17.3/src/L2/GasPriceOracle.sol";
+
 
 // NB: this will also deploy Cards, Coins, Game, Actions. Deploying tournament means deploying the protocol. 
 contract HelperConfig is Script {
     struct NetworkConfig{     
+        address erc6551account; 
         address erc6551Registry; 
         address vrfWrapper; 
         uint16 vrfRequestConfirmations;
@@ -28,6 +30,7 @@ contract HelperConfig is Script {
     } 
 
     NetworkConfig public activeNetworkConfig; 
+    bytes32 SALT = bytes32(hex'7ceda5'); 
 
     constructor() {
         if (block.chainid == 11155111) {
@@ -40,61 +43,87 @@ contract HelperConfig is Script {
             activeNetworkConfig = getArbSepoliaEthConfig(); 
         } 
         else {
-        activeNetworkConfig = getOrCreateAnvilEthConfig(); 
+            activeNetworkConfig = getAnvilConfig(); 
         }
     } 
 
-    function getSepoliaEthConfig() public view returns (NetworkConfig memory) {
+    function getSepoliaEthConfig() public returns (NetworkConfig memory) {
+        AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+        uint256 codeLength = address(erc6551account).code.length; // checking if a contract has been deployed on the calculated address. 
+        if (codeLength == 0) { 
+            vm.startBroadcast();
+            erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+            vm.stopBroadcast();
+        } 
+
         return NetworkConfig({
+            erc6551account: address(erc6551account), 
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758, 
             vrfWrapper: 0x195f15F2d49d693cE265b4fB0fdDbE15b1850Cc1,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000
+            vrfCallbackGasLimit: 10_000_000
         });
     }
 
     // TO DO 
-    function getBaseSepoliaEthConfig() public view returns (NetworkConfig memory) {
+    function getBaseSepoliaEthConfig() public returns (NetworkConfig memory) {
+        AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+        uint256 codeLength = address(erc6551account).code.length; // checking if a contract has been deployed on the calculated address. 
+        if (codeLength == 0) { 
+            vm.startBroadcast();
+            erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+            vm.stopBroadcast();
+        } 
+
         return NetworkConfig({
+            erc6551account: address(erc6551account), 
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758,
             vrfWrapper: 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000
+            vrfCallbackGasLimit: 10_000_000
         });
     } 
     
-    function getArbSepoliaEthConfig() public view returns (NetworkConfig memory) {
+    function getArbSepoliaEthConfig() public returns (NetworkConfig memory) {
+        AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+        uint256 codeLength = address(erc6551account).code.length; // checking if a contract has been deployed on the calculated address. 
+        if (codeLength == 0) { 
+            vm.startBroadcast();
+            erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+            vm.stopBroadcast();
+        } 
+
         return NetworkConfig({
+            erc6551account: address(erc6551account), 
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758,
             vrfWrapper: 0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000
+            vrfCallbackGasLimit: 10_000_000
         });
     } 
 
     // sets up a chainlink VRF arbitrum styled wrapper contract on anvil chain. 
-    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
-        if (activeNetworkConfig.vrfWrapper != address(0)) {
-            return activeNetworkConfig; 
-        } 
-
+    function getAnvilConfig() public returns (NetworkConfig memory) {
         /////////////////////////////////////////////////
         //   Deploying Chainlink VRF Wrapper contract  // 
         /////////////////////////////////////////////////
-        // The name of the example test file is VRFV2PlusWrapper_Arbitrum.t.sol 
+        // The name of the example test file is VRFV2PlusWrapper_Arbitrum.sol -- 
+        // Note: the arbitrum set up does not work due to a bug with reading the ArbGas contract in foundry. 
+        // see the £bug report here: https://github.com/foundry-rs/foundry/issues/7580. 
+        // the test script that this is now based on can be seen at VRFV2PlusWrapper_Optimism.t.sol 
 
         // chainlink VRF state vars: 
-        address ARBGAS_ADDR = address(0x000000000000000000000000000000000000006C);
-        ArbGasInfo ARBGAS = ArbGasInfo(ARBGAS_ADDR);
+        address OVM_GASPRICEORACLE_ADDR = address(0x420000000000000000000000000000000000000F);
+        OVM_GasPriceOracle OVM_GASPRICEORACLE = OVM_GasPriceOracle(OVM_GASPRICEORACLE_ADDR);
 
         address DEPLOYER = 0xD883a6A1C22fC4AbFE938a5aDF9B2Cc31b1BF18B;
         bytes32 vrfKeyHash = hex"9f2353bde94264dbc3d554a94cceba2d7d2b4fdce4304d3e09a1fea9fbeb1528";
         uint256 s_wrapperSubscriptionId;
 
-        ExposedVRFCoordinatorV2_5_Arbitrum  s_testCoordinator;
-        MockLinkToken  s_linkToken;
-        MockV3Aggregator  s_linkNativeFeed;
-        VRFV2PlusWrapper_Arbitrum  s_wrapper;
+        ExposedVRFCoordinatorV2_5_Optimism s_testCoordinator;
+        MockLinkToken s_linkToken;
+        MockV3Aggregator s_linkNativeFeed;
+        VRFV2PlusWrapper_Optimism s_wrapper;
 
         vm.roll(1);
         vm.deal(DEPLOYER, 10_000 ether);
@@ -105,13 +134,13 @@ contract HelperConfig is Script {
         s_linkNativeFeed = new MockV3Aggregator(18, 500000000000000000); // .5 ETH (good for testing)
 
         // Deploy coordinator.
-        s_testCoordinator = new ExposedVRFCoordinatorV2_5_Arbitrum(address(0));
+        s_testCoordinator = new ExposedVRFCoordinatorV2_5_Optimism(address(0));
 
         // Create subscription for all future wrapper contracts.
         s_wrapperSubscriptionId = s_testCoordinator.createSubscription();
 
         // Deploy wrapper.
-        s_wrapper = new VRFV2PlusWrapper_Arbitrum(
+        s_wrapper = new VRFV2PlusWrapper_Optimism(
         address(s_linkToken),
         address(s_linkNativeFeed),
         address(s_testCoordinator),
@@ -139,24 +168,33 @@ contract HelperConfig is Script {
         vm.stopBroadcast();
 
         /////////////////////////////////////////////////
-        //          Deploying ERC6551 Registry         // 
+        //  Deploying ERC6551 Registry and Account     // 
         /////////////////////////////////////////////////
-        vm.startBroadcast();
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         ERC6551Registry erc6551Registry = new ERC6551Registry{
             salt: 0x0000000000000000000000000000000000000000fd8eb4e1dca713016c518e31
         }();
-        vm.stopBroadcast();
-        
-    
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // address registry = deployerRegistry.run(); 
-        
+        AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+        uint256 codeLength = address(erc6551Registry).code.length; // checking if a contract has been deployed on the calculated address. 
+        console2.log("codeLength:", codeLength);
+
+        if (codeLength == 0) {
+            vm.startBroadcast();
+            ERC6551Registry erc6551Registry = new ERC6551Registry{
+                salt: 0x0000000000000000000000000000000000000000fd8eb4e1dca713016c518e31
+            }();
+            erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+            vm.stopBroadcast();
+        }
+
         return NetworkConfig({
+            erc6551account: address(erc6551account), 
             erc6551Registry: address(erc6551Registry), 
             vrfWrapper: address(s_wrapper),
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000
+            vrfCallbackGasLimit: 10_000_000
         });
     }
 }

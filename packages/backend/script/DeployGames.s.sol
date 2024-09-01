@@ -18,7 +18,7 @@ contract DeployGames is Script {
 
   function run() external returns (Cards, Games) {
     HelperConfig helperConfig = new HelperConfig(); 
-    (, address wrapperAddress, uint16 requestConfirmations, uint32 callbackGasLimit) = helperConfig.activeNetworkConfig(); 
+    (, , address wrapperAddress, uint16 requestConfirmations, uint32 callbackGasLimit) = helperConfig.activeNetworkConfig(); 
 
     vm.startBroadcast();
       // deploy cards contract, which also deploys the coins address. 

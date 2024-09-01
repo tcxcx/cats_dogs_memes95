@@ -8,7 +8,7 @@ import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
-import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
+// import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
 
 contract AvatarBasedAccountTest is Test {
     /* Type declarations */
@@ -26,8 +26,8 @@ contract AvatarBasedAccountTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();

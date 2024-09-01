@@ -5,8 +5,6 @@ import {Test, console, console2} from "@forge-std/Test.sol";
 import {Players} from "../../src/Players.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
-
 
 contract PlayersTest is Test {
     
@@ -21,8 +19,8 @@ contract PlayersTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // first have to deploy the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         DeployPlayers deployer = new DeployPlayers();
         (players, avatarBasedAccount) = deployer.run();
