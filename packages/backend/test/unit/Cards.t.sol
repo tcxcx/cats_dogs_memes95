@@ -10,9 +10,7 @@ import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-// import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
-
-
+import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract CardsTest is Test {
     /* Type declarations */
@@ -31,11 +29,13 @@ contract CardsTest is Test {
     function setUp() external {
         // deploying the ERC-6551 registry... 
         DeployPlayers deployerPlayers = new DeployPlayers();
-        (players, avatarBasedAccount) = deployerPlayers.run();
+        (players, avatarBasedAccount, ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games) = deployerGames.run();
+        (cards, games, ) = deployerGames.run();
 
+        // need to fund the contract itself for Chainlink VRF - direct payments.  
+        vm.deal(address(cards), 100 ether);
   }
 
     ///////////////////////////////////////////////
@@ -56,10 +56,12 @@ contract CardsTest is Test {
 
     function testCardsContractCanReceiveFunds() public {
       vm.deal(userOne, 1 ether); 
+      uint256 balanceStart = address(cards).balance; 
       vm.prank(userOne); 
       (bool success, ) = address(cards).call{value: 5000}(""); 
+      uint256 balanceEnd = address(cards).balance; 
       if (success) {
-        assert(address(cards).balance == 5000); 
+        assert(balanceEnd - balanceStart == 5000); 
       }
     }
 
@@ -78,6 +80,8 @@ contract CardsTest is Test {
       bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
       vm.prank(userOne);
       AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+
+
 
       console2.log("balance contract:", address(cards).balance); 
 

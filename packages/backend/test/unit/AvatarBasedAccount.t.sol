@@ -25,15 +25,14 @@ contract AvatarBasedAccountTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // deploying the ERC-6551 registry... 
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // deployerRegistry.run(); 
-
         DeployPlayers deployerPlayers = new DeployPlayers();
-        (players, avatarBasedAccount) = deployerPlayers.run();
+        (players, avatarBasedAccount, ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games) = deployerGames.run();
+        (cards, games, ) = deployerGames.run();
+
+        // need to fund the contract itself for Chainlink VRF - direct payments.  
+        vm.deal(address(cards), 100 ether);
     }
 
     ///////////////////////////////////////////////

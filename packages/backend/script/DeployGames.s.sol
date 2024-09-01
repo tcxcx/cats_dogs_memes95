@@ -16,7 +16,7 @@ contract DeployGames is Script {
   Cards cardsContract; 
   Games gamesContract;
 
-  function run() external returns (Cards, Games) {
+  function run() external returns (Cards, Games, HelperConfig) {
     HelperConfig helperConfig = new HelperConfig(); 
     (, , address wrapperAddress, uint16 requestConfirmations, uint32 callbackGasLimit) = helperConfig.activeNetworkConfig(); 
 
@@ -39,7 +39,7 @@ contract DeployGames is Script {
 
     console2.log("cards deployed at: ", address(cardsContract));
 
-    return (cardsContract, gamesContract); 
+    return (cardsContract, gamesContract, helperConfig); 
   }
 
   function createCards() public {

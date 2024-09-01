@@ -18,12 +18,8 @@ contract PlayersTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // first have to deploy the ERC-6551 registry... 
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // deployerRegistry.run(); 
-
         DeployPlayers deployer = new DeployPlayers();
-        (players, avatarBasedAccount) = deployer.run();
+        (players, avatarBasedAccount, ) = deployer.run();
     }
 
     ///////////////////////////////////////////////

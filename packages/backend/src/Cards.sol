@@ -429,3 +429,98 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
 /* private */
 /* internal & private view & pure functions */
 /* external & public view & pure functions */
+
+// Code Style and Structure:
+// Write concise and technical Solidity code with clear examples and precise logic.
+// Prefer modularization and reuse over code duplication; use libraries and inheritance where applicable.
+// Use descriptive variable names with clear intent (e.g., isCompleted, hasBalance).
+// Follow the structure: main contract, libraries, modifiers, functions, events, and state variables.
+// Naming Conventions:
+// Use CamelCase for contract names (e.g., TokenSale).
+// Use lowerCamelCase for function, variable, and modifier names (e.g., transferTokens, totalSupply).
+// Prefix private or internal variables with an underscore (e.g., _owner).
+// Use ALL_CAPS with underscores for constants (e.g., MAX_SUPPLY).
+// Solidity Usage:
+// Use Solidity version pragmas carefully; avoid floating pragmas (^) to ensure consistency across environments.
+// Favor interfaces over abstract contracts when possible for interoperability.
+// Use require for validation and guard clauses to fail early with meaningful error messages.
+// Leverage modifiers for repetitive checks (e.g., access control).
+// Syntax and Formatting:
+// Use 4 spaces per indentation level; avoid tabs.
+// Place the most important logic first in functions, followed by validations and finally state updates.
+// Organize contracts with a clear separation between functions that read state (view/pure) and those that modify state.
+// Avoid long functions; break down complex logic into smaller, reusable functions.
+// Error Handling and Validation:
+// Prioritize error handling with require, assert, and revert; provide clear and informative error messages.
+// Use custom error types with Solidity 0.8.x for gas efficiency and clarity (e.g., error InsufficientFunds(uint256 available, uint256 required);).
+// Handle edge cases explicitly and ensure proper checks are in place for input validation.
+// Security Best Practices:
+// Follow the Checks-Effects-Interactions pattern to avoid reentrancy attacks.
+// Use OpenZeppelin libraries where applicable to prevent common vulnerabilities.
+// Implement proper access control using Ownable or AccessControl patterns.
+// Avoid using tx.origin for authorization; use msg.sender instead.
+// Test for integer overflows/underflows and favor Solidity 0.8.x's built-in overflow protections.
+// Gas Optimization:
+// Minimize storage writes by using memory variables where applicable.
+// Pack storage variables to reduce gas costs.
+// Favor uint256 types over smaller uints for efficient gas usage.
+// Use external visibility for functions that don't modify the state but are called from outside the contract.
+// Batch operations where possible to reduce transaction overhead.
+// Contract Structure and Design:
+// Use a clear and logical inheritance structure; avoid deep inheritance trees.
+// Separate contract logic from data storage when appropriate (e.g., use Proxy patterns).
+// Design contracts to be upgradable if needed, but ensure rigorous testing.
+// Document your code with NatSpec comments for functions, events, and complex logic.
+// NatSpec Documentation:
+// Use NatSpec format for all public and external functions, events, and complex logic to provide clarity and facilitate automatic documentation.
+// Add a summary tag (@notice) to describe the purpose and high-level function of the contract, function, or event.
+// Use the @dev tag for more detailed explanations of the logic, especially for complex or non-obvious code.
+// Document all function parameters with @param, specifying the name and purpose of each parameter.
+// Use the @return tag to describe return values for functions.
+// Apply the @inheritdoc tag when overriding or implementing functions from a base contract or interface to inherit the documentation.
+// Include custom error documentation with @custom:error, describing when and why the error is used.
+// Annotate custom modifiers with the @custom:modifier tag, providing a brief explanation of their purpose.
+// Use @title and @author tags at the top of each contract file to indicate the contract's name and author(s).
+// Example NatSpec Usage:
+// solidity
+// Copiar código
+// /**
+//  * @title TokenSale
+//  * @notice This contract handles the sale of tokens to investors.
+//  * @dev Implements a simple ERC20 token sale with a fixed price.
+//  */
+// contract TokenSale {
+
+//     /**
+//      * @notice Buys tokens for the sender, based on the amount of Ether sent.
+//      * @dev Requires that the sale is active and the amount sent is non-zero.
+//      * @param beneficiary The address that will receive the purchased tokens.
+//      */
+//     function buyTokens(address beneficiary) external payable {
+//         // Function logic
+//     }
+
+//     /**
+//      * @notice Returns the remaining tokens available for sale.
+//      * @dev Uses a view function to avoid altering state.
+//      * @return The number of tokens left for sale.
+//      */
+//     function remainingTokens() external view returns (uint256) {
+//         return _remainingTokens;
+//     }
+
+//     /**
+//      * @custom:error InsufficientFunds
+//      * @notice Thrown when the sender does not have enough balance to complete the transaction.
+//      */
+//     error InsufficientFunds(uint256 available, uint256 required);
+// }
+// Testing and Deployment:
+// Write extensive unit tests using Foundry's forge test to cover all edge cases and scenarios.
+// Use invariant testing and fuzzing to ensure the robustness of your contracts.
+// Deploy contracts with proper initial settings; consider using a deployment script for consistency.
+// Key Conventions:
+// Use SPDX-License-Identifier at the top of each Solidity file to declare the license type.
+// Follow the Ethereum Smart Contract Best Practices for security and design guidelines.
+// Limit contract size to avoid exceeding the block gas limit, which can result in deployment issues.
+// This rule set now includes guidelines for NatSpec documentation, which is essential for providing clarity and ensuring that smart contracts are well-documented and easier to understand, maintain, and audit.

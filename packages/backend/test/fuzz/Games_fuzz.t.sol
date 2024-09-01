@@ -56,10 +56,10 @@ contract GamesTest is Test {
     function setUp() external {
         // deploying other necessary contracts 
         DeployPlayers deployerPlayers = new DeployPlayers();
-        (players, ) = deployerPlayers.run();
+        (players, , ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games) = deployerGames.run();
+        (cards, games, ) = deployerGames.run();
         
         coins = Coins(cards.i_coins());
         ownerGames = games.i_owner(); 

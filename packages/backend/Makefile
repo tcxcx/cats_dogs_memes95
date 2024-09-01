@@ -18,7 +18,8 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-commit && \
-	forge install https://github.com/erc6551/reference --no-commit
+	forge install https://github.com/erc6551/reference --no-commit && \
+	forge install smartcontractkit/chainlink --no-commit  
 
 # Update Dependencies
 # update:; forge update
@@ -55,6 +56,8 @@ sepoliaForkedDeploy:
 ###############################
 #  Arbitrum Sepolia testnet		#
 ###############################
+# Note: testing on Arbitrum does not work doe to a bug in foundry: https://github.com/foundry-rs/foundry/issues/7580. 
+# You receive an "EvmError: InvalidFEOpcode" error. 
 ARB_SEPOLIA_TEST_ARGS := --fork-url $(ARB_SEPOLIA_RPC_URL) 
 ARB_SEPOLIA_DEPLOY_ARGS := --rpc-url $(ARB_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 
@@ -78,8 +81,7 @@ OPT_SEPOLIA_TEST_ARGS := --fork-url $(OPT_SEPOLIA_RPC_URL)
 OPT_SEPOLIA_DEPLOY_ARGS := --rpc-url $(OPT_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 
 optSepoliaForkedTest: 
-	@forge test --no-match-contract Games_fuzz --mt testVRFReturnsWithRandomValue -vvvv $(OPT_SEPOLIA_TEST_ARGS) 
-# 
+	@forge test --no-match-contract Games_fuzz $(OPT_SEPOLIA_TEST_ARGS)
 
 optSepoliaForkedDeployTest:
 	@forge script script/DeployPlayers.s.sol:DeployPlayers $(OPT_SEPOLIA_TEST_ARGS) -vvvv 

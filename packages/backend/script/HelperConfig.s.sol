@@ -13,11 +13,10 @@ import {AvatarBasedAccount} from "../src/AvatarBasedAccount.sol";
 // needed to set up Chainlink VRF testing 
 import {MockLinkToken} from "../lib/chainlink/contracts/src/v0.8/mocks/MockLinkToken.sol";
 import {MockV3Aggregator} from "../lib/chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
-import {ExposedVRFCoordinatorV2_5_Optimism} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/testhelpers/ExposedVRFCoordinatorV2_5_Optimism.sol";
-import {VRFV2PlusWrapper_Optimism} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapper_Optimism.sol";
-import {OptimismL1Fees} from "/home/teijehidde/Documents/7CedarsGit/projects/cats_dogs_memes95/packages/backend/lib/chainlink/contracts/src/v0.8/vrf/dev/OptimismL1Fees.sol";
-import {GasPriceOracle as OVM_GasPriceOracle} from "../../vendor/@eth-optimism/contracts-bedrock/v0.17.3/src/L2/GasPriceOracle.sol";
-
+import {ExposedVRFCoordinatorV2_5_Optimism} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/testhelpers/ExposedVRFCoordinatorV2_5_Optimism.sol";
+import {VRFV2PlusWrapper_Optimism} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapper_Optimism.sol";
+import {OptimismL1Fees} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/OptimismL1Fees.sol";
+import {GasPriceOracle as OVM_GasPriceOracle} from "../lib/chainlink/contracts/src/v0.8/vendor/@eth-optimism/contracts-bedrock/v0.17.3/src/L2/GasPriceOracle.sol";
 
 // NB: this will also deploy Cards, Coins, Game, Actions. Deploying tournament means deploying the protocol. 
 contract HelperConfig is Script {
@@ -61,7 +60,7 @@ contract HelperConfig is Script {
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758, 
             vrfWrapper: 0x195f15F2d49d693cE265b4fB0fdDbE15b1850Cc1,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000_000
+            vrfCallbackGasLimit: 10
         });
     }
 
@@ -80,7 +79,7 @@ contract HelperConfig is Script {
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758,
             vrfWrapper: 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000_000
+            vrfCallbackGasLimit: 10
         });
     } 
     
@@ -98,7 +97,7 @@ contract HelperConfig is Script {
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758,
             vrfWrapper: 0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC,
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000_000
+            vrfCallbackGasLimit: 10
         });
     } 
 
@@ -117,6 +116,7 @@ contract HelperConfig is Script {
         OVM_GasPriceOracle OVM_GASPRICEORACLE = OVM_GasPriceOracle(OVM_GASPRICEORACLE_ADDR);
 
         address DEPLOYER = 0xD883a6A1C22fC4AbFE938a5aDF9B2Cc31b1BF18B;
+        uint8 L1_CALLDATA_GAS_COST_MODE = 1; 
         bytes32 vrfKeyHash = hex"9f2353bde94264dbc3d554a94cceba2d7d2b4fdce4304d3e09a1fea9fbeb1528";
         uint256 s_wrapperSubscriptionId;
 
@@ -126,7 +126,7 @@ contract HelperConfig is Script {
         VRFV2PlusWrapper_Optimism s_wrapper;
 
         vm.roll(1);
-        vm.deal(DEPLOYER, 10_000 ether);
+        vm.deal(DEPLOYER, 10 ether);
         vm.startBroadcast(DEPLOYER);
 
         // Deploy link token and link/native feed.
@@ -135,33 +135,46 @@ contract HelperConfig is Script {
 
         // Deploy coordinator.
         s_testCoordinator = new ExposedVRFCoordinatorV2_5_Optimism(address(0));
+        s_testCoordinator.setConfig(
+             3, // minimumRequestConfirmations,
+             1_000_00,// maxGasLimit,
+             1, // stalenessSeconds,
+             500, // gasAfterPaymentCalculation,
+             50000000000000000, // fallbackWeiPerUnitLink,
+             500_000, // fulfillmentFlatFeeNativePPM,
+             10, // fulfillmentFlatFeeLinkDiscountPPM,
+             15, // nativePremiumPercentage,
+             10 // linkPremiumPercentage
+        );
 
         // Create subscription for all future wrapper contracts.
         s_wrapperSubscriptionId = s_testCoordinator.createSubscription();
 
         // Deploy wrapper.
         s_wrapper = new VRFV2PlusWrapper_Optimism(
-        address(s_linkToken),
-        address(s_linkNativeFeed),
-        address(s_testCoordinator),
-        uint256(s_wrapperSubscriptionId)
+            address(s_linkToken),
+            address(s_linkNativeFeed),
+            address(s_testCoordinator),
+            uint256(s_wrapperSubscriptionId)
         );
 
         // Configure the wrapper.
         s_wrapper.setConfig(
-        100_000, // wrapper gas overhead
-        200_000, // coordinator gas overhead native
-        220_000, // coordinator gas overhead link
-        500, // coordinator gas overhead per word
-        15, // native premium percentage,
-        10, // link premium percentage
-        vrfKeyHash, // keyHash
-        10, // max number of words,
-        1, // stalenessSeconds
-        50000000000000000, // fallbackWeiPerUnitLink
-        500_000, // fulfillmentFlatFeeNativePPM
-        100_000 // fulfillmentFlatFeeLinkDiscountPPM
+            10, // wrapper gas overhead
+            200_000, // coordinator gas overhead native
+            220_000, // coordinator gas overhead link
+            500, // coordinator gas overhead per word
+            15, // native premium percentage,
+            10, // link premium percentage
+            vrfKeyHash, // keyHash
+            10, // max number of words,
+            1, // stalenessSeconds
+            50000000000000000, // fallbackWeiPerUnitLink
+            500_000, // fulfillmentFlatFeeNativePPM
+            10 // fulfillmentFlatFeeLinkDiscountPPM
         );
+        s_wrapper.setL1FeeCalculation(L1_CALLDATA_GAS_COST_MODE, 80);
+
 
         // Add wrapper as a consumer to the wrapper's subscription.
         s_testCoordinator.addConsumer(uint256(s_wrapperSubscriptionId), address(s_wrapper));
@@ -194,7 +207,7 @@ contract HelperConfig is Script {
             erc6551Registry: address(erc6551Registry), 
             vrfWrapper: address(s_wrapper),
             vrfRequestConfirmations: 3,
-            vrfCallbackGasLimit: 10_000_000
+            vrfCallbackGasLimit: 10
         });
     }
 }

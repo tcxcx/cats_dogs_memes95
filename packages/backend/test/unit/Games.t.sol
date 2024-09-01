@@ -8,16 +8,21 @@ import {Cards} from "../../src/Cards.sol";
 import {Coins} from "../../src/Coins.sol";
 import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
+import {VRFV2PlusWrapper_Optimism} from "../../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapper_Optimism.sol";
+import {ExposedVRFCoordinatorV2_5_Optimism} from "../../lib/chainlink/contracts/src/v0.8/vrf/dev/testhelpers/ExposedVRFCoordinatorV2_5_Optimism.sol";
+import {IVRFCoordinatorV2Plus} from "../../lib/chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFCoordinatorV2Plus.sol";
 
 import {DeployGames} from "../../script/DeployGames.s.sol"; 
-import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
-// import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
+import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
+import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract GamesTest is Test {
     /* State vars */
     Cards cards;
     Games games;
     Coins coins; 
+    HelperConfig helperConfig; 
+    IVRFCoordinatorV2Plus vrfCoordinator; 
     Players players;  
     AvatarBasedAccount avatarBasedAccountOne;
     AvatarBasedAccount avatarBasedAccountTwo;
@@ -71,10 +76,15 @@ contract GamesTest is Test {
       bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, 1);
       
       for (uint256 i; i < numberOfPacks; i++) {
-        avatarBasedAccountOne.execute(address(cards), priceCardPack, callData, 0);
+        bytes memory reply = avatarBasedAccountOne.execute(address(cards), priceCardPack, callData, 0);
+      // £NB CONTINUE HERE: See https://github.com/smartcontractkit/foundry-starter-kit/blob/main/test/VRFConsumerV2.t.sol 
+      // That is an example with a classic V2 Coordinator. Here we are dealing with a wrapper. 
+      // I did NOT find yet which crfCoordinator I can call to make this work. 
+      //   uint256 requestId = uint256(bytes32(reply)); 
+      //   vrfCoordinator.fulfillRandomWords(requestId, address(cards));
       }
       vm.stopPrank();
-
+      
       // avatar account two 
       vm.warp(block.timestamp + 50);
       vm.roll(block.number + 5); 
@@ -114,19 +124,22 @@ contract GamesTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // deploying the ERC-6551 registry... 
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // deployerRegistry.run(); 
-
         DeployPlayers deployerPlayers = new DeployPlayers();
-        (players, avatarBasedAccountOne) = deployerPlayers.run();
+        (players, avatarBasedAccountOne, ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games) = deployerGames.run();
+        (cards, games, helperConfig) = deployerGames.run();
+        (, , address vrfWarpper, , ) = helperConfig.activeNetworkConfig(); 
+
+        VRFV2PlusWrapper_Optimism vrfWrapper_optimism = VRFV2PlusWrapper_Optimism(vrfWarpper); 
+        vrfCoordinator = vrfWrapper_optimism.s_vrfCoordinator(); 
         
         coins = Coins(cards.i_coins());
         ownerGames = games.i_owner(); 
         ownerCards = cards.owner(); 
+
+        // need to fund the contract itself for Chainlink VRF - direct payments.  
+        vm.deal(address(cards), 100 ether);
     }
 
     ///////////////////////////////////////////////

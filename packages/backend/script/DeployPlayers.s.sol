@@ -14,7 +14,7 @@ contract DeployPlayers is Script {
 
     // £note1: see for a convenient overview of addresses: https://tokenbound-v3-deployer.vercel.app/ 
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 
-    function run() external returns (Players, AvatarBasedAccount) {
+    function run() external returns (Players, AvatarBasedAccount, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig(); 
         (address account, address registry, , , ) = helperConfig.activeNetworkConfig(); 
         string memory version = "alpha.1";
@@ -29,6 +29,6 @@ contract DeployPlayers is Script {
 
         AvatarBasedAccount avatarBasedAccount = AvatarBasedAccount(payable(account)); 
 
-        return (players, avatarBasedAccount); 
+        return (players, avatarBasedAccount, helperConfig); 
     }
 }
