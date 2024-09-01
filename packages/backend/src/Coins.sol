@@ -4,8 +4,7 @@ pragma solidity ^0.8.0;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
-import {Cards} from "./Cards.sol"; 
-import {ICards} from "./interfaces/ICards.sol"; 
+import {Cards} from "./Cards.sol";
 
 /** 
 * A simple ERC-20 contract that lets players mint a tokens through the function 'mintCoins'.

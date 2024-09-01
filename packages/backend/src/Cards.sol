@@ -6,10 +6,7 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol"; 
 import {Coins} from "./Coins.sol"; 
 
-// chainlink VRF imports. 
-// NB: many notes from Chainlink VRF are still included. Clean up (and some renaming) will happen later. 
-// see the docs here: https://docs.chain.link/vrf/v2-5/direct-funding/get-a-random-number
-// ps: some issues with the remappings. 
+// chainlink VRF imports. see the docs here: https://docs.chain.link/vrf/v2-5/direct-funding/get-a-random-number
 import {ConfirmedOwner} from "../lib/chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import {LinkTokenInterface} from "../lib/chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {VRFV2PlusWrapperConsumerBase} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
@@ -50,49 +47,29 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     uint256 public s_priceCardPack; // is the price for each pack. 
     uint256[] public s_packThresholds; // an array that holds the thresholds for decreasing amount of coins to be distributed on sell of card pack.  
     uint256[] public s_packCoinAmounts; // an array that holds the amount of coins to be distributed per threshold on sell of card pack.
+    uint256 s_cardPackNumber; 
     mapping(address avatarBasedAccount => uint256 allowance) public s_coinAllowance;
-
-    address public immutable i_owner; // owner of contract. For now set as immutable, can be changed later. 
+    uint32 public constant NUMBER_CARDS_IN_PACK = 5; 
     address public immutable i_coins; // This allows the Coins.sol address to be read through the functions 'i_coins()'. 
-    // chainlink VRF //  
-    struct RequestStatus {
+    
+    // chainlink VRF state vars //  
+    struct VRFRequestStatus {
         uint256 paid; // amount paid in link
         bool fulfilled; // whether the request has been successfully fulfilled
         uint256[] randomWords;
     }
-    uint256 public s_randomWord; 
-    mapping(uint256 => RequestStatus) public s_requests; /* requestId --> requestStatus */
-
-    // past requests Id.
-    uint256[] public requestIds;
+    mapping(uint256 => VRFRequestStatus) public s_requests; /* requestId --> requestStatus */
+    uint256[] public requestIds;  // past requests Id.
     uint256 public lastRequestId;
-
-    // Depends on the number of requested values that you want sent to the
-    // fulfillRandomWords() function. Test and adjust
-    // this limit based on the network that you select, the size of the request,
-    // and the processing of the callback request in the fulfillRandomWords()
-    // function.
-    uint32 public callbackGasLimit = 100000;
-
-    // The default is 3, but you can set this higher.
-    uint16 public requestConfirmations = 3;
-
-    // For this example, retrieve 2 random values in one request.
-    // Cannot exceed VRFV2Wrapper.getConfig().maxNumWords.
-    uint32 public numWords = 2;
-
-    // Address LINK - hardcoded for Sepolia
-    address public linkAddress = 0x779877A7B0D9E8603169DdbD7836e478b4624789;
-
-    // address WRAPPER - hardcoded for Sepolia
-    address public wrapperAddress = 0x195f15F2d49d693cE265b4fB0fdDbE15b1850Cc1;
+    uint32 public callbackGasLimit; 
+    uint16 public requestConfirmations; // The default is 3, but you can set this higher.
 
     /* Events */
     event Log(string func, uint256 gas);
     event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);  
     event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);  
-    // chainlink VRF //  
-    event RequestSent(uint256 requestId, uint32 numWords);
+    // chainlink VRF events //  
+    event RequestSent(uint256 requestId, uint32 NUMBER_CARDS_IN_PACK);
     event RequestFulfilled(
         uint256 requestId,
         uint256[] randomWords,
@@ -100,14 +77,6 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     );
 
     /* modifiers */
-    // is included in the 
-    // modifier onlyOwner() {
-    //     if (msg.sender != i_owner) {
-    //         revert Cards__OnlyOwner(msg.sender);
-    //     }
-    //     _;
-    // }
-
     modifier onlyAvatarBasedAccount(address playerAccount) {
         if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
             revert Cards__OnlyAvatarBasedAccount(playerAccount);
@@ -125,24 +94,30 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      */
     constructor(
         uint256 priceCardPack,
+        uint32 _callbackGasLimit, 
+        uint16 _requestConfirmations, 
+        address _wrapperAddress, 
         uint256[] memory packThresholds, // needs to be an incrementing array. 
         uint256[] memory packCoinAmounts
         ) 
             ERC1155("https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json") 
             ConfirmedOwner(msg.sender)
-            VRFV2PlusWrapperConsumerBase(wrapperAddress)
+            VRFV2PlusWrapperConsumerBase(_wrapperAddress)
             {
                 if (packThresholds.length != packCoinAmounts.length) {
                     revert Cards__ArraysNotSameLength(packThresholds.length, packCoinAmounts.length);
                 }
                 i_coins = address(new Coins());  
 
-                i_owner = msg.sender;
                 s_priceCardPack = priceCardPack; 
                 s_packThresholds = packThresholds; 
                 s_packCoinAmounts = packCoinAmounts; 
 
-                emit DeployedCardsContract(i_owner, i_coins, s_priceCardPack); 
+                // Chainlink VRF
+                callbackGasLimit = _callbackGasLimit;
+                requestConfirmations = _requestConfirmations;  
+
+                emit DeployedCardsContract(msg.sender, i_coins, s_priceCardPack); 
             }
 
     /* receive & fallback */ 
@@ -210,21 +185,92 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      * 
      * @dev For now, payment occurs in native currency. Should this be in a ERC-20 coin instead? 
      */
-    function openCardPack(uint256 cardPackNumber) public payable onlyAvatarBasedAccount(msg.sender) {
+    function openCardPack(uint256 cardPackNumber) public payable onlyAvatarBasedAccount(msg.sender) returns (uint256 requestId) {
+        if (msg.value < s_priceCardPack) {
+            revert Cards__InsufficientPayment(); 
+        }
+        if (s_cardIds.length == 0) {
+            revert Cards__NoCardsExist(); 
+        }
+
+        s_cardPackNumber = cardPackNumber; 
+        requestId = _requestRandomWords();
+
+        // See the rest of the function at the function 'fulfillRandomWords'. 
+    } 
+
+    /**
+     * note resetsPrice of a card pack. 
+     * 
+     * @param newPrice The new price of a card pack.     
+     *
+     * emits a ChangedCardPackPrice event. 
+     */
+    function setPriceCardPack(uint256 newPrice) public onlyOwner {
+        uint256 oldPrice = s_priceCardPack; 
+
+        s_priceCardPack = newPrice; 
+
+        emit ChangedCardPackPrice(newPrice, oldPrice); 
+    } 
+
+    /**
+     * note retrieves all accumulated funds from the contract.   
+     *  
+     */
+    function retrieveFunds() public onlyOwner {
+        uint256 fullBalance = address(this).balance;  
+        (bool success, ) = msg.sender.call{value: fullBalance}(''); 
+        if (!success) {
+            revert Cards__FundRetrievalUnsuccessful(); 
+        }
+    }
+
+    /**
+     * note Chainlink VRF function. 
+     * 
+     * Natspecs TBD      
+     *
+     */
+    function _requestRandomWords() internal returns (uint256) {
+        bytes memory extraArgs = VRFV2PlusClient._argsToBytes(
+            VRFV2PlusClient.ExtraArgsV1({nativePayment: true})
+        ); 
+        (uint256 requestId, uint256 reqPrice) = requestRandomnessPayInNative(
+            callbackGasLimit,
+            requestConfirmations,
+            NUMBER_CARDS_IN_PACK,
+            extraArgs
+        );
+        s_requests[requestId] = VRFRequestStatus({
+            paid: reqPrice,
+            randomWords: new uint256[](0),
+            fulfilled: false
+        });
+        requestIds.push(requestId);
+        lastRequestId = requestId;
+        emit RequestSent(requestId, NUMBER_CARDS_IN_PACK);
+        return requestId;
+    }
+
+
+    /**
+     * note Chainlink VRF function. 
+     * 
+     * Natspecs TBD      
+     *
+     */
+    function fulfillRandomWords(
+        uint256 _requestId,
+        uint256[] memory _randomWords
+    ) internal override {
         uint256[] memory selectedCards = new uint256[](5); 
         uint256[] memory cardsValues = new uint256[](5); 
         uint256[] memory cardIds = s_cardIds; 
 
-        // checks   
-        if (msg.value < s_priceCardPack) {
-            revert Cards__InsufficientPayment(); 
-        }
+        require(s_requests[_requestId].paid > 0, "request not found");
+        s_requests[_requestId].fulfilled = true;
 
-        if (cardIds.length == 0) {
-            revert Cards__NoCardsExist(); 
-        }
-
-        // step 1: get current balance owner of all existing cards. 
         address[] memory addressArray = new address[](cardIds.length); 
         for (uint256 i; i < s_cardIds.length; i++) {
             addressArray[i] = address(this); 
@@ -234,12 +280,12 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         // step 2: create an _incremented_ array of all these balances 
         uint256[] memory incrementedArray = _incrementArray(balances);  // Note that the TOTAL amount of cards is the last value in this array. 
 
-        // step 3: for each of the five cards, we retrieve a value between 0 and total amount of cards. This is used to select the cardId and add it to the CardPack object.
-        for (uint256 i; i < 5; i++) {
-            uint256 pseudoRandomNumber = _pseudoRandomiser(i + cardPackNumber) % incrementedArray[incrementedArray.length - 1]; 
-            uint256 cardId; 
-            while (incrementedArray[cardId] < pseudoRandomNumber) {
-                cardId++;
+        for (uint256 i; i < NUMBER_CARDS_IN_PACK; i++) {
+            
+        uint256 pseudoRandomNumber = uint256(keccak256(abi.encode(_randomWords[i] + s_cardPackNumber))) % incrementedArray[incrementedArray.length - 1]; 
+        uint256 cardId; 
+        while (incrementedArray[cardId] < pseudoRandomNumber) {
+            cardId++;
             }
             selectedCards[i] = cardId; 
             cardsValues[i] = 1; 
@@ -271,112 +317,9 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
             // step 3: if 's_cardPackCounter' was higher than the highest amount in 's_packThresholds', add 1 to the allowance. 
             s_coinAllowance[msg.sender]++; 
         }
-    } 
 
-    /**
-     * note resetsPrice of a card pack. 
-     * 
-     * @param newPrice The new price of a card pack.     
-     *
-     * emits a ChangedCardPackPrice event. 
-     */
-    function setPriceCardPack(uint256 newPrice) public onlyOwner {
-        uint256 oldPrice = s_priceCardPack; 
 
-        s_priceCardPack = newPrice; 
-
-        emit ChangedCardPackPrice(newPrice, oldPrice); 
-    } 
-
-    /**
-     * note retrieves all accumulated funds from the contract.   
-     */
-    function retrieveFunds() public onlyOwner {
-        uint256 fullBalance = address(this).balance;  
-        (bool success, ) = msg.sender.call{value: fullBalance}(''); 
-        if (!success) {
-            revert Cards__FundRetrievalUnsuccessful(); 
-        }
-    } 
-
-    /**
-     * note  
-     */
-    function addToCoinAllowance(uint256 coins, address recipient) public onlyOwner {
-        uint256 currentAllowance = s_coinAllowance[recipient];  
-        s_coinAllowance[recipient] = currentAllowance + coins; 
     }
-
-    // Chainlink VRF functions.. 
-
-    function requestRandomWords(bool enableNativePayment) external onlyOwner returns (uint256) {
-        bytes memory extraArgs = VRFV2PlusClient._argsToBytes(
-            VRFV2PlusClient.ExtraArgsV1({nativePayment: enableNativePayment})
-        );
-        (uint256 requestId, uint256 reqPrice) = requestRandomnessPayInNative(
-            callbackGasLimit,
-            requestConfirmations,
-            numWords,
-            extraArgs
-        );
-        s_requests[requestId] = RequestStatus({
-            paid: reqPrice,
-            randomWords: new uint256[](0),
-            fulfilled: false
-        });
-        requestIds.push(requestId);
-        lastRequestId = requestId;
-        emit RequestSent(requestId, numWords);
-        return requestId;
-    }
-
-    function fulfillRandomWords(
-        uint256 _requestId,
-        uint256[] memory _randomWords
-    ) internal override {
-        require(s_requests[_requestId].paid > 0, "request not found");
-        s_requests[_requestId].fulfilled = true;
-        s_requests[_requestId].randomWords = _randomWords;
-        s_randomWord = _randomWords[0]; 
-        emit RequestFulfilled(
-            _requestId,
-            _randomWords,
-            s_requests[_requestId].paid
-        );
-    }
-
-    function getRequestStatus(
-        uint256 _requestId
-    )
-        external
-        view
-        returns (uint256 paid, bool fulfilled, uint256[] memory randomWords)
-    {
-        require(s_requests[_requestId].paid > 0, "request not found");
-        RequestStatus memory request = s_requests[_requestId];
-        return (request.paid, request.fulfilled, request.randomWords);
-    }
-
-    // /**
-    //  * Allow withdraw of Link tokens from the contract
-    //  */
-    // function withdrawLink() public onlyOwner {
-    //     LinkTokenInterface link = LinkTokenInterface(linkAddress);
-    //     require(
-    //         link.transfer(msg.sender, link.balanceOf(address(this))),
-    //         "Unable to transfer"
-    //     );
-    // }
-
-    // /// @notice withdrawNative withdraws the amount specified in amount to the owner
-    // /// @param amount the amount to withdraw, in wei
-    // function withdrawNative(uint256 amount) external onlyOwner {
-    //     (bool success, ) = payable(owner()).call{value: amount}("");
-    //     // solhint-disable-next-line gas-custom-errors
-    //     require(success, "withdrawNative failed");
-    // }
-
-
 
     /* internal */
     /**
@@ -424,6 +367,23 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
 
         cardCollection = balanceOfBatch(addressArray, s_cardIds);  
         return cardCollection; 
+    }
+
+    /**
+     * Note: retrieves the collection of Cards of an Avatar Based Account. 
+     *
+     * dev: it returns an array with the length of all available cards. The values in this array represent the number of cards the account has of each card at that position of the array. 
+     */
+    function getRandomWordsRequestStatus(
+        uint256 _requestId
+    )
+        external
+        view
+        returns (uint256 paid, bool fulfilled, uint256[] memory randomWords)
+    {
+        require(s_requests[_requestId].paid > 0, "request not found");
+        VRFRequestStatus memory request = s_requests[_requestId];
+        return (request.paid, request.fulfilled, request.randomWords);
     }
 
     /**

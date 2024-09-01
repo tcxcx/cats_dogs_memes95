@@ -12,6 +12,8 @@ import {DeployGames} from "../../script/DeployGames.s.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
 import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";  
 
+
+
 contract CardsTest is Test {
     /* Type declarations */
     Cards cards;
@@ -28,22 +30,20 @@ contract CardsTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
-
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
         (cards, games) = deployerGames.run();
-    }
+
+  }
 
     ///////////////////////////////////////////////
     ///                   Tests                 ///
     ///////////////////////////////////////////////
 
     function testCardsContractHasOwner() public view { 
-      address owner = cards.i_owner(); 
+      address owner = cards.owner(); 
       assert(owner != address(0));  
     }
 
@@ -85,7 +85,7 @@ contract CardsTest is Test {
     }
 
     function testOwnerCanRetrieveFunds() public {
-      address ownerCardsContract = cards.i_owner(); 
+      address ownerCardsContract = cards.owner(); 
       uint256 amountToTransfer = 5000; 
 
       vm.deal(userOne, 1 ether); 
@@ -107,7 +107,7 @@ contract CardsTest is Test {
     }
 
     function testCardsCanBeUpdated() public {
-        address ownerCards = cards.i_owner(); 
+        address ownerCards = cards.owner(); 
         uint256[] memory mintAmounts = new uint256[](9); 
         Cards.Card[] memory CardData = new Cards.Card[](9); 
         string memory newuri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json"; 

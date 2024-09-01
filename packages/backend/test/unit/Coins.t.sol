@@ -34,8 +34,8 @@ contract CoinsTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();

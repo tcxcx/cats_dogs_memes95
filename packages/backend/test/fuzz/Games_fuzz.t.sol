@@ -54,10 +54,6 @@ contract GamesTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
-        
         // deploying other necessary contracts 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, ) = deployerPlayers.run();
@@ -67,7 +63,7 @@ contract GamesTest is Test {
         
         coins = Coins(cards.i_coins());
         ownerGames = games.i_owner(); 
-        ownerCards = cards.i_owner(); 
+        ownerCards = cards.owner(); 
 
         // start a tournament
         vm.prank(ownerGames); 

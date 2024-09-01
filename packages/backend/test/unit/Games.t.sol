@@ -115,8 +115,8 @@ contract GamesTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccountOne) = deployerPlayers.run();
@@ -126,7 +126,7 @@ contract GamesTest is Test {
         
         coins = Coins(cards.i_coins());
         ownerGames = games.i_owner(); 
-        ownerCards = cards.i_owner(); 
+        ownerCards = cards.owner(); 
     }
 
     ///////////////////////////////////////////////

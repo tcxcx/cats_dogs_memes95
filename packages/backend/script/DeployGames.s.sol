@@ -4,22 +4,29 @@ pragma solidity ^0.8.0;
 import {Script, console2} from "@forge-std/Script.sol";
 import {Cards} from "../src/Cards.sol";
 import {Games} from "../src/Games.sol";
+import {HelperConfig} from "./HelperConfig.s.sol"; 
 
 /**
 * This deploys the Games, Cards and Coins contracts. It ALSO saves cards to cards.sol. 
 */ 
 contract DeployGames is Script {
-  uint256 CardPackPrice = 50_000; 
+  uint256 cardPackPrice = 50_000; 
   uint256[] packThresholds = [5, 15, 30, 100]; // £todo what happens after 1000 packs sold? CHECK! 
   uint256[] packCoinAmounts = [500, 100, 25, 5]; 
   Cards cardsContract; 
-  Games gamesContract; 
+  Games gamesContract;
 
   function run() external returns (Cards, Games) {
+    HelperConfig helperConfig = new HelperConfig(); 
+    (, address wrapperAddress, uint16 requestConfirmations, uint32 callbackGasLimit) = helperConfig.activeNetworkConfig(); 
+
     vm.startBroadcast();
       // deploy cards contract, which also deploys the coins address. 
       cardsContract = new Cards(
-        CardPackPrice, 
+        cardPackPrice, 
+        callbackGasLimit, 
+        requestConfirmations, 
+        wrapperAddress, 
         packThresholds, 
         packCoinAmounts
         );

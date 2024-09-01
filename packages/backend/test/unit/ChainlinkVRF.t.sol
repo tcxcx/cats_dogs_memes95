@@ -28,8 +28,8 @@ contract ChainLinkVRFTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         // deploying the ERC-6551 registry... 
-        DeployRegistry deployerRegistry = new DeployRegistry(); 
-        deployerRegistry.run(); 
+        // DeployRegistry deployerRegistry = new DeployRegistry(); 
+        // deployerRegistry.run(); 
 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount) = deployerPlayers.run();
@@ -46,19 +46,28 @@ contract ChainLinkVRFTest is Test {
     ///////////////////////////////////////////////
 
     function testVRFReturnsWithRandomValue() public { 
+      uint256 cardPackNumber = 1; 
+        // 1: create Avatar Based Account
+      vm.prank(userOne);
+      (, address avatarAccountAddress) = players.createPlayer(avatarUri);
+      // 2: get price pack
+      uint256 priceCardPack = cards.s_priceCardPack();  
+      // 3: give userOne funds. 
 
-      vm.prank(cards.i_owner());
-      (uint256 requestId) = cards.requestRandomWords(true);
-      console2.log("requestId: ", requestId); 
+      vm.deal(avatarAccountAddress, 1 ether);  
+      // 4: open pack of cards. 
+      bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+      vm.prank(userOne);
+      AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
 
+      // vm.prank(cards.i_owner());
+      uint256 requestId = cards.lastRequestId(); 
+      console2.log("lastrequestId: ", requestId);
       vm.roll(100 + block.number); 
 
       (uint256 paid, bool fullfilled) = cards.s_requests(requestId); 
       console.log("paid: ", paid);
-      console.log("fullfilled: ", fullfilled); 
-      uint256 randomWord = cards.s_randomWord();
-      console.log("randomWord: ", randomWord); 
-
+      console.log("fullfilled: ", fullfilled);
     }
 
 
