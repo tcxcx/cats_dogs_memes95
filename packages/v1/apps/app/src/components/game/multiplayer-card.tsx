@@ -15,10 +15,11 @@ type MultiplayerCardProps = {
   card: CardData;
   initialPos: { x: number; y: number };
   cardId: string; // A unique identifier for the card, e.g., card.name or ID
+  isBlocked?: boolean;
 };
 
 // The MultiplayerCard component now handles rendering and dragging of the CardGame component
-const MultiplayerCard: FC<MultiplayerCardProps> = ({ card, initialPos, cardId }) => {
+const MultiplayerCard: FC<MultiplayerCardProps> = ({ card, initialPos, cardId, isBlocked }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const others = useOthers(); // Use without generic argument
   const updateMyPresence = useUpdateMyPresence(); // Call without type argument
@@ -27,15 +28,16 @@ const MultiplayerCard: FC<MultiplayerCardProps> = ({ card, initialPos, cardId })
   return (
     <motion.div
       ref={cardRef}
-      drag
+      drag={!isBlocked} 
       onDrag={(event, info) => {
+        if (!isBlocked) return;
         const { x, y } = info.point;
         if (cardRef.current) {
           cardRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
           updateMyPresence({ [cardId]: { x, y } });
         }
       }}
-      className="cursor-pointer"
+      className={`cursor-pointer ${isBlocked ? "opacity-50 pointer-events-none" : ""}`} // Add styles to indicate disabled state
       style={{ position: "absolute", top: 0, left: 0 }}
       onAnimationStart={() => {}} // Add a dummy function to satisfy the type requirement
     >
