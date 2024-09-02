@@ -4,13 +4,13 @@ export function Footer() {
       <span className="text-[#878787]">Featuring</span>
       <div className="flex justify-center space-x-8 mb-4">
           <a
-            href="https://chain.link"
+            href="https://www.stackrlabs.xyz/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <img
-              src="/chainlink.png"
-              alt="Chainlink"
+              src="/stackr.jpg"
+              alt="Stackr"
               width={74}
               height={17}
             />
@@ -35,6 +35,18 @@ export function Footer() {
             <img
               src="/web3auth.png"
               alt="Web3Auth"
+              width={74}
+              height={17}
+            />
+          </a>
+            <a
+            href="https://chain.link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="/chainlink.png"
+              alt="Chainlink"
               width={74}
               height={17}
             />
