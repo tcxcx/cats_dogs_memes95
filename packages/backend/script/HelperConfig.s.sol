@@ -5,7 +5,7 @@ import {Script, console, console2} from "forge-std/Script.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {VRFCoordinatorV2_5Mock} from "../lib/chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol"; 
-import "@openzeppelin/contracts/utils/Create2.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC6551Registry} from "../lib/reference/src/ERC6551Registry.sol";
 import {DeployRegistry} from "../lib/reference/script/DeployRegistry.s.sol"; 
 import {AvatarBasedAccount} from "../src/AvatarBasedAccount.sol"; 
@@ -29,7 +29,7 @@ contract HelperConfig is Script {
     } 
 
     NetworkConfig public activeNetworkConfig; 
-    bytes32 SALT = bytes32(hex'7ceda5'); 
+    bytes32 SALT = bytes32(hex'123456'); 
 
     constructor() {
         if (block.chainid == 11155111) {
@@ -66,16 +66,24 @@ contract HelperConfig is Script {
 
     // TO DO 
     function getBaseSepoliaEthConfig() public returns (NetworkConfig memory) {
-        AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
-        uint256 codeLength = address(erc6551account).code.length; // checking if a contract has been deployed on the calculated address. 
+        bytes memory creationCode = abi.encodePacked(type(AvatarBasedAccount).creationCode);
+        address erc6551AccountAddress = Create2.computeAddress(SALT, keccak256(creationCode));
+
+        // AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+        uint256 codeLength = address(erc6551AccountAddress).code.length; // checking if a contract has been deployed on the calculated address. 
+        console.log("codeLength:", codeLength); 
         if (codeLength == 0) { 
             vm.startBroadcast();
-            erc6551account = new AvatarBasedAccount{salt: SALT}(); 
+            erc6551AccountAddress = Create2.deploy(0, SALT, creationCode); 
+            // AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}(); 
             vm.stopBroadcast();
+            console.log("deployed at address:", erc6551AccountAddress); 
         } 
 
+        console.log("computed Address:", erc6551AccountAddress); 
+        
         return NetworkConfig({
-            erc6551account: address(erc6551account), 
+            erc6551account: erc6551AccountAddress, 
             erc6551Registry: 0x000000006551c19487814612e58FE06813775758,
             vrfWrapper: 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed,
             vrfRequestConfirmations: 3,

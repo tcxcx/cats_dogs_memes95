@@ -91,3 +91,22 @@ optSepoliaForkedDeployTest:
 optSepoliaForkedDeploy: 
 	@forge script script/DeployPlayers.s.sol:DeployPlayers $(OPT_SEPOLIA_DEPLOY_ARGS) -vvvv 
 	@forge script script/DeployGames.s.sol:DeployGames $(OPT_SEPOLIA_DEPLOY_ARGS) -vvvv 
+
+
+###############################
+#    Base Sepolia testnet		  #
+###############################
+BASE_SEPOLIA_TEST_ARGS := --fork-url $(BASE_SEPOLIA_RPC_URL) 
+BASE_SEPOLIA_DEPLOY_ARGS := --rpc-url $(BASE_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+
+baseSepoliaForkedTest: 
+	@forge test --mt testPlayerCannotInitaliseGameIfDoesNotOwnACardInTheirDeck -vvvv $(BASE_SEPOLIA_TEST_ARGS)
+# --no-match-contract Games_fuzz
+
+baseSepoliaForkedDeployTest:
+	@forge script script/DeployPlayers.s.sol:DeployPlayers $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol:DeployGames $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+	
+baseSepoliaForkedDeploy: 
+	@forge script script/DeployPlayers.s.sol:DeployPlayers $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol:DeployGames $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
