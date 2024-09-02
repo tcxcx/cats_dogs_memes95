@@ -73,7 +73,7 @@ export default function Component() {
           if (cardRef.current) {
             const transform = cardRef.current.style.transform;
             const match = transform.match(/translate3d\((.*)px, (.*)px, 0\)/);
-            if (match) {
+            if (match && match[1] !== undefined && match[2] !== undefined) {
               return [parseFloat(match[1]), parseFloat(match[2])];
             }
           }
@@ -85,6 +85,10 @@ export default function Component() {
 
   const drawCard = (player: Player) => {
     const newCard = userCards[Math.floor(Math.random() * userCards.length)];
+    if (!newCard) {
+      console.error("Failed to draw a card: no cards available.");
+      return; // Exit the function early if no card was drawn
+    }
     if (player === "player") {
       setPlayerHand((prev) => [...prev, newCard]);
     } else {
@@ -201,26 +205,43 @@ export default function Component() {
         if (!playerActiveCard) {
           const randomCard =
             playerHand[Math.floor(Math.random() * playerHand.length)];
-          playCard(randomCard, "player");
+          if (randomCard) {
+            playCard(randomCard, "player");
+            if (!selectedPower) {
+              const randomPower =
+                randomCard.powers[
+                  Math.floor(Math.random() * randomCard.powers.length)
+                ];
+              if (randomPower) {
+                  selectPower(randomPower, "player");
+              }
+            }
+          }
         }
         if (!opponentActiveCard) {
           const randomCard =
             opponentHand[Math.floor(Math.random() * opponentHand.length)];
-          playCard(randomCard, "opponent");
+          if (randomCard) {
+            playCard(randomCard, "opponent");
+            if (!opponentSelectedPower) {
+              const randomPower =
+                randomCard.powers[
+                  Math.floor(Math.random() * randomCard.powers.length)
+                ];
+              if (randomPower) {
+                selectPower(randomPower, "opponent");
+              }
+            }
+          }
         }
         if (!selectedPower && playerActiveCard) {
           const randomPower =
             playerActiveCard.powers[
               Math.floor(Math.random() * playerActiveCard.powers.length)
             ];
-          selectPower(randomPower, "player");
-        }
-        if (!opponentSelectedPower && opponentActiveCard) {
-          const randomPower =
-            opponentActiveCard.powers[
-              Math.floor(Math.random() * opponentActiveCard.powers.length)
-            ];
-          selectPower(randomPower, "opponent");
+          if (randomPower) {
+            selectPower(randomPower, "opponent");
+          }
         }
         setGamePhase("combat");
         break;
@@ -456,16 +477,19 @@ export default function Component() {
 
           {/* Player's Hand */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
-            <AnimatePresence>
-              {playerHand.map((card, index) => (
-                <MultiplayerCard
-                  key={index}
-                  card={card}
-                  initialPos={{ x: index * 150, y: 0 }} // Example initial position
-                  cardId={`playerCard-${index}`} // Unique identifier for this card
-                />
-              ))}
-            </AnimatePresence>
+            {!playerActiveCard && (
+              <AnimatePresence>
+                {playerHand.map((card, index) => (
+                  <MultiplayerCard
+                    key={index}
+                    card={card}
+                    initialPos={{ x: index * 150, y: 0 }} // Example initial position
+                    cardId={`playerCard-${index}`} // Unique identifier for this card
+                    isBlocked={!!playerActiveCard}
+                  />
+                ))}
+              </AnimatePresence>
+            )}
           </div>
         </div>
 
@@ -480,11 +504,12 @@ export default function Component() {
             >
               <h2 className="text-lg font-bold mb-2">Select Power</h2>
               <div className="flex justify-center space-x-2">
+                {/* Power Display */}
                 {playerActiveCard.powers.map((power, index) => (
                   <motion.div
                     key={index}
                     whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 1 }}
                   >
                     <Button
                       onClick={() => selectPower(power, "player")}

@@ -133,6 +133,10 @@ export default function Game() {
 
   const drawCard = (player: Player) => {
     const newCard = userCards[Math.floor(Math.random() * userCards.length)];
+    if (!newCard) {
+      console.error("Failed to draw a card: no cards available.");
+      return; // Exit the function early if no card was drawn
+    }
     if (player === "player") {
       setPlayerHand((prev) => [...prev, newCard]);
     } else {
@@ -281,25 +285,33 @@ export default function Game() {
         if (!playerActiveCard) {
           const randomCard =
             playerHand[Math.floor(Math.random() * playerHand.length)];
-          playCard(randomCard, "player");
-          if (!selectedPower) {
-            const randomPower =
-              randomCard.powers[
-                Math.floor(Math.random() * randomCard.powers.length)
-              ];
-            selectPower(randomPower, "player");
+          if (randomCard) {
+            playCard(randomCard, "player");
+            if (!selectedPower) {
+              const randomPower =
+                randomCard.powers[
+                  Math.floor(Math.random() * randomCard.powers.length)
+                ];
+              if (randomPower) {
+                  selectPower(randomPower, "player");
+              }
+            }
           }
         }
         if (!opponentActiveCard) {
           const randomCard =
             opponentHand[Math.floor(Math.random() * opponentHand.length)];
-          playCard(randomCard, "opponent");
-          if (!opponentSelectedPower) {
-            const randomPower =
-              randomCard.powers[
-                Math.floor(Math.random() * randomCard.powers.length)
-              ];
-            selectPower(randomPower, "opponent");
+          if (randomCard) {
+            playCard(randomCard, "opponent");
+            if (!opponentSelectedPower) {
+              const randomPower =
+                randomCard.powers[
+                  Math.floor(Math.random() * randomCard.powers.length)
+                ];
+              if (randomPower) {
+                selectPower(randomPower, "opponent");
+              }
+            }
           }
         }
         if (!selectedPower && playerActiveCard) {
@@ -307,7 +319,9 @@ export default function Game() {
             playerActiveCard.powers[
               Math.floor(Math.random() * playerActiveCard.powers.length)
             ];
-          selectPower(randomPower, "player");
+          if (randomPower) {
+            selectPower(randomPower, "opponent");
+          }
         }
         setGamePhase("combat");
         break;
@@ -602,22 +616,25 @@ export default function Game() {
             {playerActiveCard && gamePhase === "prep" && !selectedPower && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: -400 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3 }}
                 className="mt-4"
               >
-                <h2 className="text-lg font-bold mb-2">Select Power</h2>
-                <div className="flex justify-center space-x-2">
+                <h2 className="text-lg justify-center font-bold mb-2">
+                  Power
+                </h2>
+                <div className="flex flex-col justify-center space-y-2">
                   {playerActiveCard.powers.map((power, index) => (
                     <motion.div
                       key={index}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
+                      {/* Power Buttons */}
                       <Button
                         onClick={() => selectPower(power, "player")}
-                        variant="default"
+                        variant="noShadow"
                         className="bg-blue-500 text-white hover:bg-blue-600"
                       >
                         {power.type}: {power.value}
