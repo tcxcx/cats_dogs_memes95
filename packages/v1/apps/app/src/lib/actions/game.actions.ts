@@ -15,10 +15,16 @@ import {
 import { userCards } from '@/lib/mock-cards';
 
 // Mock deck for demonstration purposes
-const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
-const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name));
+const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
+const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
+
+const iniHandP1: CardData[] = Deck1.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+const iniHandP2: CardData[] = Deck2.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+
 const cardCollection: CardCollection = userCards.reduce((collection, card) => {
-    collection[card.name] = card; // Use card.name or card.id as the key, depending on your needs
+    if (card.name) {
+        collection[card.name] = card; // Use card.name or card.id as the key, depending on your needs
+    }
     return collection;
   }, {} as CardCollection);
 
@@ -26,8 +32,8 @@ const cardCollection: CardCollection = userCards.reduce((collection, card) => {
 let currentGameState: GameState = {
   deckP1: Deck1, // Replace with actual deck initialization
   deckP2: Deck2, // Replace with actual deck initialization
-  handP1: [cardCollection[Deck1[0]], cardCollection[Deck1[1]], cardCollection[Deck1[2]]],
-  handP2: [cardCollection[Deck2[0]], cardCollection[Deck2[1]], cardCollection[Deck2[2]]],
+  handP1: iniHandP1,
+  handP2: iniHandP2,
   score: [0, 0], // Initial score
   turnCount: 0, // Start of the game
   cardCollection: cardCollection, // Your full card collection or subset as needed
@@ -77,10 +83,19 @@ function calculateTurnOutcome(
     types: string[],
     powers: string[]
 ): TurnResult {
-    let val1 = coll[card1].powers.find(power => power.type === pow1)?.value || 0;
-    let val2 = coll[card2].powers.find(power => power.type === pow2)?.value || 0;
-    const type1 = coll[card1].type[0].type;
-    const type2 = coll[card2].type[0].type;
+    const cardData1 = coll[card1];
+    const cardData2 = coll[card2];
+    if (!cardData1 || !cardData2) {
+        throw new Error("One or both cards not found in the collection.");
+    }
+    let val1 = cardData1.powers.find(power => power.type === pow1)?.value ?? 0;
+    let val2 = cardData2.powers.find(power => power.type === pow2)?.value ?? 0;
+    const type1 = cardData1.type[0]?.type;
+    const type2 = cardData2.type[0]?.type;
+
+    if (!type1 || !type2) {
+        throw new Error("One or both card types are missing..");
+    }
     const type1Index = types.indexOf(type1);
     const type2Index = types.indexOf(type2);
 
@@ -109,8 +124,8 @@ function calculateTurnOutcome(
         player1Points: val1 > val2 ? 1 : 0,
         player2Points: val2 > val1 ? 1 : 0,
     };
-
 }
+
 // build Card Collection
 function buildCardCollection(cards: CardData[]): CardCollection {
     return cards.reduce((collection, card) => {
@@ -182,10 +197,17 @@ export function playTurn(
     types: typeof TypeList,
     powers: typeof PowerList,
 ): GameState {
-    const { deckP1, deckP2, handP1, handP2, score, turnCount } = gameState;
+    const { deckP1, deckP2, handP1, handP2, score, turnCount, cardCollection } = gameState;
+    // Check if indices are within the bounds of the hands
+    if (
+        handIndexP1 < 0 || handIndexP1 >= handP1.length ||
+        handIndexP2 < 0 || handIndexP2 >= handP2.length
+    ) {
+        throw new Error("Invalid hand index provided.");
+    }
 
-    const playerCardP1 = handP1[handIndexP1]; // CardData object from player's hand
-    const playerCardP2 = handP2[handIndexP2]; // CardData object from opponent's hand
+    const playerCardP1 = handP1[handIndexP1]!; // CardData object from player's hand
+    const playerCardP2 = handP2[handIndexP2]!; // CardData object from opponent's hand
 
     const turnResult = calculateTurnOutcome(
         gameState.cardCollection,
@@ -206,9 +228,17 @@ export function playTurn(
     const updatedHandP2 = handP2.filter((_, idx) => idx !== handIndexP2);
 
     // Draw a new card from the deck if hands are empty
-    const newCardP1: CardData | undefined = deckP1[turnCount + 3] ? cardCollection[deckP1[turnCount + 3]] : undefined;
-    const newCardP2: CardData | undefined = deckP2[turnCount + 3] ? cardCollection[deckP2[turnCount + 3]] : undefined;
+    const newCardIndexP1 = (turnCount + 3) % deckP1.length;
+    const newCardIndexP2 = (turnCount + 3) % deckP2.length;
 
+    // Draw a new card from the deck if hands are empty
+    const newCardP1: CardData = cardCollection[deckP1[newCardIndexP1]!]!;
+    const newCardP2: CardData = cardCollection[deckP2[newCardIndexP2]!]!;
+
+    if (!newCardP1 || !newCardP2) {
+        throw new Error("A new card could not be drawn from the deck.");
+    }
+    
     // Update hands to ensure they contain only CardData objects
     const finalHandP1: CardData[] = updatedHandP1.length ? updatedHandP1 : [...updatedHandP1, newCardP1!].filter(card => card !== undefined);
     const finalHandP2: CardData[] = updatedHandP2.length ? updatedHandP2 : [...updatedHandP2, newCardP2!].filter(card => card !== undefined);
