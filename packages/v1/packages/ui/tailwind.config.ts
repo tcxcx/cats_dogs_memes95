@@ -81,6 +81,10 @@ const config = {
         heading: "700",
       },
       keyframes: {
+        grid: {
+          "0%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
         "caret-blink": {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
@@ -93,16 +97,12 @@ const config = {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0%)" },
         },
-        grid: {
-          "0%": { transform: "translateY(-50%)" },
-          "100%": { transform: "translateY(0)" },
-        },
       },
       animation: {
+        grid: "grid 15s linear infinite",
         "caret-blink": "caret-blink 1.25s ease-out infinite",
         marquee: "marquee 25s linear infinite",
         marquee2: "marquee2 25s linear infinite",
-        grid: "grid 15s linear infinite",
       },
     },
   },

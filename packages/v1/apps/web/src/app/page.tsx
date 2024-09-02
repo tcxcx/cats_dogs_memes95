@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import Image from "next/image";
-import { RetroGrid } from "../../../../packages/ui/src/components/retrogrid";
+import { RetroGrid } from "@v1/ui/retro-grid";
 
 export default function Page() {
   return (
@@ -16,7 +16,7 @@ export default function Page() {
       <div className="absolute inset-0 bg-gradient-to-t from-bg to-transparent pointer-events-none -z-10" />
 
       <h1 className="font-departure text-[40px] md:text-[84px] relative z-10 text-center h-[120px] md:h-auto leading-tight">
-        <AnimatedText text="Cats, Memes, Dogs. etc." />
+        <AnimatedText speed={40} text="Cats, Memes, Dogs. etc." />
       </h1>
       <div>
         <TooltipProvider delayDuration={0}>
@@ -37,8 +37,10 @@ export default function Page() {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <div className="justify-center text-center font-departure text-[40px] md:text-[84px] relative z-10 text-center h-[120px] md:h-auto leading-tight">
-        In the world of cats and dogs, memes arise,
+      <div className="justify-center text-center font-departure text-xs z-10 text-center h-auto md:h-auto leading-tight max-w-3xl py-4">
+        <AnimatedText 
+        speed={20}
+        text={`In the world of cats and dogs, memes arise,
         On the blockchain, where their magic flies.
         Cards in hand, three to play,
         Choose your champion and join the fray.
@@ -56,11 +58,11 @@ export default function Page() {
         Pick your avatar, make your commands,
         Memelord supreme with the dankest demands!
         Trade, compete, and stand your ground,
-        A champion of this metagame shall be crowned!
+        A champion of this metagame shall be crowned!`} />
       </div>
+      <RetroGrid />
       <div className="absolute -bottom-[280px] inset-0 bg-[linear-gradient(to_right,#c4a1ff_1px,transparent_1px),linear-gradient(to_bottom,#c4a1ff_1px,transparent_1px)] bg-[size:4.5rem_2rem] -z-10 [transform:perspective(560px)_rotateX(63deg)] pointer-events-none" />
       <div className="absolute w-full bottom-[100px] h-1/2  bg-gradient-to-bg from-bg to-transparent pointer-events-none -z-10" />
-      <RetroGrid />
     </div>
   );
 }

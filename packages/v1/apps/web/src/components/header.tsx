@@ -18,15 +18,21 @@ export function Header() {
       <span className="hidden md:block text-sm font-medium">memestic memes</span>
 
       <Link href="/">
-        <Image
-          src="/logo.png"
-          alt="CMDE logo"
-          width={60}
-          quality={100}
-          height={60}
-          className="md:absolute md:left-1/2 md:top-5 md:-translate-x-1/2"
-        />
-      </Link>
+          <div className="flex flex-col-2 justify-between">
+            <div className="justify-end">
+              <div className="flex">🐱</div>
+              <div className="flex">🐸</div>
+              <div className="flex">🐶</div>
+              <div className="flex">🤖</div>
+            </div>
+            <div className="justify-start font-departure uppercase">
+              <div className="flex">Cats</div>
+              <div className="flex">Dogs</div>
+              <div className="flex">Memes</div>
+              <div className="flex">etc</div>
+            </div>
+          </div>
+        </Link>
 
       <nav className="md:mt-2">
         <ul className="flex gap-4">
