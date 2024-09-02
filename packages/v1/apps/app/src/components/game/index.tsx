@@ -95,6 +95,8 @@ export default function Game() {
       setWinner(null); // Reset the winner to null
       setPlayerActiveCard(null);
       setOpponentActiveCard(null);
+      setSelectedPower(null);
+      setOpponentSelectedPower(null);
       setGamePhase("draw");
       setPlayerScore(0);
       setOpponentScore(0);
@@ -265,9 +267,9 @@ export default function Game() {
 
       if (
         playerScore >= 4 ||
-        opponentScore >= 4 ||
-        playerHand.length === 0 ||
-        opponentHand.length === 0
+        opponentScore >= 4
+        //  playerHand.length === 0 ||
+        //  opponentHand.length === 0
       ) {
         setWinner(playerScore >= 4 ? "player" : "opponent");
       }
@@ -616,13 +618,13 @@ export default function Game() {
             {playerActiveCard && gamePhase === "prep" && !selectedPower && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: -400 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3 }}
-                className="mt-4"
+                className="absolute top-[40%] left-[15%] transform ml-4"
               >
-                <h2 className="text-lg justify-center font-bold mb-2">
-                  Power
+                <h2 className="text-2xl font-extrabold mb-4">
+                  Powers
                 </h2>
                 <div className="flex flex-col justify-center space-y-2">
                   {playerActiveCard.powers.map((power, index) => (
