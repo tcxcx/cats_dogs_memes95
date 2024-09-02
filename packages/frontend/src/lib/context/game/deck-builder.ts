@@ -1,4 +1,4 @@
-import create from "zustand";
+import { create } from "zustand";
 import { CardData } from "@/lib/types";
 
 interface DeckState {

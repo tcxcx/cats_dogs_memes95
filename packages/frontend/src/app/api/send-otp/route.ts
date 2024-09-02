@@ -1,9 +1,9 @@
 // app/api/send-otp/route.ts (for App Router)
 import { NextRequest, NextResponse } from "next/server";
-import { OtpEmailTemplate } from "@/lib/emails/otp"; // Import the email template
+import { OtpEmailTemplate } from "@v1/email/otp-template";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.NEXT_PUBLIC_RESEND_API);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   try {

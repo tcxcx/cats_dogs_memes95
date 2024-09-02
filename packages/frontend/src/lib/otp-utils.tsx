@@ -9,7 +9,7 @@ interface OtpEntry {
 // In-memory storage for OTPs (this is not suitable for production, consider using a database)
 const otpStorage: Map<string, OtpEntry> = new Map();
 
-const resend = new Resend(process.env.NEXT_PUBLIC_RESEND_API);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Generate a 6-digit OTP.
