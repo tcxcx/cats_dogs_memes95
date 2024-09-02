@@ -61,8 +61,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const web3AuthClientId = process.env.WEB3AUTH_CLIENT_ID as string;
-const verifier = "w3a-firebase-google-auth";
+const web3AuthClientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string;
+const verifier = "w3a-firebase-google-authentication";
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
@@ -140,7 +140,7 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const idTokenLoginParams: JWTLoginParams = {
         verifier,
-        verifierId: parsedToken.email, // Ensure this is correct
+        verifierId: parsedToken.email,
         idToken,
       };
 
