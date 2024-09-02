@@ -62,7 +62,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const web3AuthClientId = process.env.WEB3AUTH_CLIENT_ID as string;
-const verifier = "w3a-firebase-google";
+const verifier = "w3a-firebase-google-auth";
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
