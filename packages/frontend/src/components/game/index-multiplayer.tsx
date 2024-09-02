@@ -358,7 +358,7 @@ export default function Component() {
                   className="transform scale-75 bg-red-200 rounded-lg p-2 shadow-md center h-fit w-fit"
                 >
                   <div className="text-center text-xs font-semibold text-red-700 mb-1">
-                    Opponent's Card
+                    Opponent`s Card
                   </div>
                   <CardGame card={opponentActiveCard} />
                   {opponentSelectedPower && (
@@ -411,7 +411,7 @@ export default function Component() {
             whileTap={{ scale: 0.95 }}
             className="absolute top-4 right-4 h-64 w-48 bg-red-500 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
           >
-            Opponent's Deck
+            Opponent `s Deck
           </motion.div>
 
           {/* Next Phase Button */}
