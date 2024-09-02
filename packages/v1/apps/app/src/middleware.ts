@@ -11,12 +11,8 @@ const I18nMiddleware = createI18nMiddleware({
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(
     request,
-    I18nMiddleware(request),
+    I18nMiddleware(request)
   );
-
-  if (!request.nextUrl.pathname.endsWith("/login") && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
 
   return response;
 }

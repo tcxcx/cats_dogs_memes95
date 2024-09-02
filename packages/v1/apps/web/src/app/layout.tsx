@@ -16,8 +16,7 @@ const DepartureMono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://cats-dogs-memes-etc.wtf"),
   title: "Cats, Dogs, Memes & Etc.",
-  description:
-    "Memestic memes for card playing memelords.",
+  description: "Memestic memes for card playing memelords.",
 };
 
 export default function RootLayout({
@@ -30,7 +29,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${DepartureMono.variable} ${GeistSans.variable} ${GeistMono.variable}`,
-          "antialiased dark",
+          "antialiased dark"
         )}
       >
         <Header />

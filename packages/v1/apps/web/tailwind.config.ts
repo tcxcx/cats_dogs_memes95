@@ -47,17 +47,16 @@ const config = {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0%)" },
         },
-               grid: {
+        grid: {
           "0%": { transform: "translateY(-50%)" },
           "100%": { transform: "translateY(0)" },
         },
       },
       animation: {
         "caret-blink": "caret-blink 1.25s ease-out infinite",
-         marquee: "marquee 25s linear infinite",
-         marquee2: "marquee2 25s linear infinite",
-                  grid: "grid 15s linear infinite",
-
+        marquee: "marquee 25s linear infinite",
+        marquee2: "marquee2 25s linear infinite",
+        grid: "grid 15s linear infinite",
       },
     },
   },
@@ -65,4 +64,3 @@ const config = {
 } satisfies Config;
 
 export default config;
-

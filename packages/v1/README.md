@@ -1,17 +1,13 @@
 ![hero](image.png)
 
-
 <p align="center">
 	<h1 align="center"><b>Cats, Dogs, Memes, etc. v1</b></h1>
 <p align="center">
     <br />
     <br />
-    <a href="https://v1.run"><strong>Website</strong></a> · 
-    <a href="https://github.com/midday-ai/v1/issues"><strong>Issues</strong></a> · 
     <a href="#whats-included"><strong>What's included</strong></a> ·
     <a href="#prerequisites"><strong>Prerequisites</strong></a> ·
     <a href="#getting-started"><strong>Getting Started</strong></a> ·
-    <a href="#how-to-use"><strong>How to use</strong></a>
   </p>
 </p>
 
@@ -57,7 +53,7 @@ The latest on Next.js framework on a monorepo ready for edge, supabase and expo 
 │    ├── logger                  # Logger library
 │    ├── supabase                # Supabase - Queries, Mutations, Clients
 │    └── ui                      # Shared UI components (Shadcn)
-|       
+|
 ├── tooling                      # are the shared configuration that are used by the apps and packages
 │    └── typescript              # Shared TypeScript configuration
 ├── .cursorrules                 # Cursor rules specific to this project

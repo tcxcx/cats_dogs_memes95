@@ -1,4 +1,5 @@
 import { WelcomeEmail } from "@v1/emails/welcome";
+import { OtpEmailTemplate } from "@v1/emails/otp";
 import React from "react";
 import { render } from "react-email/components";
 import { Resend } from "resend";
@@ -39,9 +40,28 @@ Deno.serve(async (req) => {
       const html = await render(React.createElement(WelcomeEmail));
 
       await resend.emails.send({
-        from: "Create v1 <onboarding@resend.dev>",
+        from: "Cats, Memes & Dogs, etc. <onboarding@resend.dev>",
         to: [user.email],
-        subject: "Welcome to v1",
+        subject: "Welcome to Cars, Dogs, Memes, Etc.",
+        html,
+      });
+
+      break;
+    }
+
+    case "otp": {
+      const { firstName, otpCode } = {
+        firstName: user.email.split("@")[0],
+        otpCode: token,
+      };
+      const html = await render(
+        React.createElement(OtpEmailTemplate, { firstName, otpCode })
+      );
+
+      await resend.emails.send({
+        from: "Cats, Memes & Dogs, etc. <onboarding@resend.dev>",
+        to: [user.email],
+        subject: "Your One-Time Password (OTP)",
         html,
       });
 

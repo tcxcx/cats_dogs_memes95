@@ -11,6 +11,9 @@
     "build": "email build",
     "start": "email start"
   },
+  "exports": {
+    "./otp-template": "./emails/otp.tsx"
+  },
   "dependencies": {
     "@react-email/components": "^0.0.24",
     "@react-email/tailwind": "^0.1.0"
