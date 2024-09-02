@@ -98,8 +98,8 @@ contract GamesTest is Test {
         DeployGames deployerGames = new DeployGames();
         (cards, games, helperConfig) = deployerGames.run();
 
-        coins = Coins(cards.i_coins());
-        ownerGames = games.i_owner();
+        coins = Coins(cards.COINS_CONTRACT());
+        ownerGames = games.OWNER();
         ownerCards = cards.owner();
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
@@ -110,8 +110,8 @@ contract GamesTest is Test {
     ///                   Tests                 ///
     ///////////////////////////////////////////////
     function testGamesContractDeploysCorrectly() public view {
-        address owner = games.i_owner();
-        address cardsAddress = games.i_cards();
+        address owner = games.OWNER();
+        address cardsAddress = games.CARDS_CONTRACT();
 
         assert(owner != address(0));
         assert(cardsAddress == address(cards));
@@ -128,7 +128,7 @@ contract GamesTest is Test {
         games.startTournament();
 
         // checking if state vars are correctly set.
-        assert(games.s_statusTournament() == Games.Status.Active);
+        assert(games.statusTournament() == Games.Status.Active);
     }
 
     function testStopTournamentWithoutGamesIsPossible() public {
@@ -138,7 +138,7 @@ contract GamesTest is Test {
         vm.prank(ownerGames);
         games.startTournament();
         // check if correctly deployed.
-        assert(games.s_statusTournament() == Games.Status.Active);
+        assert(games.statusTournament() == Games.Status.Active);
 
         (address[] memory winners, uint256[] memory scores, uint256[] memory rankings) = games.getRankings();
 
@@ -196,8 +196,8 @@ contract GamesTest is Test {
         accountPlayer0.execute(address(games), 0, callData, 0);
 
         // I can assert more state vars, but this should be sufficient.
-        (address playerOne,,,,) = games.s_games(gameHash);
-        (,, Games.Status status) = games.s_players(player0);
+        (address playerOne,,,,) = games.games(gameHash);
+        (,, Games.Status status) = games.players(player0);
 
         assert(playerOne == player0);
         assert(status == Games.Status.Pending);
@@ -239,9 +239,9 @@ contract GamesTest is Test {
         accountPlayer1.execute(address(games), 0, callData, 0);
 
         // I can assert more state vars, but this should be sufficient.
-        (address playerOne, address playerTwo,,,) = games.s_games(gameHash);
-        (,, Games.Status statusOne) = games.s_players(player0);
-        (,, Games.Status statusTwo) = games.s_players(player1);
+        (address playerOne, address playerTwo,,,) = games.games(gameHash);
+        (,, Games.Status statusOne) = games.players(player0);
+        (,, Games.Status statusTwo) = games.players(player1);
 
         assert(playerOne == player0);
         assert(playerTwo == player1);
@@ -270,8 +270,8 @@ contract GamesTest is Test {
         accountPlayer0.execute(address(games), 0, callData, 0);
 
         // asserting state changes..
-        (,,,, Games.Status statusGame) = games.s_games(gameHash);
-        (,, Games.Status statusPlayer) = games.s_players(player0);
+        (,,,, Games.Status statusGame) = games.games(gameHash);
+        (,, Games.Status statusPlayer) = games.players(player0);
 
         assert(statusGame == Games.Status.Cancelled);
         assert(statusPlayer == Games.Status.Idle);
@@ -342,12 +342,12 @@ contract GamesTest is Test {
         startActiveTournament
         setupAvatarBasedAccounts
     {
-        (, uint256 scoreOneBefore,) = games.s_players(player0);
-        (, uint256 scoreTwoBefore,) = games.s_players(player1);
+        (, uint256 scoreOneBefore,) = games.players(player0);
+        (, uint256 scoreTwoBefore,) = games.players(player1);
 
         bytes32 gameHash = _createActiveGame(player0, player1);
 
-        bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player0);
+        bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, player0, 1, player0);
         vm.prank(users[0]);
         accountPlayer0.execute(address(games), 0, callData, 0);
 
@@ -357,9 +357,9 @@ contract GamesTest is Test {
         vm.prank(users[1]);
         accountPlayer1.execute(address(games), 0, callData, 0);
 
-        (,, address winner,, Games.Status status) = games.s_games(gameHash);
-        (, uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(player0);
-        (, uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(player1);
+        (,, address winner,, Games.Status status) = games.games(gameHash);
+        (, uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.players(player0);
+        (, uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.players(player1);
 
         assert(status == Games.Status.Completed);
         assert(statusPlayerOne == Games.Status.Completed);
@@ -374,28 +374,28 @@ contract GamesTest is Test {
         startActiveTournament
         setupAvatarBasedAccounts
     {
-        (, uint256 scoreOneBefore,) = games.s_players(player0);
-        (, uint256 scoreTwoBefore,) = games.s_players(player1);
+        (, uint256 scoreOneBefore,) = games.players(player0);
+        (, uint256 scoreTwoBefore,) = games.players(player1);
 
         bytes32 gameHash = _createActiveGame(player0, player1);
 
-        bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player0);
+        bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, player0, 1, player0);
         vm.prank(users[0]);
         accountPlayer0.execute(address(games), 0, callData, 0);
 
-        (,,,, Games.Status statusPaused) = games.s_games(gameHash);
+        (,,,, Games.Status statusPaused) = games.games(gameHash);
         assert(statusPaused == Games.Status.Paused);
 
         // player two calls the completeGame function with the exact same data.
-        bytes memory callData2 = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player1); // note: different winner than at
+        bytes memory callData2 = abi.encodeWithSelector(Games.completeGame.selector, player0, 1, player1); // note: different winner than at
         vm.expectEmit(true, false, false, false);
         emit CompletedGame(address(1), gameHash); // check if really an active game is deployed.
         vm.prank(users[1]);
         accountPlayer1.execute(address(games), 0, callData2, 0);
 
-        (,, address winner,, Games.Status status) = games.s_games(gameHash);
-        (, uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(player0);
-        (, uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(player1);
+        (,, address winner,, Games.Status status) = games.games(gameHash);
+        (, uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.players(player0);
+        (, uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.players(player1);
 
         assert(status == Games.Status.Completed);
         assert(statusPlayerOne == Games.Status.Completed);

@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
-/**
- * NOTE: currently an exact copy of TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
- * I copied it (instead of importing) because we might add bespoke logics later on.
- */
-
 /**
  * Copied from TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
  * Two small changes:

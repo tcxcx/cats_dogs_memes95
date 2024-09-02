@@ -13,6 +13,7 @@ import {Cards} from "./Cards.sol";
  * It is not possible to mint more than your allowance.
  *
  * Authors: Argos, CriptoPoeta, 7cedars
+ * 
  */
 contract Coins is ERC20 {
     /* errors */
@@ -21,16 +22,16 @@ contract Coins is ERC20 {
     error Coins__constructorCanOnlyBeCalledByCardsConrtact(address caller);
 
     /* state vars */
-    address public immutable i_cardsAddress;
-    mapping(address avatarBasedAccount => uint256 coinsMinted) public s_coinsMinted;
+    address public immutable CARDS_CONTRACT;
+    mapping(address avatarBasedAccount => uint256 amount) public coinsMinted;
 
     /* Events */
     event DeployedCoinsContract(address indexed parentContract);
 
     /* Modifiers */
-    modifier onlyAvatarBasedAccount(address playerAccount) {
-        if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
-            revert Coins__OnlyAvatarBasedAccount(playerAccount);
+    modifier onlyAvatarBasedAccount(address user) {
+        if (!ERC165Checker.supportsInterface(user, type(IAvatarExecutable).interfaceId)) {
+            revert Coins__OnlyAvatarBasedAccount(user);
         }
         _;
     }
@@ -38,66 +39,64 @@ contract Coins is ERC20 {
     /* FUNCTIONS: */
     /* constructor */
     /**
-     * Note Sets up the coins contract.
+     * @notice Sets up the coins contract.
      *
-     * Does not take any params. Name and Symbol is hard coded into the contract.
+     * Does not take any params. Name and Symbol of the coin is hard coded into the contract.
      *
-     * dev: it sets msg.sender as the i_cardAddress. This has to be a card address. The check for this is currently commented out.
+     * @dev it sets msg.sender as the 'CARDS_CONTRACT'. This has to be a card address. The check for this is currently missing.
      * When a non-Cards.sol contract is used to create this contract, it will not function.
-     *
+     * 
+     * emits a DeployedCoinsContract event 
      */
     constructor() ERC20("Cats Dogs and Memes Coin", "CDM") {
-        // £TODO: the interface of ICards proves hard to setup. Not quite clear why - yet. Come back to this later.
-        // if (!ERC165Checker.supportsInterface(msg.sender, type(ICards).interfaceId)) {
-        //     revert Coins__constructorCanOnlyBeCalledByCardsConrtact(msg.sender);
-        // }
-        i_cardsAddress = msg.sender;
-
+        CARDS_CONTRACT = msg.sender;
+        
         emit DeployedCoinsContract(msg.sender);
     }
 
     /* public */
     /**
-     * Note lets Avatar Based Accounts mint their coin allowance.
+     * @notice lets Avatar Based Accounts mint their coin allowance.
      *
      * @param coinsToMint The amount of coins to be minted. This can be any amount below or equal to their allowance.
      *
-     * dev: it logs the amount of coins minted in this contract at 's_coinsMinted'
-     * Before minting, it retrieves the full allowance of the AvatarBasedAccount from Cards.sol and substracts the value at 's_coinsMinted'.
+     * @dev it logs the amount of coins minted in this contract at 'coinsMinted'
+     * Before minting, it retrieves the full allowance of the AvatarBasedAccount from Cards.sol and substracts the value at 'coinsMinted'.
      * This is the amount allowed to be minted.
      *
      */
     function mintCoins(uint256 coinsToMint) public onlyAvatarBasedAccount(msg.sender) {
-        uint256 allowance = Cards(payable(i_cardsAddress)).s_coinAllowance(msg.sender);
+        uint256 allowance = Cards(payable(CARDS_CONTRACT)).s_coinAllowance(msg.sender);
 
-        if (coinsToMint + s_coinsMinted[msg.sender] > allowance) {
+        if (coinsToMint + coinsMinted[msg.sender] > allowance) {
             revert Coins__MintExceedsAllowance();
         }
-        s_coinsMinted[msg.sender] = s_coinsMinted[msg.sender] + coinsToMint;
+        coinsMinted[msg.sender] = coinsMinted[msg.sender] + coinsToMint;
         _mint(msg.sender, coinsToMint);
     }
 
     /* getters */
     /**
-     * Note a simple getter function to calculate the remaining allowance
+     * @notice a simple getter function to calculate the remaining allowance
      *
      * @param playerAccount The avatar based account that has an allowance.
      *
-     * dev: The function has no access restrictions what so ever. Anyone can request the allowance of any player.
+     * @dev The function has no access restrictions what so ever. Anyone can request the allowance of any player.
      *
      */
     function getRemainingAllowance(address playerAccount) external view returns (uint256 remainingAllowance) {
-        uint256 allowance = Cards(payable(i_cardsAddress)).s_coinAllowance(playerAccount);
+        uint256 allowance = Cards(payable(CARDS_CONTRACT)).s_coinAllowance(playerAccount);
 
-        return (allowance - s_coinsMinted[playerAccount]);
+        return (allowance - coinsMinted[playerAccount]);
     }
 }
 
-// £Notes to self
-// When reviewing this code, check: https://github.com/transmissions11/solcurity
-// see also: https://github.com/nascentxyz/simple-security-toolkit
+// for extensive guidance on best practices see: 
+// - https://book.getfoundry.sh/tutorials/best-practices?highlight=lint#general-contract-guidance
+// - https://docs.soliditylang.org/en/latest/style-guide.html
 
-// Structure contract // -- from Patrick Collins.
+
+// Structure contract // -- From patrick collins, following guidance of the Ethereum foundation at: https://docs.soliditylang.org/en/latest/style-guide.html#order-of-functions
 /* version */
 /* imports */
 /* errors */
@@ -117,3 +116,7 @@ contract Coins is ERC20 {
 /* private */
 /* internal & private view & pure functions */
 /* external & public view & pure functions */
+
+// for guidance on security see:   
+// - https://github.com/transmissions11/solcurity
+// - https://github.com/nascentxyz/simple-security-toolkit

@@ -58,7 +58,7 @@ contract CardsTest is Test {
     }
 
     function testCardsPackHasPrice() public view {
-        uint256 price = cards.s_priceCardPack();
+        uint256 price = cards.priceCardPack();
 
         console.log("price cardsPack:", price);
         assert(price != 0);
@@ -84,7 +84,7 @@ contract CardsTest is Test {
         vm.prank(userOne);
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
         // 3: give userOne funds.
 
         vm.deal(avatarAccountAddress, 1 ether);
@@ -176,7 +176,7 @@ contract CardsTest is Test {
         cards.createCards(CardData, mintAmounts, newuri);
 
         // assert
-        uint256 cardId = cards.s_cardIds(7);
+        uint256 cardId = cards.cardIds(7);
         assert(cardId == 7);
     }
 
@@ -189,7 +189,7 @@ contract CardsTest is Test {
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
 
         // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
         // 3: give avatarAccountAddress funds.
         vm.deal(avatarAccountAddress, 1 ether);
 

@@ -10,8 +10,9 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 * This deploys the Games, Cards and Coins contracts. It ALSO saves cards to cards.sol. 
 */ 
 contract DeployGames is Script {
-  uint256 cardPackPrice = 1 ether; // NB: for the game to be sustainable, a pack of cards needs to cose more that around .6 ether in these tests. I hope this is not for real! 
-  uint256[] packThresholds = [5, 15, 30, 100]; // £todo what happens after 1000 packs sold? CHECK! 
+  // NB: for the game to be sustainable, a pack of cards needs to cost more that around .6 ether in these tests. I hope this is not for real! 
+  uint256 cardPackPrice = 1 ether; 
+  uint256[] packThresholds = [5, 15, 30, 100]; 
   uint256[] packCoinAmounts = [500, 100, 25, 5]; 
   Cards cardsContract; 
   Games gamesContract;
@@ -24,11 +25,11 @@ contract DeployGames is Script {
       // deploy cards contract, which also deploys the coins address. 
       cardsContract = new Cards(
         cardPackPrice, 
+        packThresholds, 
+        packCoinAmounts, 
         callbackGasLimit, 
         requestConfirmations, 
-        wrapperAddress, 
-        packThresholds, 
-        packCoinAmounts
+        wrapperAddress
         );
       createCards(); // saves cards to blockchain
 

@@ -45,7 +45,7 @@ contract ChainLinkVRFTest is Test {
             , // uint16 vrfRequestConfirmations;
             // uint32 vrfCallbackGasLimit
         ) = helperConfig.activeNetworkConfig();
-        coins = Coins(cards.i_coins());
+        coins = Coins(cards.COINS_CONTRACT());
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
         vm.deal(address(cards), 100 ether);
@@ -65,7 +65,7 @@ contract ChainLinkVRFTest is Test {
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         vm.deal(avatarAccountAddress, 1 ether);
         // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
 
         // 3: create callData for opening pack of cards.
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);

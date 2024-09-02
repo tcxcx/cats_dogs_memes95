@@ -12,21 +12,19 @@ import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/
 import {ERC6551Registry} from "@reference/src/ERC6551Registry.sol";
 
 contract Players is ERC721URIStorage {
-    uint256 private _avatarCounter;
-
     /* errors */
-    error Players__OnlyOwner();
     error Players__AvatarDoesNotExist();
 
     /* events */
-    event DeployedPlayersContract(address indexed owner, string indexed version, address indexed i_erc6551_account);
+    event DeployedPlayersContract(address indexed owner, uint256 indexed version, address indexed erc6551_account);
     event CreatedPlayer(uint256 indexed avatarId, address indexed avatarAccountAddress);
 
     /* state vars */
-    address public s_owner;
+    uint256 private _avatarCounter;
+    address public immutable OWNER;
     bytes32 private constant SALT = bytes32(hex"7ceda5");
-    address private immutable i_erc6551_registry;
-    address private immutable i_erc6551_account;
+    address private immutable ERC6551_REGISTRY;
+    address private immutable ERC6551_ACCOUNT;
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
@@ -41,43 +39,46 @@ contract Players is ERC721URIStorage {
     /////////////////////////////////////////////////////
     /* constructor */
     /**
-     * Note Sets up the players contract. It is builds on an ERC-721 NFT template. It creates an AvatarBasedAccount linked to NFTs it mints.
+     * @notice Sets up the players contract. It is builds on an ERC-721 NFT template. It creates an AvatarBasedAccount linked to NFTs it mints.
      *
-     * @param _version the version of this contract. It helps find the correct address on-chain.
-     * @param _erc6551_account the address where our token based account implementation (in our case AvatarBasedAccount) is deployed.
-     * @param _erc6551_registry the entrypoint of the singleton ERC-6551 contract.
+     * @param version the version of this contract. It helps find the correct address on-chain.
+     * @param erc6551_account the address where our token based account implementation (in our case AvatarBasedAccount) is deployed.
+     * @param erc6551_registry the entrypoint of the singleton ERC-6551 contract.
      *
      * emits a DeployedPlayersContract event.
      *
      */
-    constructor(string memory _version, address _erc6551_account, address _erc6551_registry)
+    constructor(uint256 version, address erc6551_account, address erc6551_registry)
         ERC721("Cats, Dogs and Memes Avatar", "CDM")
     {
-        s_owner = msg.sender;
-        i_erc6551_account = _erc6551_account;
-        i_erc6551_registry = _erc6551_registry;
+        OWNER = msg.sender;
+        ERC6551_ACCOUNT = erc6551_account;
+        ERC6551_REGISTRY = erc6551_registry;
 
-        emit DeployedPlayersContract(msg.sender, _version, i_erc6551_account);
+        emit DeployedPlayersContract(msg.sender, version, ERC6551_ACCOUNT);
     }
 
     /* public */
     /**
-     * Note: mints an avatar for a user and uses this to call the ERC-6551 registry to create a ERC-6551 account.
+     * @notice mints an avatar for a user and uses this to call the ERC-6551 registry to create a ERC-6551 account.
      *
      * @param avatarURI: the uri that holds the metadata (with the uri to the image) of the Avatar NFT.
      *
+     * @return newAvatarId - the avatar Id assigned to the user.  
+     * @return AvatarAddress - the address of the Avatar Based Account assigned to the user. 
+     *
      * emits a CreatedPlayer event. The event holds (indexed) avatarId and avatarAddress.
      *
-     * dev: The CreatedPlayer event should makes it possible to search for the user account that called createPlayer
+     * dev: The CreatedPlayer event should make it possible to search for the user account that called createPlayer
      *      and then retrieve which avatarId and AvatarAddress they received.
      */
-    function createPlayer(string memory avatarURI) public returns (uint256, address) {
-        uint256 newAvatarId = _avatarCounter;
+    function createPlayer(string memory avatarURI) public returns (uint256 newAvatarId, address AvatarAddress) {
+        newAvatarId = _avatarCounter;
         _avatarCounter++;
 
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
-        address AvatarAddress = _createAvatarAddress(newAvatarId);
+        AvatarAddress = _createAvatarAddress(newAvatarId);
 
         emit CreatedPlayer(newAvatarId, AvatarAddress);
 
@@ -86,15 +87,15 @@ contract Players is ERC721URIStorage {
 
     /* internal */
     /**
-     * Note: Creates the address of an AvatarBasedAccount.
+     * @notice Creates the address of an AvatarBasedAccount.
      *
      * @param avatarId: The tokenId id of the minted avatar NFT.
      *
      * dev: this function does not emit an event. Event is emitted in the public function 'createPlayer'.
      */
     function _createAvatarAddress(uint256 avatarId) internal returns (address AvatarAddress) {
-        AvatarAddress = ERC6551Registry(i_erc6551_registry).createAccount(
-            i_erc6551_account, SALT, block.chainid, address(this), avatarId
+        AvatarAddress = ERC6551Registry(ERC6551_REGISTRY).createAccount(
+            ERC6551_ACCOUNT, SALT, block.chainid, address(this), avatarId
         );
 
         return AvatarAddress;
@@ -102,7 +103,7 @@ contract Players is ERC721URIStorage {
 
     /* getters */
     /**
-     * Note: external view function to retrieve address of Avatar based Account, using avatarId as input.
+     * @notice external view function to retrieve address of Avatar based Account, using avatarId as input.
      *
      * @param avatarId: The tokenId id of avatar NFT.
      *
@@ -117,17 +118,18 @@ contract Players is ERC721URIStorage {
         returns (address AvatarAddress)
     {
         AvatarAddress =
-            ERC6551Registry(i_erc6551_registry).account(i_erc6551_account, SALT, block.chainid, address(this), avatarId);
+            ERC6551Registry(ERC6551_REGISTRY).account(ERC6551_ACCOUNT, SALT, block.chainid, address(this), avatarId);
 
         return AvatarAddress;
     }
 }
 
-// £Notes to self
-// When reviewing this code, check: https://github.com/transmissions11/solcurity
-// see also: https://github.com/nascentxyz/simple-security-toolkit
+// for extensive guidance on best practices see: 
+// - https://book.getfoundry.sh/tutorials/best-practices?highlight=lint#general-contract-guidance
+// - https://docs.soliditylang.org/en/latest/style-guide.html
 
-// Structure contract // -- from Patrick Collins.
+
+// Structure contract // -- From patrick collins, following guidance of the Ethereum foundation at: https://docs.soliditylang.org/en/latest/style-guide.html#order-of-functions
 /* version */
 /* imports */
 /* errors */
@@ -147,3 +149,7 @@ contract Players is ERC721URIStorage {
 /* private */
 /* internal & private view & pure functions */
 /* external & public view & pure functions */
+
+// for guidance on security see:   
+// - https://github.com/transmissions11/solcurity
+// - https://github.com/nascentxyz/simple-security-toolkit

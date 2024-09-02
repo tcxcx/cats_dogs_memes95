@@ -44,7 +44,7 @@ contract CoinsTest is Test {
         vm.prank(userOne);
         (, avatarAccountAddress) = players.createPlayer(avatarUri);
         // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
         // 3: give userOne funds.
         vm.deal(userOne, 1 ether);
         vm.deal(avatarAccountAddress, 1 ether);
@@ -76,7 +76,7 @@ contract CoinsTest is Test {
             , // uint16 vrfRequestConfirmations;
             // uint32 vrfCallbackGasLimit
         ) = helperConfig.activeNetworkConfig();
-        coins = Coins(cards.i_coins());
+        coins = Coins(cards.COINS_CONTRACT());
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
         vm.deal(address(cards), 100 ether);
@@ -94,7 +94,7 @@ contract CoinsTest is Test {
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
         // 3: give userOne funds.
         vm.deal(userOne, 1 ether);
         vm.deal(avatarAccountAddress, 1 ether);
@@ -164,7 +164,7 @@ contract CoinsTest is Test {
         vm.assertEq(packCoinAmounts[0], coinAllowance);
 
         uint256 cardPackNumber = 1;
-        uint256 priceCardPack = cards.s_priceCardPack();
+        uint256 priceCardPack = cards.priceCardPack();
 
         // act: opening pack of cards
         uint256 numberOfPacksToOpen = 125;

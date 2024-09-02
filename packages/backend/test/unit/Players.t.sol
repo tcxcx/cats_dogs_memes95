@@ -26,7 +26,7 @@ contract PlayersTest is Test {
     ///                   Tests                 ///
     ///////////////////////////////////////////////
     function testPlayersHasOwner() public {
-        address ownerPlayers = players.s_owner();
+        address ownerPlayers = players.OWNER();
 
         assertNotEq(address(0), ownerPlayers);
     }

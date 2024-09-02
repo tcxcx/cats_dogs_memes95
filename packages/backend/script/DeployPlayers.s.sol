@@ -17,7 +17,7 @@ contract DeployPlayers is Script {
     function run() external returns (Players, AvatarBasedAccount, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig(); 
         (address account, address registry, , , ) = helperConfig.activeNetworkConfig(); 
-        string memory version = "alpha.1";
+        uint256 version = 1;
    
         vm.startBroadcast();
             players = new Players(

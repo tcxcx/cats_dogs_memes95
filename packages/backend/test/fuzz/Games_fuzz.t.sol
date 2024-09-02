@@ -64,8 +64,8 @@ contract GamesFuzzTest is Test {
         DeployGames deployerGames = new DeployGames();
         (cards, games,) = deployerGames.run();
 
-        coins = Coins(cards.i_coins());
-        ownerGames = games.i_owner();
+        coins = Coins(cards.COINS_CONTRACT());
+        ownerGames = games.OWNER();
         ownerCards = cards.owner();
 
         for (uint256 i; i < userNames.length; i++) {
@@ -205,7 +205,7 @@ contract GamesFuzzTest is Test {
         winnerAddress[0] = avatarBasedAddressA;
         winnerAddress[1] = avatarBasedAddressB;
 
-        nonce = games.s_nonce();
+        nonce = games.gameCounter();
         bytes32 gameHash = keccak256(abi.encode(avatarBasedAddressA, nonce));
         avatarBasedAccountA = AvatarBasedAccount(payable(avatarBasedAddressA));
         avatarBasedAccountB = AvatarBasedAccount(payable(avatarBasedAddressB));
@@ -233,7 +233,7 @@ contract GamesFuzzTest is Test {
 
         // PlayerA completes the game
         bytes memory callData =
-            abi.encodeWithSelector(Games.completeGame.selector, nonce, avatarBasedAddressA, winnerAddress[winnerA]);
+            abi.encodeWithSelector(Games.completeGame.selector, avatarBasedAddressA, nonce, winnerAddress[winnerA]);
         vm.prank(playerA);
         avatarBasedAccountA.execute(address(games), 0, callData, 0);
 
@@ -242,7 +242,7 @@ contract GamesFuzzTest is Test {
 
         // player B calls the completeGame function.
         bytes memory callData2 =
-            abi.encodeWithSelector(Games.completeGame.selector, nonce, avatarBasedAddressA, winnerAddress[winnerB]); // note: different winner than at userOne
+            abi.encodeWithSelector(Games.completeGame.selector, avatarBasedAddressA, nonce, winnerAddress[winnerB]); // note: different winner than at userOne
         vm.prank(playerB);
         avatarBasedAccountB.execute(address(games), 0, callData2, 0);
 
