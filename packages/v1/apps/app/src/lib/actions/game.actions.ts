@@ -18,9 +18,6 @@ import { userCards } from '@/lib/mock-cards';
 const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
 const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
 
-const iniHandP1: CardData[] = Deck1.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
-const iniHandP2: CardData[] = Deck2.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
-
 const cardCollection: CardCollection = userCards.reduce((collection, card) => {
     if (card.name) {
         collection[card.name] = card; // Use card.name or card.id as the key, depending on your needs
@@ -28,6 +25,9 @@ const cardCollection: CardCollection = userCards.reduce((collection, card) => {
     return collection;
   }, {} as CardCollection);
 
+  const iniHandP1: CardData[] = Deck1.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+  const iniHandP2: CardData[] = Deck2.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+  
 // Mock Game state for demonstration purposes
 let currentGameState: GameState = {
   deckP1: Deck1, // Replace with actual deck initialization
@@ -40,7 +40,6 @@ let currentGameState: GameState = {
   powerList: ["attack", "defense", "speed"], // Populate with Power type data
   typeList: ['Cat', 'Dog', 'Meme'], // Assuming these are the types
 };
-
 // Mock Game log
 let gameLog: GameLog = {
     initialDecks: {
