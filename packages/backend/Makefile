@@ -81,7 +81,8 @@ OPT_SEPOLIA_TEST_ARGS := --fork-url $(OPT_SEPOLIA_RPC_URL)
 OPT_SEPOLIA_DEPLOY_ARGS := --rpc-url $(OPT_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 
 optSepoliaForkedTest: 
-	@forge test --no-match-contract Games_fuzz $(OPT_SEPOLIA_TEST_ARGS)
+	@forge test $(OPT_SEPOLIA_TEST_ARGS)
+# --no-match-contract Games_fuzz
 
 optSepoliaForkedDeployTest:
 	@forge script script/DeployPlayers.s.sol:DeployPlayers $(OPT_SEPOLIA_TEST_ARGS) -vvvv 

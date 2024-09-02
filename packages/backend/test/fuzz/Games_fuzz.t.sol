@@ -14,7 +14,7 @@ import {DeployGames} from "../../script/DeployGames.s.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";  
 
 
-contract GamesTest is Test {
+contract GamesFuzzTest is Test {
     /* State vars */
     Cards cards;
     Games games;
@@ -29,6 +29,9 @@ contract GamesTest is Test {
     AvatarBasedAccount avatarBasedAccountB;
     address[2] winnerAddress; 
     uint256 nonce = 1;
+    uint256 numberOfCardsPerPlayer = 25;
+    uint256[] cardPack =   [23, 34, 4, 3, 2, 8, 9, 12, 45, 46, 43, 7, 10, 24, 22]; 
+    uint256[] cardValues = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]; 
     
     address[] users; 
     string[] userNames = ["alice", "bob", "claire", "doug", "7cedars", "test"]; 
@@ -65,14 +68,6 @@ contract GamesTest is Test {
         ownerGames = games.i_owner(); 
         ownerCards = cards.owner(); 
 
-        // start a tournament
-        vm.prank(ownerGames); 
-        games.startTournament();
-
-        // create Avatar Based Accounts
-        uint256 priceCardPack = cards.s_priceCardPack();  
-        uint256 numberOfPacks = 5;
-
         for (uint256 i; i < userNames.length; i++) {
           vm.warp(block.timestamp + 50);
           vm.roll(block.number + 5); 
@@ -82,18 +77,15 @@ contract GamesTest is Test {
           vm.prank(users[i]);
           (, address avatarAccountAddress) = players.createPlayer(avatarUri);  
 
+          vm.prank(ownerGames); 
+          cards.transferCards(avatarAccountAddress, cardPack, cardValues);
+
           // ... 2: save the AvatarBasedAccountAddress in an array and provide it with funds. 
           avatarBasedAccounts[users[i]] = avatarAccountAddress; 
           vm.deal(avatarBasedAccounts[users[i]], 1 ether);
-
-          // ... 3: open a number of cardPacks to give cards to the Avatar Based Account. 
-          bytes memory callDataOpenPack = abi.encodeWithSelector(Cards.openCardPack.selector, 1);
-          vm.startPrank(users[i]);
-            for (uint256 j; j < numberOfPacks; j++) {
-              AvatarBasedAccount(payable(avatarBasedAccounts[users[i]])).execute(address(cards), priceCardPack, callDataOpenPack, 0);
-            }
-          vm.stopPrank();
         }
+        vm.prank(ownerGames); 
+        games.startTournament();
     }
 
     ///////////////////////////////////////////////
@@ -151,6 +143,55 @@ contract GamesTest is Test {
       }
 
       return deck; 
+    }
+
+    function _pseudoRandomiser(uint256 salt, uint256 max) internal returns (uint256 pseudoRandomNumber) {   
+        pseudoRandomNumber = uint256(keccak256(abi.encodePacked(
+            block.timestamp, 
+            msg.sender, 
+            blockhash(block.number), 
+            salt
+        ))) % max;
+        
+        return pseudoRandomNumber; 
+    }
+
+    // turns a normal array of values into an array that increments. 
+    function _incrementArray(uint256[] memory array) internal returns (uint256[] memory incrementArray) {
+        incrementArray = new uint256[](array.length);  
+        
+        for (uint256 k; k < array.length; k++) {
+            if (k == 0) {
+                incrementArray[k] = array[k]; 
+            } else {
+                incrementArray[k] = incrementArray[k - 1] + array[k];
+            }
+        }
+        return incrementArray;
+    }
+
+    function _createCardPack(uint256 numberOfCards) internal returns (uint256[] memory selectedCards, uint256[] memory cardsValues) {   
+        uint256[] memory cardIds = new uint256[](50);
+        address[] memory addressArray = new address[](cardIds.length); 
+        for (uint256 i; i < cardIds.length; i++) {
+            cardIds[i] = i; 
+            addressArray[i] = address(cards); 
+        }  
+        uint256[] memory selectedCards = new uint256[](numberOfCards); 
+        uint256[] memory cardsValues = new uint256[](numberOfCards); 
+
+        uint256[] memory balances = cards.balanceOfBatch(addressArray, cardIds); 
+        uint256[] memory incrementedBalances  = _incrementArray(balances); 
+        
+        for (uint256 i; i < numberOfCards; i++) {
+          uint256 pseudoRandomNumber = _pseudoRandomiser(i, incrementedBalances[numberOfCards]); 
+          uint256 cardId; 
+          while (incrementedBalances[cardId] < pseudoRandomNumber) {
+              cardId++;
+              }
+              selectedCards[i] = cardId; 
+              cardsValues[i] = 1; 
+          }
     }
 
     function _runGame(address playerA, address playerB, uint256 winnerA, uint256 winnerB) internal returns (address winner) { 

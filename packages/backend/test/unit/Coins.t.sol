@@ -22,12 +22,42 @@ contract CoinsTest is Test {
     Cards cards;
     Games games;
     Coins coins; 
-    Players players;  
+    Players players;
+    HelperConfig helperConfig;  
     AvatarBasedAccount avatarBasedAccount;
+    address avatarAccountAddress; 
+    address vrfWrapper; 
+    uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
 
     address userOne = makeAddr("UserOne"); 
     address userTwo = makeAddr("UserTwo"); 
     string avatarUri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
+
+    ///////////////////////////////////////////////
+    ///                Modifier                 ///
+    ///////////////////////////////////////////////
+
+    modifier createUserOneAndOpenCardPack() {
+        uint256 cardPackNumber = 1;
+        // 1: create Avatar Based Account
+        vm.prank(userOne);
+        (, avatarAccountAddress) = players.createPlayer(avatarUri);
+        // 2: get price pack
+        uint256 priceCardPack = cards.s_priceCardPack();  
+        // 3: give userOne funds. 
+        vm.deal(userOne, 1 ether);
+        vm.deal(avatarAccountAddress, 1 ether);  
+        // 4: open pack of cards. 
+        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+        vm.prank(userOne);
+        bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+        uint256 requestId = uint256(bytes32(result)); 
+        // 5: mock callback from Chainlink VRF:  
+        vm.prank(vrfWrapper); 
+        cards.rawFulfillRandomWords(requestId, mockRandomWords); 
+        _; 
+    }
+
   
     ///////////////////////////////////////////////
     ///                   Setup                 ///
@@ -37,7 +67,14 @@ contract CoinsTest is Test {
         (players, avatarBasedAccount, ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games, ) = deployerGames.run();
+        (cards, games, helperConfig) = deployerGames.run();
+        (
+            , //address erc6551account; 
+            , // address erc6551Registry; 
+            vrfWrapper, // address vrfWrapper; 
+            , // uint16 vrfRequestConfirmations;
+            // uint32 vrfCallbackGasLimit
+            ) = helperConfig.activeNetworkConfig(); 
         coins = Coins(cards.i_coins());
 
         // need to fund the contract itself for Chainlink VRF - direct payments.  
@@ -63,29 +100,19 @@ contract CoinsTest is Test {
 
         // act: opening pack of cards
         vm.prank(userOne);
-        AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+        bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+        uint256 requestId = uint256(bytes32(result)); 
+
+        vm.prank(vrfWrapper); 
+        cards.rawFulfillRandomWords(requestId, mockRandomWords); 
 
         // assert
         uint256 observedAllowance = cards.s_coinAllowance(avatarAccountAddress); 
         vm.assertEq(packCoinAmounts[0], observedAllowance);     
     }
 
-    function testCoinsCanBeMintedByAvatarAccount() public {
-        // PREP
-        uint256 cardPackNumber = 2;
-        // 1: create Avatar Based Account
-        vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();  
-        // 3: give userOne funds. 
-        vm.deal(userOne, 1 ether);
-        vm.deal(avatarAccountAddress, 1 ether);  
-        // 4: open pack of cards. 
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
-        vm.prank(userOne);
-        AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
-        // 5: check if account received allowance. 
+    function testCoinsCanBeMintedByAvatarAccount() public createUserOneAndOpenCardPack {
+        // prep: check if account received allowance. 
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress); 
         vm.assertEq(packCoinAmounts[0], coinAllowance); 
 
@@ -112,22 +139,8 @@ contract CoinsTest is Test {
         coins.mintCoins(amountCoinsToMint);
     }
 
-    function testAccessAllowanceOfCoinsCannotBeMinted() public {
-        // PREP
-        uint256 cardPackNumber = 2;
-        // 1: create Avatar Based Account
-        vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        // 2: get price pack
-        uint256 priceCardPack = cards.s_priceCardPack();  
-        // 3: give userOne funds. 
-        vm.deal(userOne, 1 ether);
-        vm.deal(avatarAccountAddress, 1 ether);  
-        // 4: open pack of cards. 
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
-        vm.prank(userOne);
-        AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
-        // 5: check if account received allowance. 
+    function testAccessAllowanceOfCoinsCannotBeMinted() public createUserOneAndOpenCardPack {
+        // Prep: check if account received allowance. 
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress); 
         vm.assertEq(packCoinAmounts[0], coinAllowance); 
 
@@ -143,31 +156,34 @@ contract CoinsTest is Test {
         AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(coins), 0, callData2, 0);
     }
 
-    function testCoinAllowanceDecrease() public { 
-        // prep
-        uint256 cardPackNumber = 1;
-        // 1: create Avatar Based Account
-        vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        // 2: get price pack
+    function testCoinAllowanceDecrease() public createUserOneAndOpenCardPack { 
+        // prep check if user one received allowance for opening pack no 1 (which means account has been succesfully created).   
+        uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress); 
+        vm.assertEq(packCoinAmounts[0], coinAllowance); 
+
+        uint256 cardPackNumber = 1; 
         uint256 priceCardPack = cards.s_priceCardPack();  
-        // 3: give userOne funds. 
-        // vm.deal(userOne, 1 ether);
-        vm.deal(avatarAccountAddress, 1 ether);  
 
         // act: opening pack of cards
         uint256 numberOfPacksToOpen = 125;
         uint256[] memory increasesAllowance = new uint256[](numberOfPacksToOpen); 
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         for (uint256 i; i < numberOfPacksToOpen; i++) {
+            vm.deal(avatarAccountAddress, 1 ether); 
             uint256 allowanceBefore = cards.s_coinAllowance(avatarAccountAddress); 
+            
             vm.prank(userOne);
-            AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+            bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+            uint256 requestId = uint256(bytes32(result)); 
+            // 5: mock callback from Chainlink VRF:  
+            vm.prank(vrfWrapper); 
+            cards.rawFulfillRandomWords(requestId, mockRandomWords); 
+
             increasesAllowance[i] = cards.s_coinAllowance(avatarAccountAddress) - allowanceBefore; 
         }
 
-        for (uint256 i; i < numberOfPacksToOpen; i++) {
-            console2.log("increase", i, ":", increasesAllowance[i]); 
+        for (uint256 i = 1; i < numberOfPacksToOpen; i++) {
+            assert(increasesAllowance[i - 1] >= increasesAllowance[i]); 
         }
     }
 

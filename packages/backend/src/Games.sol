@@ -78,9 +78,6 @@ contract Games {
     mapping(address => Player) public s_players; // £note: you cannot save a mapping in a struct. Hence the 'Game' struct only store the address. This mapping is used to store the actucal 'Player' struct. It is independent from tournament. 
     // mapping(address => uint256[]) public s_cardDecks; 
     address[] public s_playersInTournament; // an array of player participating in the current tournament. Acts as counter and used to calculate rankings. 
-    address[] public s_winners; 
-    address[] public s_runnerUps; 
-    address[] public s_thirdPlace; 
     uint256 public s_tournamentCounter; // The tournament number, keeps each tournament (sequentially) unique. NOTE: It is impossible to hold two tournaments at the same time within one 'Games.sol' contract. 
     Status public s_statusTournament; // the status of the tournament.
 
@@ -88,7 +85,7 @@ contract Games {
     event DeployedGamesContract(address indexed owner);
     event PlayerRegisteredInTournament(address indexed playerAccount); 
     event StartedNewTournament(uint256 indexed tournament); 
-    event EndedTournament(uint256 indexed tournament, address[] winner, address[] runnerUp, address[] thirdPlace); 
+    event EndedTournament(uint256 indexed tournament); 
     event InitialisedGame(address indexed playerOne, uint256 indexed nonce); 
     event JoinedGame(address indexed playerTwo, bytes32 indexed gameHash);  
     event CancelledPendingGame(address indexed playerOne, bytes32 indexed gameHash); 
@@ -143,47 +140,20 @@ contract Games {
             ) {
             revert Games__TournamentNotIdleOrCompleted(); 
         }
-        
-        // delete array of players active in tournament -- used to calculate rankings in tournament. 
-        while (s_playersInTournament.length > 0) {
-            s_playersInTournament.pop(); 
-        }
-        // reset arrays of winners, seconds, thirds 
-        while (s_winners.length > 0) {
-            s_winners.pop(); 
-        }
-        while (s_runnerUps.length > 0) {
-            s_runnerUps.pop(); 
-        }
-        while (s_thirdPlace.length > 0) {
-            s_thirdPlace.pop(); 
-        }
+       
         s_tournamentCounter++;
         s_statusTournament = Status.Active; 
 
         emit StartedNewTournament(s_tournamentCounter); 
     }
 
-    function stopTournament() public onlyOwner {
-        (address[] memory avatarAccount, , uint256[] memory rankings) = getRankings(); 
+    function stopTournament() public onlyOwner returns (uint256[] memory rankings){
+        (, , rankings) = getRankings(); 
         s_statusTournament = Status.Completed; 
 
-        // NB TODO: Change logic: mint coins to this contract; then transfer coins to winners. 
-        // Note: prices are now in coins. Can also be in native currency. Pretty much any logic / thing is possible. 
-        // NB! If people have same rank this approach does not work!! 
-        for (uint256 i; i < rankings.length; i++) {
-            if (rankings[i] == 1 && avatarAccount[i] != address(0)) { // if there is no winner, address remains at address(0)
-                s_winners.push(avatarAccount[i]); 
-            }
-            if (rankings[i] == 2 && avatarAccount[i] != address(0)) { // same as above. 
-                s_runnerUps.push(avatarAccount[i]);
-            }
-            if (rankings[i] == 3 && avatarAccount[i] != address(0)) { // same as above. 
-                s_thirdPlace.push(avatarAccount[i]);
-            }
-        }
+        emit EndedTournament(s_tournamentCounter); 
 
-        emit EndedTournament(s_tournamentCounter, s_winners, s_runnerUps, s_thirdPlace); 
+        return rankings; 
     }
 
     function initialiseGame(uint256[] memory cardDeck) public onlyDuringActiveTournament onlyAvatarBasedAccount {
@@ -346,15 +316,20 @@ contract Games {
             uint256[] memory rankings
         ) { 
     
-        uint256 numberPlayers = s_playersInTournament.length; 
+        uint256 numberPlayers = s_playersInTournament.length;
+ 
         scores = new uint256[](numberPlayers);
         rankings = new uint256[](numberPlayers);
+        avatars = new address[](numberPlayers); 
+        if (numberPlayers == 0) {
+            return (avatars, scores, rankings);  
+        }
 
         for (uint256 i; i < numberPlayers; i++) {
             scores[i] = s_players[s_playersInTournament[i]].score;
         }
         for (uint256 i; i < numberPlayers; i++) {
-            rankings[i] = 1;  
+            rankings[i] = 1;
             for (uint256 j; j < numberPlayers; j++) {
                 if (scores[i] < scores[j]){ rankings[i]++; }  
             }

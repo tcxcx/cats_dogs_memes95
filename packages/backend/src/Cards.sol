@@ -57,6 +57,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         uint256 paid; // amount paid in link
         bool fulfilled; // whether the request has been successfully fulfilled
         uint256[] randomWords;
+        address requester; 
     }
     mapping(uint256 => VRFRequestStatus) public s_requests; /* requestId --> requestStatus */
     uint256[] public requestIds;  // past requests Id.
@@ -194,9 +195,34 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         }
 
         s_cardPackNumber = cardPackNumber; 
-        requestId = _requestRandomWords();
+        requestId = _requestRandomWords(msg.sender);
 
         // See the rest of the function at the function 'fulfillRandomWords'. 
+    } 
+
+    /**
+     * note function through which owner of the contract can transfer cards for free from the contract to any address. Can be used for exceptional events, circumstances, etc.  
+     * 
+     * @param recipient todo
+     * @param cardIds todo
+     * @param cardvalues todo 
+     *
+     * emits a TransferBatch event. 
+     *
+     * @dev The function is only accesible to the owner. 
+     * 
+     */
+    function transferCards(address recipient, uint256[] memory cardIds, uint256[] memory cardvalues ) public payable onlyOwner {
+        if (cardIds.length != cardvalues.length) {
+            revert Cards__ArraysNotSameLength(cardIds.length, cardvalues.length); 
+        }
+        _safeBatchTransferFrom(
+            address(this), // address from,
+            recipient, // address to,
+            cardIds, // uint256[] memory ids,
+            cardvalues, // uint256[] memory values,
+            '' // bytes memory data
+        );
     } 
 
     /**
@@ -232,7 +258,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      * Natspecs TBD      
      *
      */
-    function _requestRandomWords() internal returns (uint256) {
+    function _requestRandomWords(address requester) internal returns (uint256) {
         bytes memory extraArgs = VRFV2PlusClient._argsToBytes(
             VRFV2PlusClient.ExtraArgsV1({nativePayment: true})
         ); 
@@ -245,7 +271,8 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         s_requests[requestId] = VRFRequestStatus({
             paid: reqPrice,
             randomWords: new uint256[](0),
-            fulfilled: false
+            fulfilled: false, 
+            requester: requester
         });
         requestIds.push(requestId);
         lastRequestId = requestId;
@@ -267,6 +294,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         uint256[] memory selectedCards = new uint256[](5); 
         uint256[] memory cardsValues = new uint256[](5); 
         uint256[] memory cardIds = s_cardIds; 
+        address player = s_requests[_requestId].requester; 
 
         require(s_requests[_requestId].paid > 0, "request not found");
         s_requests[_requestId].fulfilled = true;
@@ -280,15 +308,14 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         // step 2: create an _incremented_ array of all these balances 
         uint256[] memory incrementedArray = _incrementArray(balances);  // Note that the TOTAL amount of cards is the last value in this array. 
 
-        for (uint256 i; i < NUMBER_CARDS_IN_PACK; i++) {
-            
-        uint256 pseudoRandomNumber = uint256(keccak256(abi.encode(_randomWords[i] + s_cardPackNumber))) % incrementedArray[incrementedArray.length - 1]; 
-        uint256 cardId; 
-        while (incrementedArray[cardId] < pseudoRandomNumber) {
-            cardId++;
-            }
-            selectedCards[i] = cardId; 
-            cardsValues[i] = 1; 
+        for (uint256 i; i < NUMBER_CARDS_IN_PACK; i++) { 
+            uint256 pseudoRandomNumber = uint256(keccak256(abi.encode(_randomWords[i] + s_cardPackNumber))) % incrementedArray[incrementedArray.length - 1]; 
+            uint256 cardId; 
+            while (incrementedArray[cardId] < pseudoRandomNumber) {
+                cardId++;
+                }
+                selectedCards[i] = cardId; 
+                cardsValues[i] = 1; 
         }
         // Before execution, increase the s_cardPackCounter: cardPack is being bought.  
         s_cardPackCounter++; 
@@ -296,7 +323,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         // step 4: transfer selected Cards to Avatar.
         _safeBatchTransferFrom(
             address(this), // address from,
-            msg.sender, // address to,
+            player, // address to,
             selectedCards, // uint256[] memory ids,
             cardsValues, // uint256[] memory values,
             '' // bytes memory data
@@ -312,10 +339,10 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
                 allowanceIndex++;
             }
             // step 2: add the matched allowance at index to the avatar based account. 
-            s_coinAllowance[msg.sender] = s_coinAllowance[msg.sender] + s_packCoinAmounts[allowanceIndex]; 
+            s_coinAllowance[player] = s_coinAllowance[player] + s_packCoinAmounts[allowanceIndex]; 
         } else {
             // step 3: if 's_cardPackCounter' was higher than the highest amount in 's_packThresholds', add 1 to the allowance. 
-            s_coinAllowance[msg.sender]++; 
+            s_coinAllowance[player]++; 
         }
 
 

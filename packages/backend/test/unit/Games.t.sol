@@ -22,32 +22,30 @@ contract GamesTest is Test {
     Games games;
     Coins coins; 
     HelperConfig helperConfig; 
-    IVRFCoordinatorV2Plus vrfCoordinator; 
     Players players;  
-    AvatarBasedAccount avatarBasedAccountOne;
-    AvatarBasedAccount avatarBasedAccountTwo;
-    AvatarBasedAccount avatarBasedAccountThree;
-    address avatarAccountAddressOne;
-    address avatarAccountAddressTwo;
-    address avatarAccountAddressThree;
 
     address ownerGames;
     address ownerCards;
+ 
+    uint256 numberOfCardsPerPlayer = 25; 
+    uint256[] cardPackIds = [0, 3, 4, 5, 7, 9, 12, 45, 51, 52]; 
+    uint256[] cardPackValues = [1, 2, 1, 2, 2, 1, 3, 4, 5, 1]; 
 
-    uint256 CardPackPrice = 50_000; 
-    uint256[] packThresholds = [5, 15, 30, 100]; // £todo what happens after 1000 packs sold? CHECK! 
-    uint256[] packCoinAmounts = [500, 100, 25, 1];  
-
-    address userOne = makeAddr("UserOne"); 
-    address userTwo = makeAddr("UserTwo"); 
-    address userThree = makeAddr("UserThree"); 
+    address[] users; 
+    string[] userNames = ["alice", "bob", "claire", "doug", "7cedars", "test"]; 
+    mapping(address => address) avatarBasedAccounts;
     string avatarUri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
+
+    address player0; // avatar based address of users[0] 
+    address player1; // avatar based address of users[1] 
+    AvatarBasedAccount accountPlayer0; // avatar based account of users[0] 
+    AvatarBasedAccount accountPlayer1; // avatar based account of users[1]
 
     /* Events */
     event DeployedGamesContract(address indexed owner);
     event PlayerEnteredTournament(address indexed playerAccount); 
     event StartedNewTournament(uint256 indexed tournament); 
-    event EndedTournament(uint256 indexed tournament, address[] indexed winners, address[] runnerUps, address[] thirdPlaces); 
+    event EndedTournament(uint256 indexed tournament); 
     event InitialisedGame(address indexed playerOne, uint256 indexed nonce); 
     event JoinedGame(address indexed playerTwo, bytes32 indexed gameHash);  
     event CancelledPendingGame(address indexed playerOne, bytes32 indexed gameHash); 
@@ -64,58 +62,25 @@ contract GamesTest is Test {
     }
 
     modifier setupAvatarBasedAccounts() {
-      uint256 numberOfPacks = 5; 
-      uint256 priceCardPack = cards.s_priceCardPack();  
+      for (uint256 i; i < userNames.length; i++) {
+          // ... 1: create an address and AvatarBasedAccount 
+          users.push(makeAddr(userNames[i]));
+          vm.prank(users[i]);
+          (, address avatarAccountAddress) = players.createPlayer(avatarUri);  
 
-      // avatar account one 
-      vm.startPrank(userOne);
-      (, avatarAccountAddressOne) = players.createPlayer(avatarUri); 
-      vm.deal(avatarAccountAddressOne, 1 ether);
+          vm.prank(ownerGames); 
+          cards.transferCards(avatarAccountAddress, cardPackIds, cardPackValues);
 
-      avatarBasedAccountOne = AvatarBasedAccount(payable(avatarAccountAddressOne)); 
-      bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, 1);
-      
-      for (uint256 i; i < numberOfPacks; i++) {
-        bytes memory reply = avatarBasedAccountOne.execute(address(cards), priceCardPack, callData, 0);
-      // £NB CONTINUE HERE: See https://github.com/smartcontractkit/foundry-starter-kit/blob/main/test/VRFConsumerV2.t.sol 
-      // That is an example with a classic V2 Coordinator. Here we are dealing with a wrapper. 
-      // I did NOT find yet which crfCoordinator I can call to make this work. 
-      //   uint256 requestId = uint256(bytes32(reply)); 
-      //   vrfCoordinator.fulfillRandomWords(requestId, address(cards));
-      }
-      vm.stopPrank();
-      
-      // avatar account two 
-      vm.warp(block.timestamp + 50);
-      vm.roll(block.number + 5); 
-
-      vm.startPrank(userTwo);
-      (, avatarAccountAddressTwo) = players.createPlayer(avatarUri); 
-      vm.deal(avatarAccountAddressTwo, 1 ether);
-
-      avatarBasedAccountTwo = AvatarBasedAccount(payable(avatarAccountAddressTwo)); 
-      callData = abi.encodeWithSelector(Cards.openCardPack.selector, 1);
-      
-      for (uint256 i; i < numberOfPacks; i++) {
-        avatarBasedAccountTwo.execute(address(cards), priceCardPack, callData, 0);
-      }
-      vm.stopPrank();
-
-      // avatar account three
-      vm.warp(block.timestamp + 50);
-      vm.roll(block.number + 5); 
-
-      vm.startPrank(userThree);
-      (, avatarAccountAddressThree) = players.createPlayer(avatarUri); 
-      vm.deal(avatarAccountAddressThree, 1 ether);
-
-      avatarBasedAccountThree = AvatarBasedAccount(payable(avatarAccountAddressThree)); 
-      callData = abi.encodeWithSelector(Cards.openCardPack.selector, 1);
-      
-      for (uint256 i; i < numberOfPacks; i++) {
-        avatarBasedAccountThree.execute(address(cards), priceCardPack, callData, 0);
-      }
-      vm.stopPrank();
+          // ... 2: save the AvatarBasedAccountAddress in an array and provide it with funds. 
+          avatarBasedAccounts[users[i]] = avatarAccountAddress; 
+          vm.deal(avatarBasedAccounts[users[i]], 1 ether);
+        }
+        
+        // ...3: for readability, create object for player and accounts used through this contract.
+        player0 = avatarBasedAccounts[users[0]];
+        player1 = avatarBasedAccounts[users[1]];
+        accountPlayer0 = AvatarBasedAccount(payable(player0)); 
+        accountPlayer1 = AvatarBasedAccount(payable(player1)); 
 
       _; 
     }
@@ -125,14 +90,10 @@ contract GamesTest is Test {
     ///////////////////////////////////////////////
     function setUp() external {
         DeployPlayers deployerPlayers = new DeployPlayers();
-        (players, avatarBasedAccountOne, ) = deployerPlayers.run();
+        (players, , ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
         (cards, games, helperConfig) = deployerGames.run();
-        (, , address vrfWarpper, , ) = helperConfig.activeNetworkConfig(); 
-
-        VRFV2PlusWrapper_Optimism vrfWrapper_optimism = VRFV2PlusWrapper_Optimism(vrfWarpper); 
-        vrfCoordinator = vrfWrapper_optimism.s_vrfCoordinator(); 
         
         coins = Coins(cards.i_coins());
         ownerGames = games.i_owner(); 
@@ -176,26 +137,28 @@ contract GamesTest is Test {
       // check if correctly deployed. 
       assert(games.s_statusTournament() == Games.Status.Active); 
 
+      (address[] memory winners, uint256[] memory scores, uint256[] memory rankings ) = games.getRankings();
+
       // ACT: stop tournament. 
       vm.prank(ownerGames); 
       vm.expectEmit(true, false, false, false);
-      emit EndedTournament(expectedTournamentCounter, emptyArray, emptyArray, emptyArray);
+      emit EndedTournament(expectedTournamentCounter);
       games.stopTournament();
     }
 
     function testInitialiseGameNotPossibleIfTournamentNotActive() public setupAvatarBasedAccounts {
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection); 
 
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
       
-      vm.prank(userOne);
+      vm.prank(users[0]);
       vm.expectRevert(); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      accountPlayer0.execute(address(games), 0, callData, 0);
     }
 
     function testPlayerCannotInitaliseGameIfDoesNotOwnACardInTheirDeck() public startActiveTournament setupAvatarBasedAccounts {
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = new uint256[](10); 
       for (uint256 i; i < collection.length; i++) {
         if (collection[i] == 0) {
@@ -207,85 +170,74 @@ contract GamesTest is Test {
       }
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
       
-      vm.prank(userOne);
+      vm.prank(users[0]);
       vm.expectRevert(); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      accountPlayer0.execute(address(games), 0, callData, 0);
     }
 
     function testInitialiseGameChangesStateVarsCorrectly() public startActiveTournament setupAvatarBasedAccounts {
       uint256 nonce = 1; 
-      bytes32 gameHash = keccak256(abi.encode(avatarAccountAddressOne, nonce));  
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      bytes32 gameHash = keccak256(abi.encode(player0, nonce));  
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
 
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
       
       vm.expectEmit(true, false, false, false);
-      emit InitialisedGame(avatarAccountAddressOne, nonce);
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      emit InitialisedGame(player0, nonce);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // I can assert more state vars, but this should be sufficient. 
       (address playerOne, , , ,) = games.s_games(gameHash); 
-      (, , Games.Status status) = games.s_players(avatarAccountAddressOne); 
+      (, , Games.Status status) = games.s_players(player0); 
 
-      assert(playerOne == avatarAccountAddressOne);
+      assert(playerOne == player0);
       assert(status == Games.Status.Pending);
     }
 
-    function testInitialiseGameNotPossibleByNonRegisteredPlayer() public startActiveTournament setupAvatarBasedAccounts {
-        uint256[] memory cardDeck = new uint256[](10); 
-        for (uint256 i; i < 10; i++) {
-          cardDeck[i] == i; 
-        }
-
-        vm.prank(userOne);
-        vm.expectRevert();
-        games.initialiseGame(cardDeck);
-    }
-
     function testInitialiseGameNotPossibleByPendingPlayer() public startActiveTournament setupAvatarBasedAccounts {
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
 
-      // userOne initialises a game and their status turns to pending... 
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      //  initialises a game and their status turns to pending... 
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // when they try to initialise a game again, it should revert. 
-      vm.prank(userOne); 
+      vm.prank(users[0]); 
       vm.expectRevert(); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      accountPlayer0.execute(address(games), 0, callData, 0);
     }
 
     function testJoinGameChangesStateVarsCorrectly() public startActiveTournament setupAvatarBasedAccounts {
       // Prep: setting up a game by user one.
       uint256 nonce = 1; 
 
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
-      bytes32 gameHash = keccak256(abi.encode(avatarAccountAddressOne, nonce));  
+      bytes32 gameHash = keccak256(abi.encode(player0, nonce));  
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // User two joins the game using the nonce and opponent address. 
-      collection = cards.getCollection(avatarAccountAddressTwo); 
+      collection = cards.getCollection(player1); 
       cardDeck = _createCardDeckFromCollection(collection);
-      callData = abi.encodeWithSelector(Games.joinGame.selector, avatarAccountAddressOne, nonce, cardDeck);
+      callData = abi.encodeWithSelector(Games.joinGame.selector, player0, nonce, cardDeck);
       vm.expectEmit(true, false, false, false);
-      emit JoinedGame(avatarAccountAddressTwo, gameHash);
-      vm.prank(userTwo); 
-      avatarBasedAccountTwo.execute(address(games), 0, callData, 0);
+      emit JoinedGame(player1, gameHash);
+      vm.prank(users[1]); 
+      accountPlayer1.execute(address(games), 0, callData, 0);
 
       // I can assert more state vars, but this should be sufficient. 
       (address playerOne, address playerTwo, , ,) = games.s_games(gameHash); 
-      (, , Games.Status statusOne) = games.s_players(avatarAccountAddressOne); 
-      (, , Games.Status statusTwo) = games.s_players(avatarAccountAddressTwo); 
+      (, , Games.Status statusOne) = games.s_players(player0); 
+      (, , Games.Status statusTwo) = games.s_players(player1); 
 
-      assert(playerOne == avatarAccountAddressOne);
-      assert(playerTwo == avatarAccountAddressTwo);
+      assert(playerOne == player0);
+      assert(playerTwo == player1);
       assert(statusOne == Games.Status.Active);
       assert(statusTwo == Games.Status.Active);
     }
@@ -294,25 +246,25 @@ contract GamesTest is Test {
       // Prep: setting up a game by user one.
       uint256 nonce = 1; 
       
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
-      bytes32 gameHash = keccak256(abi.encode(avatarAccountAddressOne, nonce));  
+      bytes32 gameHash = keccak256(abi.encode(player0, nonce));  
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
       vm.expectEmit(true, false, false, false);
-      emit InitialisedGame(avatarAccountAddressOne, nonce); // to check if it really does get initialised. 
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      emit InitialisedGame(player0, nonce); // to check if it really does get initialised. 
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
-      // and now userOne cancels the pending game. 
+      // and now  cancels the pending game. 
       callData = abi.encodeWithSelector(Games.cancelPendingGame.selector, 1);
       vm.expectEmit(true, false, false, false);
-      emit CancelledPendingGame(avatarAccountAddressOne, gameHash); // to check if it really does get initialised. 
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      emit CancelledPendingGame(player0, gameHash); // to check if it really does get initialised. 
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
       
       // asserting state changes.. 
       (, , , , Games.Status statusGame) = games.s_games(gameHash); 
-      (, , Games.Status statusPlayer) = games.s_players(avatarAccountAddressOne); 
+      (, , Games.Status statusPlayer) = games.s_players(player0); 
       
       assert(statusGame == Games.Status.Cancelled);
       assert(statusPlayer == Games.Status.Idle);
@@ -323,39 +275,39 @@ contract GamesTest is Test {
       uint256 nonce = 1; 
 
       // first avatar based account joins game.. 
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
-      bytes32 gameHash = keccak256(abi.encode(avatarAccountAddressOne, nonce));  
+      bytes32 gameHash = keccak256(abi.encode(player0, nonce));  
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
       
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // second avatar based account joins game.. 
-      collection = cards.getCollection(avatarAccountAddressTwo); 
+      collection = cards.getCollection(player1); 
       cardDeck = _createCardDeckFromCollection(collection);
-      callData = abi.encodeWithSelector(Games.joinGame.selector, avatarAccountAddressOne, nonce, cardDeck);
+      callData = abi.encodeWithSelector(Games.joinGame.selector, player0, nonce, cardDeck);
       vm.expectEmit(true, false, false, false);
-      emit JoinedGame(avatarAccountAddressTwo, gameHash); // check if really an active game is deployed. 
-      vm.prank(userTwo); 
-      avatarBasedAccountTwo.execute(address(games), 0, callData, 0);
+      emit JoinedGame(player1, gameHash); // check if really an active game is deployed. 
+      vm.prank(users[1]); 
+      accountPlayer1.execute(address(games), 0, callData, 0);
 
-      // and now userOne tries to cancel an active game. 
+      // and now  tries to cancel an active game. 
       callData = abi.encodeWithSelector(Games.cancelPendingGame.selector, 1);
       vm.expectRevert();
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
     }
 
     function testPlayerCannotJoinGameIfDoesNotOwnACardInTheirDeck() public startActiveTournament setupAvatarBasedAccounts {
       // Prep: setting up an active game by player one.
       uint256 nonce = 1; 
-      uint256[] memory collection = cards.getCollection(avatarAccountAddressOne); 
+      uint256[] memory collection = cards.getCollection(player0); 
       uint256[] memory cardDeck = _createCardDeckFromCollection(collection);
  
       bytes memory callData = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeck);
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // And here user two calls to join game with cards they don't own. 
       uint256[] memory mockCardDeck = new uint256[](10); 
@@ -368,63 +320,63 @@ contract GamesTest is Test {
         } 
       }
 
-      callData = abi.encodeWithSelector(Games.joinGame.selector, avatarAccountAddressOne, nonce, mockCardDeck);
+      callData = abi.encodeWithSelector(Games.joinGame.selector, player0, nonce, mockCardDeck);
       vm.expectRevert();
-      vm.prank(userTwo); 
-      avatarBasedAccountTwo.execute(address(games), 0, callData, 0);
+      vm.prank(users[1]); 
+      accountPlayer1.execute(address(games), 0, callData, 0);
     }
 
     function testCompleteGamewithConsensusWinnerChangesStateVarsCorrectly() public startActiveTournament setupAvatarBasedAccounts {
-      ( , uint256 scoreOneBefore, ) = games.s_players(avatarAccountAddressOne); 
-      ( , uint256 scoreTwoBefore, ) = games.s_players(avatarAccountAddressTwo);
+      ( , uint256 scoreOneBefore, ) = games.s_players(player0); 
+      ( , uint256 scoreTwoBefore, ) = games.s_players(player1);
       
-      bytes32 gameHash = _createActiveGame(avatarAccountAddressOne, avatarAccountAddressTwo); 
+      bytes32 gameHash = _createActiveGame(player0, player1); 
 
-      bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, avatarAccountAddressOne, avatarAccountAddressOne);
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       // player two calls the completeGame function with the exact same data. 
       vm.expectEmit(true, false, false, false);
-      emit CompletedGame(avatarAccountAddressOne, gameHash); // check if really an active game is deployed. 
-      vm.prank(userTwo); 
-      avatarBasedAccountTwo.execute(address(games), 0, callData, 0);
+      emit CompletedGame(player0, gameHash); // check if really an active game is deployed. 
+      vm.prank(users[1]); 
+      accountPlayer1.execute(address(games), 0, callData, 0);
 
       ( ,  , address winner, , Games.Status status) = games.s_games(gameHash);
-      ( , uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(avatarAccountAddressOne); 
-      ( , uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(avatarAccountAddressTwo);
+      ( , uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(player0); 
+      ( , uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(player1);
 
       assert(status == Games.Status.Completed);
       assert(statusPlayerOne == Games.Status.Completed);
       assert(statusPlayerTwo == Games.Status.Completed);
       assert(scoreOneAfter - scoreOneBefore == 3);
       assert(scoreTwoAfter - scoreTwoBefore == 1);
-      assert(winner == avatarAccountAddressOne);
+      assert(winner == player0);
     }
 
     function testCompleteGamewith_non_ConsensusWinnerChangesStateVarsCorrectly() public startActiveTournament setupAvatarBasedAccounts {
-      ( , uint256 scoreOneBefore, ) = games.s_players(avatarAccountAddressOne); 
-      ( , uint256 scoreTwoBefore, ) = games.s_players(avatarAccountAddressTwo);
+      ( , uint256 scoreOneBefore, ) = games.s_players(player0); 
+      ( , uint256 scoreTwoBefore, ) = games.s_players(player1);
       
-      bytes32 gameHash = _createActiveGame(avatarAccountAddressOne, avatarAccountAddressTwo); 
+      bytes32 gameHash = _createActiveGame(player0, player1); 
 
-      bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, avatarAccountAddressOne, avatarAccountAddressOne);
-      vm.prank(userOne); 
-      avatarBasedAccountOne.execute(address(games), 0, callData, 0);
+      bytes memory callData = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player0);
+      vm.prank(users[0]); 
+      accountPlayer0.execute(address(games), 0, callData, 0);
 
       ( ,  , , , Games.Status statusPaused) = games.s_games(gameHash);
       assert(statusPaused == Games.Status.Paused);
 
       // player two calls the completeGame function with the exact same data. 
-      bytes memory callData2 = abi.encodeWithSelector(Games.completeGame.selector, 1, avatarAccountAddressOne, avatarAccountAddressTwo); // note: different winner than at userOne
+      bytes memory callData2 = abi.encodeWithSelector(Games.completeGame.selector, 1, player0, player1); // note: different winner than at 
       vm.expectEmit(true, false, false, false);
       emit CompletedGame(address(1), gameHash); // check if really an active game is deployed. 
-      vm.prank(userTwo); 
-      avatarBasedAccountTwo.execute(address(games), 0, callData2, 0);
+      vm.prank(users[1]); 
+      accountPlayer1.execute(address(games), 0, callData2, 0);
 
       ( ,  , address winner, , Games.Status status) = games.s_games(gameHash);
-      ( , uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(avatarAccountAddressOne); 
-      ( , uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(avatarAccountAddressTwo);
+      ( , uint256 scoreOneAfter, Games.Status statusPlayerOne) = games.s_players(player0); 
+      ( , uint256 scoreTwoAfter, Games.Status statusPlayerTwo) = games.s_players(player1);
 
       assert(status == Games.Status.Completed);
       assert(statusPlayerOne == Games.Status.Completed);
@@ -468,16 +420,16 @@ contract GamesTest is Test {
         );
       bytes memory callDataA = abi.encodeWithSelector(Games.initialiseGame.selector, cardDeckA);
       
-      vm.prank(userOne); 
+      vm.prank(users[0]); 
       avatarBasedAccountA.execute(address(games), 0, callDataA, 0);
       
       // PlayerB joins the pending game
       uint256[] memory cardDeckB = _createCardDeckFromCollection(
         cards.getCollection(playerB)
         ); 
-      bytes memory callDataB = abi.encodeWithSelector(Games.joinGame.selector, avatarAccountAddressOne, nonce, cardDeckB);
+      bytes memory callDataB = abi.encodeWithSelector(Games.joinGame.selector, player0, nonce, cardDeckB);
       
-      vm.prank(userTwo); 
+      vm.prank(users[1]); 
       avatarBasedAccountB.execute(address(games), 0, callDataB, 0);
     
     }

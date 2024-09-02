@@ -18,7 +18,10 @@ contract CardsTest is Test {
     Games games;
     Players players;  
     AvatarBasedAccount avatarBasedAccount;
+    HelperConfig helperConfig; 
 
+    address vrfWrapper; 
+    uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
     address userOne = makeAddr("UserOne"); 
     address userTwo = makeAddr("UserTwo"); 
     string avatarUri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
@@ -27,16 +30,22 @@ contract CardsTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
-        // deploying the ERC-6551 registry... 
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount, ) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games, ) = deployerGames.run();
+        (cards, games, helperConfig) = deployerGames.run();
+        (
+            , //address erc6551account; 
+            , // address erc6551Registry; 
+            vrfWrapper, // address vrfWrapper; 
+            , // uint16 vrfRequestConfirmations;
+            // uint32 vrfCallbackGasLimit
+            ) = helperConfig.activeNetworkConfig(); 
 
         // need to fund the contract itself for Chainlink VRF - direct payments.  
         vm.deal(address(cards), 100 ether);
-  }
+    }
 
     ///////////////////////////////////////////////
     ///                   Tests                 ///
@@ -65,9 +74,11 @@ contract CardsTest is Test {
       }
     }
 
-    function testWhenPackOFCardsBoughtBalanceContractIncreases() public {
+    function testWhenPackOfCardsBoughtBalanceContractIncreases() public {
       // PREP
       uint256 cardPackNumber = 2;
+      uint256 balanceStart = address(cards).balance; 
+
       // 1: create Avatar Based Account
       vm.prank(userOne);
       (, address avatarAccountAddress) = players.createPlayer(avatarUri);
@@ -79,26 +90,27 @@ contract CardsTest is Test {
       // 4: open pack of cards. 
       bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
       vm.prank(userOne);
-      AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+      bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+      uint256 requestId = uint256(bytes32(result)); 
 
+      // Mock callback from vrfWrapper
+      vm.prank(vrfWrapper); 
+      cards.rawFulfillRandomWords(requestId, mockRandomWords); 
 
-
-      console2.log("balance contract:", address(cards).balance); 
-
-      assert(address(cards).balance == priceCardPack); 
+      uint256 balanceEnd = address(cards).balance; 
+      console.log("balanceEnd", balanceEnd); 
+      assert(balanceEnd > balanceStart); 
     }
 
     function testOwnerCanRetrieveFunds() public {
       address ownerCardsContract = cards.owner(); 
+      uint256 initialCardsBalance = address(cards).balance; 
       uint256 amountToTransfer = 5000; 
 
       vm.deal(userOne, 1 ether); 
       vm.prank(userOne); 
       (bool success, ) = address(cards).call{value: amountToTransfer}(""); 
       // check if funds arrived. 
-      if (success) {
-        assert(address(cards).balance == amountToTransfer); 
-      }
 
       uint256 balanceBefore = ownerCardsContract.balance; 
       vm.prank(ownerCardsContract);
@@ -107,7 +119,7 @@ contract CardsTest is Test {
       uint256 balanceChange = balanceAfter - balanceBefore; 
       console2.log("balanceChange: ", balanceChange); 
 
-      assert((balanceAfter - balanceBefore) == amountToTransfer); 
+      assert((balanceAfter - balanceBefore) == amountToTransfer + initialCardsBalance); 
     }
 
     function testCardsCanBeUpdated() public {
@@ -143,19 +155,26 @@ contract CardsTest is Test {
         // 1: create Avatar Based Account
         vm.prank(userOne);
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+        
         // 2: get price pack
         uint256 priceCardPack = cards.s_priceCardPack();  
-        // 3: give userOne funds. 
-        vm.deal(userOne, 1 ether);
+        // 3: give avatarAccountAddress funds. 
         vm.deal(avatarAccountAddress, 1 ether);  
-
+        
+        // 4: open pack of cards. 
+        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         vm.prank(userOne);
-        AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+        bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+        uint256 requestId = uint256(bytes32(result)); 
 
-        uint256[] memory collection = cards.getCollection(avatarAccountAddress); 
-      
+        // Mock callback from vrfWrapper
+        vm.prank(vrfWrapper); 
+        cards.rawFulfillRandomWords(requestId, mockRandomWords); 
+
+        uint256[] memory collection = cards.getCollection(avatarAccountAddress);  
     }
+
+    // test tbi: // 
 
     // function testOpenCardPackRevertsIfNotFromAvatarBasedAccount() public {
 

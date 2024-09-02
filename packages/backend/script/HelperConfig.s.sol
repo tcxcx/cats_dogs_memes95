@@ -175,7 +175,6 @@ contract HelperConfig is Script {
         );
         s_wrapper.setL1FeeCalculation(L1_CALLDATA_GAS_COST_MODE, 80);
 
-
         // Add wrapper as a consumer to the wrapper's subscription.
         s_testCoordinator.addConsumer(uint256(s_wrapperSubscriptionId), address(s_wrapper));
         vm.stopBroadcast();
@@ -183,8 +182,6 @@ contract HelperConfig is Script {
         /////////////////////////////////////////////////
         //  Deploying ERC6551 Registry and Account     // 
         /////////////////////////////////////////////////
-        // DeployRegistry deployerRegistry = new DeployRegistry(); 
-        // deployerRegistry.run(); 
 
         ERC6551Registry erc6551Registry = new ERC6551Registry{
             salt: 0x0000000000000000000000000000000000000000fd8eb4e1dca713016c518e31
