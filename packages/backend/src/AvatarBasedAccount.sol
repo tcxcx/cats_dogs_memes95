@@ -2,17 +2,16 @@
 pragma solidity ^0.8.0;
 
 /**
-* NOTE: currently an exact copy of TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
-* I copied it (instead of importing) because we might add bespoke logics later on.
-*/ 
+ * NOTE: currently an exact copy of TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
+ * I copied it (instead of importing) because we might add bespoke logics later on.
+ */
 
-/** 
-* Copied from TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
-* Two small changes: 
-* 1 - changed names of contracts. This ensure that the interfaceId of AvatarBasedAccounts is unique. 
-* 2 - added onERC1155Received and onERC1155BatchReceived. This allows receiving of ERC-1155 tokens. 
-*/ 
-
+/**
+ * Copied from TokenBounds's reference ERC6551Account.sol. (see lib/reference/src/examples/simple)
+ * Two small changes:
+ * 1 - changed names of contracts. This ensure that the interfaceId of AvatarBasedAccounts is unique.
+ * 2 - added onERC1155Received and onERC1155BatchReceived. This allows receiving of ERC-1155 tokens.
+ */
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
@@ -21,17 +20,11 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 interface IAvatarAccount {
     receive() external payable;
 
-    function token()
-        external
-        view
-        returns (uint256 chainId, address tokenContract, uint256 tokenId);
+    function token() external view returns (uint256 chainId, address tokenContract, uint256 tokenId);
 
     function state() external view returns (uint256);
 
-    function isValidSigner(address signer, bytes calldata context)
-        external
-        view
-        returns (bytes4 magicValue);
+    function isValidSigner(address signer, bytes calldata context) external view returns (bytes4 magicValue);
 }
 
 interface IAvatarExecutable {
@@ -75,12 +68,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         return bytes4(0);
     }
 
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        virtual
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view virtual returns (bytes4 magicValue) {
         bool isValid = SignatureChecker.isValidSignatureNow(owner(), hash, signature);
 
         if (isValid) {
@@ -91,8 +79,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC165).interfaceId
-            || interfaceId == type(IAvatarAccount).interfaceId
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAvatarAccount).interfaceId
             || interfaceId == type(IAvatarExecutable).interfaceId;
     }
 
@@ -117,15 +104,15 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         return signer == owner();
     }
 
-        /**
-     * @dev added onERC1155Received function to make single transfers of ERC1155 tokens to TBA possible.  
+    /**
+     * @dev added onERC1155Received function to make single transfers of ERC1155 tokens to TBA possible.
      */
     function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
     /**
-     * @dev added onERC1155Received function to make batch transfers of ERC1155 tokens to TBA possible.  
+     * @dev added onERC1155Received function to make batch transfers of ERC1155 tokens to TBA possible.
      */
     function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory)
         public
