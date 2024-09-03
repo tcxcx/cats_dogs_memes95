@@ -131,6 +131,7 @@ export default function Game() {
       setGamePhase("draw");
       setPlayerScore(0);
       setOpponentScore(0);
+      setTurnCount(1);
       setGameLog(initialGameLog);
     } catch (error) {
       console.error("Failed to initialize game:", error);
