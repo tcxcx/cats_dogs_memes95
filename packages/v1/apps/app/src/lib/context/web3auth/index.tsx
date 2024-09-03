@@ -237,3 +237,4 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     </Web3AuthContext.Provider>
   );
 };
+

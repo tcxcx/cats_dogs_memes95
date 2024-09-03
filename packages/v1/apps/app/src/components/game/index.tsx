@@ -674,25 +674,3 @@ export default function Game() {
     </DynamicIslandProvider>
   );
 }
-
-//// DUMP
-/*
-  const initializeGame = () => {
-    const shuffledDeck = [...userCards].sort(() => Math.random() - 0.5);
-    setPlayerHand(shuffledDeck.slice(0, 2));
-    setOpponentHand(shuffledDeck.slice(2, 4));
-    setGamePhase("draw");
-    setPlayerScore(0);
-    setOpponentScore(0);
-    setWinner(null);
-    setSize("compact");
-  };
-  */
-/* Play Again Button
-              <Button
-                onClick = {initializeGame( Deck1, Deck2)}
-                className="bg-green-500 text-white hover:bg-green-600"
-              
-                Play Again
-              </Button>
-              >*/

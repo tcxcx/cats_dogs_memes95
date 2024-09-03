@@ -1,0 +1,13 @@
+{
+  "state": {
+    "deckP1": [],
+    "deckP2": [],
+    "handP1": [],
+    "handP2": [],
+    "score": [0, 0],
+    "turnCount": 0,
+    "cardCollection": {},
+    "powerList": ["attack", "defense", "speed"],
+    "typeList": ["Cat", "Dog", "Meme"]
+  }
+}

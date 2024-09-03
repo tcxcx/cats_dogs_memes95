@@ -10,7 +10,6 @@ import {
   type Account,
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
-
 import type { IProvider } from "@web3auth/base";
 
 export default class EthereumRpc {
@@ -48,7 +47,9 @@ export default class EthereumRpc {
   private cardsContractABI = [
     // ABI definitions for Cards.sol
     {
-      inputs: [{ internalType: "uint256", name: "cardPackNo", type: "uint256" }],
+      inputs: [
+        { internalType: "uint256", name: "cardPackNo", type: "uint256" },
+      ],
       name: "openCardPack",
       outputs: [],
       stateMutability: "payable",
@@ -75,7 +76,6 @@ export default class EthereumRpc {
     },
     // other functions...
   ];
-
 
   private playersContractABI = [
     {
@@ -316,13 +316,15 @@ export default class EthereumRpc {
     }
   }
 
-// * NFT Minting: *
+  // * NFT Minting: *
 
-// * The mintNFT function enables the minting of NFTs to a specified recipient. This is crucial for your game's mechanics, where players acquire NFTs representing in-game assets. *
-// * The integration with viem's createWalletClient and createPublicClient provides a seamless way to interact with the blockchain, ensuring transactions are sent and confirmed properly. *
+  // * The mintNFT function enables the minting of NFTs to a specified recipient. This is crucial for your game's mechanics, where players acquire NFTs representing in-game assets. *
+  // * The integration with viem's createWalletClient and createPublicClient provides a seamless way to interact with the blockchain, ensuring transactions are sent and confirmed properly. *
 
-
-  async mintNFT(recipient: string, tokenURI: string): Promise<TransactionReceipt> {
+  async mintNFT(
+    recipient: string,
+    tokenURI: string
+  ): Promise<TransactionReceipt> {
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
@@ -356,13 +358,15 @@ export default class EthereumRpc {
     }
   }
 
-// * Opening Card Packs: *
+  // * Opening Card Packs: *
 
-// * The openCardPack function manages the purchasing and opening of card packs, which are represented as ERC-1155 tokens. Each pack contains multiple cards (likely ERC-1155 tokens themselves). *
-// * The function handles both the transaction to open the pack and the retrieval of transaction receipts, ensuring the process is smooth and the game logic can proceed based on the outcome. *
+  // * The openCardPack function manages the purchasing and opening of card packs, which are represented as ERC-1155 tokens. Each pack contains multiple cards (likely ERC-1155 tokens themselves). *
+  // * The function handles both the transaction to open the pack and the retrieval of transaction receipts, ensuring the process is smooth and the game logic can proceed based on the outcome. *
 
-
-  async openCardPack(cardPackNo: number, value: string): Promise<TransactionReceipt> {
+  async openCardPack(
+    cardPackNo: number,
+    value: string
+  ): Promise<TransactionReceipt> {
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
@@ -414,11 +418,10 @@ export default class EthereumRpc {
     }
   }
 
+  // * Coin Share Minting: *
 
-// * Coin Share Minting: *
-
-// * The mintCoinShare function ties in with your game’s reward system, where purchasing packs or other in-game actions grant players coin shares. *
-// * This function correctly handles the transaction process, ensuring players receive their allocated coin shares based on their actions. *
+  // * The mintCoinShare function ties in with your game’s reward system, where purchasing packs or other in-game actions grant players coin shares. *
+  // * This function correctly handles the transaction process, ensuring players receive their allocated coin shares based on their actions. *
 
   async mintCoinShare(): Promise<TransactionReceipt> {
     try {
@@ -450,28 +453,29 @@ export default class EthereumRpc {
     }
   }
 
-// * Creating a player (an ERC-6551 wallet) *
+  // * Creating a player (an ERC-6551 wallet) *
 
-// * Player Creation (ERC-6551 Wallet): *
+  // * Player Creation (ERC-6551 Wallet): *
 
-// * The createPlayer function allows the creation of a player associated with an ERC-6551 account. The process involves sending a transaction, waiting for its confirmation, and decoding the logs to extract the avatarId and corresponding avatarAddress. *
-// * The logic to decode the event logs and retrieve the avatar's details is sound. This will ensure that once a player is created, they are correctly linked to the wallet, and the game's subsequent actions can interact with this player. *
+  // * The createPlayer function allows the creation of a player associated with an ERC-6551 account. The process involves sending a transaction, waiting for its confirmation, and decoding the logs to extract the avatarId and corresponding avatarAddress. *
+  // * The logic to decode the event logs and retrieve the avatar's details is sound. This will ensure that once a player is created, they are correctly linked to the wallet, and the game's subsequent actions can interact with this player. *
 
-
-  async createPlayer(avatarURI: string): Promise<{ avatarId: number, avatarAddress: string }> {
+  async createPlayer(
+    avatarURI: string
+  ): Promise<{ avatarId: number; avatarAddress: string }> {
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
-  
+
       const publicClient = createPublicClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
-  
+
       const address = await this.getAddresses();
-  
+
       // Submit the transaction to create the player
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
@@ -480,31 +484,33 @@ export default class EthereumRpc {
         functionName: "createPlayer",
         args: [avatarURI],
       });
-  
+
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  
+
       // Manually decode the event logs
-      const events = receipt.logs.map((log) => {
-        try {
-          return decodeEventLog({
-            abi: this.playersContractABI,
-            data: log.data, // Log data to decode
-            topics: log.topics, // Log topics to decode
-          });
-        } catch (error) {
-          console.error("Error decoding log:", error);
-          return null;
-        }
-      }).filter(Boolean);
-  
+      const events = receipt.logs
+        .map((log) => {
+          try {
+            return decodeEventLog({
+              abi: this.playersContractABI,
+              data: log.data, // Log data to decode
+              topics: log.topics, // Log topics to decode
+            });
+          } catch (error) {
+            console.error("Error decoding log:", error);
+            return null;
+          }
+        })
+        .filter(Boolean);
+
       if (events.length === 0 || !events[0]?.args) {
         throw new Error("No valid events found in transaction receipt");
       }
-  
+
       // Accessing the avatarId safely
       const avatarId = events[0].args?.[0] as number;
       const avatarAddress = await this.getAvatarAddress(avatarId);
-  
+
       return { avatarId, avatarAddress };
     } catch (error) {
       console.error("Error creating player:", error);
@@ -514,11 +520,10 @@ export default class EthereumRpc {
 
   // * Get Avatar Address: *
 
-// * The getAvatarAddress function retrieves the address of an avatar based on its ID. *
-// * This is used to map the player's avatar to a specific wallet address after the player has been created. *
-// * The function interacts with the Players contract, calling the getAvatarAddress function to obtain the associated address. *
+  // * The getAvatarAddress function retrieves the address of an avatar based on its ID. *
+  // * This is used to map the player's avatar to a specific wallet address after the player has been created. *
+  // * The function interacts with the Players contract, calling the getAvatarAddress function to obtain the associated address. *
 
-  
   async getAvatarAddress(avatarId: number): Promise<string> {
     try {
       const publicClient = createPublicClient({
@@ -526,7 +531,7 @@ export default class EthereumRpc {
         transport: custom(this.provider),
       });
 
-          // Call the getAvatarAddress function on the Players contract to get the avatar's address
+      // Call the getAvatarAddress function on the Players contract to get the avatar's address
 
       const result = await publicClient.readContract({
         address: "0xPlayersContractAddressHere",
@@ -542,7 +547,6 @@ export default class EthereumRpc {
     }
   }
 
-
   toObject<T>(data: T): T {
     return JSON.parse(
       JSON.stringify(data, (key, value) =>
@@ -551,3 +555,5 @@ export default class EthereumRpc {
     ) as T;
   }
 }
+
+export { EthereumRpc };

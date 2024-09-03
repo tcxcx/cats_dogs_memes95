@@ -74,7 +74,7 @@ function drawInitialHand(deck: Deck): Hand {
 }
 
 
-function calculateTurnOutcome(
+export function calculateTurnOutcome(
     coll: CardCollection,
     card1: string,
     card2: string,
