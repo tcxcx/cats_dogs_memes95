@@ -1,5 +1,5 @@
 {
-  "name": "counter-mru",
+  "name": "@v1/rollup",
   "module": "index.ts",
   "type": "module",
   "scripts": {
@@ -26,11 +26,12 @@
     "chai": "^5.1.0"
   },
   "exports": {
-    "./stackr/schemas": "./src/stackr/schemas.ts",
-    "./stackr/state": "./src/stackr/state.ts",
-    "./stackr/transitions": "./src/stackr/transitions.ts",
-    "./stackr/machine": "./src/stackr/machine.ts",
-    "./stackr/mru": "./src/stackr/mru.ts"
+    "./schemas": "./src/stackr/schemas.ts",
+    "./state": "./src/stackr/state.ts",
+    "./transitions": "./src/stackr/transitions.ts",
+    "./machine": "./src/stackr/machine.ts",
+    "./mru": "./src/stackr/mru.ts",
+    ".": "./src/index.ts"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

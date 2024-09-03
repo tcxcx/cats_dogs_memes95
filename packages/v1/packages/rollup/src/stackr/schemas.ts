@@ -19,3 +19,9 @@ export const FinalizeGameSchema = new ActionSchema("finalize-game", {
   turnCount: SolidityType.UINT,
   gameLog: SolidityType.STRING,
 });
+
+export const schemas = {
+  initializeGame: InitializeGameSchema,
+  playTurn: PlayTurnSchema,
+  finalizeGame: FinalizeGameSchema,
+};

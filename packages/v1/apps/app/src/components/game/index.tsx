@@ -24,6 +24,7 @@ import {
   Player,
   GamePhase,
   Winner,
+  GameStateLog,
 } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
 import { Cat, Dog, Smile } from "lucide-react";
@@ -35,7 +36,8 @@ import {
   useDynamicIslandSize,
 } from "@v1/ui/dynamic-island";
 import Image from "next/image";
-import { set } from "zod";
+import GameDrawer from "@/components/game-drawer";
+import { useWeb3Auth } from "@/lib/context/web3auth";
 
 //type CardType = "CAT" | "DOG" | "MEME";
 
@@ -68,6 +70,15 @@ export default function Game() {
 
   const { state: blobState, setSize } = useDynamicIslandSize();
 
+  const { rpc, isLoggedIn } = useWeb3Auth();
+
+  const [isGameDrawerOpen, setIsGameDrawerOpen] = useState(false);
+  const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
+  const [handIndexP1, setHandIndexP1] = useState<number | undefined>(undefined);
+  const [powIndexP1, setPowIndexP1] = useState<number | undefined>(undefined);
+  const [handIndexP2, setHandIndexP2] = useState<number | undefined>(undefined);
+  const [powIndexP2, setPowIndexP2] = useState<number | undefined>(undefined);
+
   // Mock decks for demonstration purposes Assuming user has all userCards
   // Or use card.id if Deck should contain IDs
   const Deck1: Deck = shuffleDeck([...userCards])
@@ -77,11 +88,21 @@ export default function Game() {
     .slice(0, 10)
     .map((card) => card.name);
 
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      initializeGameHandler();
+    }
+  }, [isLoggedIn]);
+
+
   // Fetch the initial game state when the component mounts
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
         const initialGameState = await initializeGame(Deck1, Deck2);
+        setCurrentGameAction('initializeGame');
+        setIsGameDrawerOpen(true);
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
@@ -162,7 +183,7 @@ export default function Game() {
       }
       return hand;
     };
-  
+
     if (player === "player") {
       setPlayerActiveCard(card);
       setPlayerHand((prev) => removeOneCard(prev));
@@ -170,7 +191,7 @@ export default function Game() {
       setOpponentActiveCard(card);
       setOpponentHand((prev) => removeOneCard(prev));
     }
-    
+
     setSize("medium");
     setTimeout(() => setSize("compact"), 1000);
   };
@@ -190,7 +211,7 @@ export default function Game() {
       selectedPower &&
       opponentSelectedPower
     ) {
-      const {newPlayerScore, newOpponentScore, size} = resolveCombat(
+      const { newPlayerScore, newOpponentScore, size } = resolveCombat(
         playerActiveCard,
         opponentActiveCard,
         selectedPower,
@@ -206,11 +227,12 @@ export default function Game() {
 
       setTimeout(() => setSize("compact"), 2000);
       //Winner declaration
-      const { winner, updatedGameLog} = finalizeGame(
+      const { winner, updatedGameLog } = finalizeGame(
         playerScore,
         opponentScore,
         turnCount,
-        gameLog!);
+        gameLog!
+      );
       setGameLog(updatedGameLog);
       setWinner(winner);
       /*if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
@@ -232,11 +254,12 @@ export default function Game() {
   };
 
   const nextPhase = () => {
-    const { winner, updatedGameLog} = finalizeGame(
+    const { winner, updatedGameLog } = finalizeGame(
       playerScore,
       opponentScore,
       turnCount,
-      gameLog!);
+      gameLog!
+    );
     setGameLog(updatedGameLog);
     setWinner(winner);
     switch (gamePhase) {
@@ -355,9 +378,9 @@ export default function Game() {
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {playerScore > opponentScore
                 ? "You Win This Round!"
-                : (playerScore < opponentScore 
-                  ? "Opponent Wins This Round!" 
-                  : "It's a Draw!")}
+                : playerScore < opponentScore
+                  ? "Opponent Wins This Round!"
+                  : "It's a Draw!"}
             </DynamicTitle>
           </DynamicContainer>
         );

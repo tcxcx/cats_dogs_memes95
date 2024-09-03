@@ -11,6 +11,11 @@ import {
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
+import { TypedDataField } from 'ethers';
+import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
+
+export type EIP712Types = Record<string, TypedDataField[]>;
+
 
 export default class EthereumRpc {
   private provider: IProvider;
@@ -236,7 +241,7 @@ export default class EthereumRpc {
     }
   }
 
-  async signMessage(): Promise<string> {
+  async signMessage(messageToSign?: string): Promise<string> {
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
@@ -554,6 +559,31 @@ export default class EthereumRpc {
       )
     ) as T;
   }
+
+async sign712Message(schema: ActionSchema, payload: any): Promise<string> {
+  const walletClient = createWalletClient({
+    chain: this.getViewChain(),
+    transport: custom(this.provider),
+  });
+
+  const address = await this.getAccounts();
+    const domain = schema.domain as TypedDataDomain;
+  const types = schema.EIP712TypedData.types as EIP712Types;
+
+   const signature = await walletClient.signTypedData({
+      account: address[0] as `0x${string}` | Account,
+      domain: {
+        ...domain,
+        chainId: domain.chainId ? Number(domain.chainId) : undefined,
+      },
+      types,
+      primaryType: schema.EIP712TypedData.primaryType,
+      message: payload,
+    });
+
+    return signature;
+  }
+
 }
 
 export { EthereumRpc };

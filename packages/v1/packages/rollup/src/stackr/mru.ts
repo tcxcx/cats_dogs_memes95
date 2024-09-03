@@ -7,12 +7,13 @@ import {
   FinalizeGameSchema,
 } from "./schemas";
 
-const mru = await MicroRollup({
-  config: stackrConfig,
-  actionSchemas: [InitializeGameSchema, PlayTurnSchema, FinalizeGameSchema],
-  stateMachines: [gameMachine],
-});
+export const initializeMRU = async () => {
+  const mru = await MicroRollup({
+    config: stackrConfig,
+    actionSchemas: [InitializeGameSchema, PlayTurnSchema, FinalizeGameSchema],
+    stateMachines: [gameMachine],
+  });
 
-await mru.init();
-
-export { mru };
+  await mru.init();
+  return mru;
+};
