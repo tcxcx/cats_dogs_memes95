@@ -597,7 +597,7 @@ export const userCards: CardData[] = [
     type: [{ type: "Meme", value: 1 }],
     subtype: "🐸",
     powers: [
-      { type: "attack", value: 20 },
+      { type: "attack", value: 16 },
       { type: "defense", value: 2 },
       { type: "speed", value: 2 },
     ],

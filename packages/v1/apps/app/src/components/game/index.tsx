@@ -128,11 +128,12 @@ export default function Game() {
       setOpponentActiveCard(null);
       setSelectedPower(null);
       setOpponentSelectedPower(null);
-      setGamePhase("draw");
       setPlayerScore(0);
       setOpponentScore(0);
       setTurnCount(1);
       setGameLog(initialGameLog);
+      setGamePhase("draw");
+      console.log("Game reset: ", gameLog, "Turn: ", turnCount);
     } catch (error) {
       console.error("Failed to initialize game:", error);
     }
