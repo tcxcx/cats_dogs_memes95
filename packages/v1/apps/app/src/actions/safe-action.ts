@@ -1,9 +1,9 @@
+// packages/v1/apps/app/src/actions/safe-action.ts
+
 import * as Sentry from "@sentry/nextjs";
 import { setupAnalytics } from "@v1/analytics/server";
 import { ratelimit } from "@v1/kv/ratelimit";
 import { logger } from "@v1/logger";
-import { getUser } from "@v1/supabase/queries";
-import { createClient } from "@v1/supabase/server";
 import {
   DEFAULT_SERVER_ERROR_MESSAGE,
   createSafeActionClient,
@@ -42,7 +42,7 @@ export const actionClientWithMeta = createSafeActionClient({
   },
 });
 
-export const authActionClient = actionClientWithMeta
+export const nonAuthActionClient = actionClientWithMeta
   .use(async ({ next, clientInput, metadata }) => {
     const result = await next({ ctx: {} });
 
@@ -50,8 +50,6 @@ export const authActionClient = actionClientWithMeta
       logger("Input ->", clientInput);
       logger("Result ->", result.data);
       logger("Metadata ->", metadata);
-
-      return result;
     }
 
     return result;
@@ -60,7 +58,7 @@ export const authActionClient = actionClientWithMeta
     const ip = headers().get("x-forwarded-for");
 
     const { success, remaining } = await ratelimit.limit(
-      `${ip}-${metadata.name}`,
+      `${ip}-${metadata.name}`
     );
 
     if (!success) {
@@ -76,31 +74,12 @@ export const authActionClient = actionClientWithMeta
     });
   })
   .use(async ({ next, metadata }) => {
-    const {
-      data: { user },
-    } = await getUser();
-    const supabase = createClient();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (metadata) {
-      const analytics = await setupAnalytics({
-        userId: user.id,
-      });
-
-      if (metadata.track) {
-        analytics.track(metadata.track);
-      }
+    if (metadata && metadata.track) {
+      const analytics = await setupAnalytics({});
+      analytics.track(metadata.track);
     }
 
     return Sentry.withServerActionInstrumentation(metadata.name, async () => {
-      return next({
-        ctx: {
-          supabase,
-          user,
-        },
-      });
+      return next({ ctx: {} });
     });
   });

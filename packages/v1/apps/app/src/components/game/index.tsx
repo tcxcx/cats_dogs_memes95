@@ -24,7 +24,7 @@ import {
   GameLog,
   Player,
   GamePhase,
-  Winner
+  Winner,
 } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
 import { Cat, Dog, Smile } from "lucide-react";
@@ -70,8 +70,12 @@ export default function Game() {
 
   // Mock decks for demonstration purposes Assuming user has all userCards
   // Or use card.id if Deck should contain IDs
-  const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
-  const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
+  const Deck1: Deck = shuffleDeck([...userCards])
+    .slice(0, 10)
+    .map((card) => card.name);
+  const Deck2: Deck = shuffleDeck([...userCards])
+    .slice(0, 10)
+    .map((card) => card.name);
 
   // Fetch the initial game state when the component mounts
   useEffect(() => {
@@ -92,8 +96,7 @@ export default function Game() {
         setGameLog(initialGameLog);
         setGamePhase("draw");
         setTurnCount(1);
-      }
-      catch (error) {
+      } catch (error) {
         console.error("Failed to initialize game:", error);
       }
     }
@@ -206,14 +209,13 @@ export default function Game() {
 
       setTimeout(() => setSize("compact"), 2000);
 
-      if (
-        playerScore >= 4 ||
-        opponentScore >= 4 ||
-        turnCount >= 8
-      ) {
-        const provWinner = playerScore > opponentScore ? "player" :(
-          playerScore < opponentScore ? "opponent" : null
-        );
+      if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
+        const provWinner =
+          playerScore > opponentScore
+            ? "player"
+            : playerScore < opponentScore
+              ? "opponent"
+              : null;
         const finalGameLog: GameLog = {
           ...gameLog!,
           winner: provWinner,
@@ -243,7 +245,7 @@ export default function Game() {
                   Math.floor(Math.random() * randomCard.powers.length)
                 ];
               if (randomPower) {
-                  selectPower(randomPower, "player");
+                selectPower(randomPower, "player");
               }
             }
           }
@@ -280,12 +282,16 @@ export default function Game() {
         setGamePhase("check");
         break;
       case "check":
-        setTurnCount((prevCount) => prevCount + 1); 
+        setTurnCount((prevCount) => prevCount + 1);
         const updatedGameLog = updateGameLog(
-          gameLog!, turnCount,
-          playerActiveCard!, opponentActiveCard!,
-          selectedPower!, opponentSelectedPower!,
-          [playerScore, opponentScore]);
+          gameLog!,
+          turnCount,
+          playerActiveCard!,
+          opponentActiveCard!,
+          selectedPower!,
+          opponentSelectedPower!,
+          [playerScore, opponentScore]
+        );
         setGameLog(updatedGameLog);
         setPlayerActiveCard(null);
         setOpponentActiveCard(null);
@@ -326,8 +332,8 @@ export default function Game() {
               {gamePhase === "prep"
                 ? "Preparing for Battle"
                 : gamePhase === "combat"
-                ? "Combat!"
-                : "It's a Draw!"}
+                  ? "Combat!"
+                  : "It's a Draw!"}
             </DynamicTitle>
           </DynamicContainer>
         );
@@ -563,10 +569,10 @@ export default function Game() {
                 {gamePhase === "draw"
                   ? "Draw"
                   : gamePhase === "prep"
-                  ? "Prepare"
-                  : gamePhase === "combat"
-                  ? "Combat"
-                  : "Next Turn"}
+                    ? "Prepare"
+                    : gamePhase === "combat"
+                      ? "Combat"
+                      : "Next Turn"}
               </Button>
             </motion.div>
           </motion.div>
@@ -580,9 +586,7 @@ export default function Game() {
                 transition={{ duration: 0.3 }}
                 className="absolute top-[40%] left-[15%] transform ml-4"
               >
-                <h2 className="text-2xl font-extrabold mb-4">
-                  Powers
-                </h2>
+                <h2 className="text-2xl font-extrabold mb-4">Powers</h2>
                 <div className="flex flex-col justify-center space-y-2">
                   {playerActiveCard.powers.map((power, index) => (
                     <motion.div
