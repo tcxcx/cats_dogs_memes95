@@ -355,7 +355,7 @@ export default function Game() {
       case "large":
         return (
           <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
               Drawing Cards...
             </DynamicTitle>
           </DynamicContainer>
@@ -363,7 +363,7 @@ export default function Game() {
       case "medium":
         return (
           <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
               {gamePhase === "prep"
                 ? "Preparing for Battle"
                 : gamePhase === "combat"
@@ -375,7 +375,7 @@ export default function Game() {
       case "tall":
         return (
           <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
               {playerScore > opponentScore
                 ? "You Win This Round!"
                 : playerScore < opponentScore
@@ -387,7 +387,7 @@ export default function Game() {
       default:
         return (
           <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-            <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
               {turnCount >= 8
                 ? winner
                   ? winner === "player"
@@ -415,7 +415,7 @@ export default function Game() {
             className="flex justify-between mb-4 center"
           >
             {/* Scores */}
-            <div className="text-3xl text-center font-bold">
+            <div className="text-3xl text-center font-departure">
               {" "}
               Player{"\n"}
               {playerScore}{" "}
@@ -425,7 +425,7 @@ export default function Game() {
                 {renderDynamicIslandState()}
               </DynamicIsland>
             </div>
-            <div className="text-3xl text-center font-bold">
+            <div className="text-3xl text-center font-departure">
               {" "}
               Opponent{"\n"}
               {opponentScore}{" "}
@@ -456,12 +456,12 @@ export default function Game() {
                     transition={{ duration: 0.5 }}
                     className="transform scale-75 bg-red-100 bg-opacity-50 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
                   >
-                    <div className="text-center text-xs font-semibold text-red-700 mb-1">
+                    <div className="text-center text-xs font-departure text-red-700 mb-1">
                       Opponent`s Card
                     </div>
                     <CardGame card={opponentActiveCard} />
                     {opponentSelectedPower && (
-                      <div className="mt-2 text-center font-bold">
+                      <div className="mt-2 text-center font-departure">
                         {opponentSelectedPower.type}:{" "}
                         {opponentSelectedPower.value}
                       </div>
@@ -486,12 +486,12 @@ export default function Game() {
                     transition={{ duration: 0.5 }}
                     className="transform scale-75 bg-blue-100 bg-opacity-50 rounded-lg p-2 shadow-sm w-1/2 h-4/5 justify-self-end"
                   >
-                    <div className="text-center text-xs font-semibold text-blue-700 mb-1">
+                    <div className="text-center text-xs font-departure text-blue-700 mb-1">
                       Your Card
                     </div>
                     <CardGame card={playerActiveCard} />
                     {selectedPower && (
-                      <div className="mt-2 text-center font-bold">
+                      <div className="mt-2 text-center font-departure">
                         {selectedPower.type}: {selectedPower.value}
                       </div>
                     )}
@@ -536,7 +536,7 @@ export default function Game() {
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-center font-bold shadow-stone-900"
+              className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-100%", animationDelay: "1s" }}
               animate={{ x: "50%", y: "-250%" }}
             >
@@ -553,7 +553,7 @@ export default function Game() {
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="relative h-1/5 aspect-[3/4] bg-blue-400 rounded-lg shadow-md flex items-center justify-center text-pretty font-bold shadow-stone-900"
+              className="relative h-1/5 aspect-[3/4] bg-blue-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-200%", animationDelay: "1s" }}
               animate={{ x: "650%", y: "-50%" }}
             >
@@ -601,7 +601,7 @@ export default function Game() {
             >
               <Button
                 onClick={nextPhase}
-                className="bg-yellow-400 text-black hover:bg-yellow-200 font-bold px-4 rounded-full shadow-md"
+                className="bg-yellow-400 text-black hover:bg-yellow-200 font-departure px-4 rounded-full shadow-md"
               >
                 {gamePhase === "draw"
                   ? "Draw"
@@ -623,7 +623,7 @@ export default function Game() {
                 transition={{ duration: 0.3 }}
                 className="absolute top-[40%] left-[15%] transform ml-4"
               >
-                <h2 className="text-2xl font-extrabold mb-4">Powers</h2>
+                <h2 className="text-2xl font-departure mb-4">Powers</h2>
                 <div className="flex flex-col justify-center space-y-2">
                   {playerActiveCard.powers.map((power, index) => (
                     <motion.div
@@ -653,7 +653,7 @@ export default function Game() {
               className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
             >
               <div className="bg-white p-8 rounded-xl text-center">
-                <h2 className="text-3xl font-bold mb-4">
+                <h2 className="text-3xl font-departure mb-4">
                   {winner === "player"
                     ? "You Win the Game!"
                     : "Opponent Wins the Game!"}

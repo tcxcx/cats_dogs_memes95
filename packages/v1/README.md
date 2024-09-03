@@ -1,4 +1,4 @@
-![hero](image.png)
+![hero](image.png) 
 
 <p align="center">
 	<h1 align="center"><b>Cats, Dogs, Memes, etc. v1</b></h1>
