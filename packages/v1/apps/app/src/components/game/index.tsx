@@ -10,10 +10,9 @@ import {
   shuffleDeck,
   calculateTypeAdvantage,
   calculateCombatAdvantage,
-  fetchGameState,
-  determineWinner,
+  resolveCombat,
+  attestWinner,
   updateGameLog,
-  shuffleDeckAction,
 } from "@/lib/actions/game.actions";
 import {
   CardData,
@@ -36,6 +35,7 @@ import {
   useDynamicIslandSize,
 } from "@v1/ui/dynamic-island";
 import Image from "next/image";
+import { set } from "zod";
 
 //type CardType = "CAT" | "DOG" | "MEME";
 
@@ -171,45 +171,38 @@ export default function Game() {
       setOpponentSelectedPower(power);
     }
   };
-
-  const resolveCombat = () => {
+  const resolveCombatHandler = () => {
+    setSize("medium");
     if (
       playerActiveCard &&
       opponentActiveCard &&
       selectedPower &&
       opponentSelectedPower
     ) {
-      let playerValue = selectedPower.value;
-      let opponentValue = opponentSelectedPower.value;
-      playerValue += calculateTypeAdvantage(
-        playerActiveCard.type[0]!,
-        opponentActiveCard.type[0]!,
-      );
-      opponentValue += calculateTypeAdvantage(
-        opponentActiveCard.type[0]!,
-        playerActiveCard.type[0]!
-      );
-      playerValue += calculateCombatAdvantage(
+      const {newPlayerScore, newOpponentScore, size} = resolveCombat(
+        playerActiveCard,
+        opponentActiveCard,
         selectedPower,
-        opponentSelectedPower
-      );
-      opponentValue += calculateCombatAdvantage(
         opponentSelectedPower,
-        selectedPower
+        playerScore,
+        opponentScore,
+        calculateTypeAdvantage,
+        calculateCombatAdvantage
       );
-      if (playerValue > opponentValue) {
-        setPlayerScore((prev) => prev + 1);
-        setSize("tall");
-      } else if (opponentValue > playerValue) {
-        setOpponentScore((prev) => prev + 1);
-        setSize("tall");
-      } else {
-        setSize("medium");
-      }
+      setPlayerScore(newPlayerScore);
+      setOpponentScore(newOpponentScore);
+      setSize(size);
 
       setTimeout(() => setSize("compact"), 2000);
-
-      if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
+      //Winner attestation
+      const { winner, updatedGameLog} = attestWinner(
+        playerScore,
+        opponentScore,
+        turnCount,
+        gameLog!);
+      setGameLog(updatedGameLog);
+      setWinner(winner);
+      /*if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
         const provWinner =
           playerScore > opponentScore
             ? "player"
@@ -223,6 +216,7 @@ export default function Game() {
         setGameLog(finalGameLog);
         setWinner(provWinner);
       }
+      */
     }
   };
 
@@ -278,7 +272,7 @@ export default function Game() {
         setGamePhase("combat");
         break;
       case "combat":
-        resolveCombat();
+        resolveCombatHandler();
         setGamePhase("check");
         break;
       case "check":
@@ -353,11 +347,13 @@ export default function Game() {
         return (
           <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
-              {winner
-                ? winner === "player"
-                  ? "You Win the Game!"
-                  : "Opponent Wins the Game!"
-                : "Waiting..."}
+              {turnCount >= 8
+                ? winner
+                  ? winner === "player"
+                    ? "You Win the Game!"
+                    : "Opponent Wins the Game!"
+                  : "Waiting..."
+                : "It's a Draw!"}
             </DynamicTitle>
           </DynamicContainer>
         );

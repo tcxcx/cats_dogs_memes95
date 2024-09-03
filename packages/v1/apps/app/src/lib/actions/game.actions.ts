@@ -12,8 +12,11 @@ import {
   PowerList,
   GameLog,
   Player,
+  Winner,
+  Size,
 } from "@/lib/types"; // Assuming these types exist based on your project structure
 import { userCards } from "@/lib/mock-cards";
+import { SIZE_PRESETS, SizePresets } from "@v1/ui/dynamic-island";
 
 // Shuffle Functions
 export function shuffleDeck(array: any[]) {
@@ -333,6 +336,49 @@ export async function playTurnHandler(
     throw error;
   }
 }
+// Resolve combat
+export function resolveCombat(
+    playerActiveCard: CardData,
+    opponentActiveCard: CardData,
+    selectedPower: Power,
+    opponentSelectedPower: Power,
+    playerScore: number,
+    opponentScore: number,
+    calculateTypeAdvantage: (playerType: Type, opponentType: Type) => number,
+    calculateCombatAdvantage: (power1: Power, power2: Power) => number
+  ): { newPlayerScore: number; newOpponentScore: number; size: SizePresets} {
+    let playerValue = selectedPower.value;
+    let opponentValue = opponentSelectedPower.value;
+  
+    // Calculate type and combat advantages
+    playerValue += calculateTypeAdvantage(
+      playerActiveCard.type[0]!,
+      opponentActiveCard.type[0]!
+    );
+    opponentValue += calculateTypeAdvantage(
+      opponentActiveCard.type[0]!,
+      playerActiveCard.type[0]!
+    );
+    playerValue += calculateCombatAdvantage(selectedPower, opponentSelectedPower);
+    opponentValue += calculateCombatAdvantage(opponentSelectedPower, selectedPower);
+  
+    // Initialize new scores and size
+    let newPlayerScore = playerScore;
+    let newOpponentScore = opponentScore;
+    let size = "medium" as SizePresets;
+
+    // Update scores and size based on combat results
+    if (playerValue > opponentValue) {
+      newPlayerScore += 1;
+      size = "tall" as SizePresets;
+    } else if (opponentValue > playerValue) {
+      newOpponentScore += 1;
+      size = "tall" as SizePresets;
+    }
+  
+    return { newPlayerScore, newOpponentScore, size };
+  }
+  
 
 // ========== GAME OVER FUNCTIONS ==========
 export function checkGameOver(gameState: GameState): boolean {
@@ -346,6 +392,29 @@ export function determineWinner(gameState: GameState): Player | null {
     scoreP1 > scoreP2 ? "player" : scoreP2 > scoreP1 ? "opponent" : null;
   gameLog.winner = winner;
   return winner;
+}
+// win attestation
+export function attestWinner(
+    playerScore: number,
+    opponentScore: number,
+    turnCount: number,
+    gameLog: GameLog
+    ): {winner: Winner, updatedGameLog: GameLog}{
+        let provWinner: Winner = null;
+        if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
+            provWinner = (
+                playerScore > opponentScore
+                ? "player"
+                :(
+                    playerScore < opponentScore
+                    ? "opponent"
+                    : null)); // Handle a tie or no winner yet    
+        }
+        const updatedGameLog: GameLog = {
+            ...gameLog,
+            winner: provWinner,
+        };
+        return {winner: provWinner, updatedGameLog};
 }
 
 // ========== COMBAT FUNCTIONS ==========
@@ -377,6 +446,7 @@ export function calculateCombatAdvantage(
   }
   return 0;
 }
+
 
 // ========== CHOOSE FUNCTIONS ==========
 /*const chooseCard = (player: "P1" | "P2", index: number) => {
