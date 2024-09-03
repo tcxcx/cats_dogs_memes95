@@ -1,6 +1,6 @@
 import { State } from "@stackr/sdk/machine";
 import { solidityPackedKeccak256 } from "ethers";
-import { CardData, CardCollection } from "@v1/app/types"
+import { CardData, CardCollection } from "@v1/app/types";
 
 export type GameState = {
   deckP1: string[];
@@ -21,14 +21,7 @@ export class CardGameState extends State<GameState> {
 
   getRootHash() {
     return solidityPackedKeccak256(
-      [
-        "string[]",
-        "string[]",
-        "uint256[]",
-        "uint256",
-        "string[]",
-        "string[]",
-      ],
+      ["string[]", "string[]", "uint256[]", "uint256", "string[]", "string[]"],
       [
         this.state.deckP1,
         this.state.deckP2,

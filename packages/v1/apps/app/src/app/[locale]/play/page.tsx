@@ -13,7 +13,6 @@ const GamePage: FC = () => {
   return (
     <DynamicIslandProvider initialSize="compact">
       <div className="container h-fit relative" ref={canvasRef}>
-        <h1 className="null"></h1>
         <Game />
         <MultiplayerCursors canvas={canvasRef} />
       </div>

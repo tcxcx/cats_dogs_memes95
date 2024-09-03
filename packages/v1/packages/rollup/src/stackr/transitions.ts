@@ -1,24 +1,35 @@
 import { STF, Transitions } from "@stackr/sdk/machine";
 import { CardGameState } from "./state";
-import { 
-  calculateTurnOutcome, 
-  initializeGame as initGame, 
+import {
+  calculateTurnOutcome,
+  initializeGame as initGame,
   playTurn as playGameTurn,
-  checkGameOver as isGameOver, 
-  determineWinner as getWinner
+  checkGameOver as isGameOver,
+  determineWinner as getWinner,
 } from "@v1/app/game-actions";
 
-const initializeGame: STF<CardGameState, { deckP1: string[], deckP2: string[] }> = {
+const initializeGame: STF<
+  CardGameState,
+  { deckP1: string[]; deckP2: string[] }
+> = {
   handler: ({ state, inputs }) => {
     const initialState = initGame(inputs.deckP1, inputs.deckP2);
     return {
       ...state,
-      ...initialState
+      ...initialState,
     };
   },
 };
 
-const playTurn: STF<CardGameState, { handIndexP1: number, powIndexP1: number, handIndexP2: number, powIndexP2: number }> = {
+const playTurn: STF<
+  CardGameState,
+  {
+    handIndexP1: number;
+    powIndexP1: number;
+    handIndexP2: number;
+    powIndexP2: number;
+  }
+> = {
   handler: ({ state, inputs }) => {
     const { handIndexP1, powIndexP1, handIndexP2, powIndexP2 } = inputs;
     const { cardCollection, handP1, handP2, powerList, typeList } = state;
