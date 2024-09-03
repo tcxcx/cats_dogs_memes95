@@ -144,13 +144,22 @@ export default function Game() {
   };
 
   const playCard = (card: CardData, player: Player) => {
+    const removeOneCard = (hand: CardData[]) => {
+      const index = hand.findIndex((c) => c === card);
+      if (index !== -1) {
+        return [...hand.slice(0, index), ...hand.slice(index + 1)];
+      }
+      return hand;
+    };
+  
     if (player === "player") {
       setPlayerActiveCard(card);
-      setPlayerHand((prev) => prev.filter((c) => c !== card));
+      setPlayerHand((prev) => removeOneCard(prev));
     } else {
       setOpponentActiveCard(card);
-      setOpponentHand((prev) => prev.filter((c) => c !== card));
+      setOpponentHand((prev) => removeOneCard(prev));
     }
+    
     setSize("medium");
     setTimeout(() => setSize("compact"), 1000);
   };
@@ -172,16 +181,14 @@ export default function Game() {
     ) {
       let playerValue = selectedPower.value;
       let opponentValue = opponentSelectedPower.value;
-
       playerValue += calculateTypeAdvantage(
-        playerActiveCard.type as any,
-        opponentActiveCard.type as any
+        playerActiveCard.type[0]!,
+        opponentActiveCard.type[0]!,
       );
       opponentValue += calculateTypeAdvantage(
-        opponentActiveCard.type as any,
-        playerActiveCard.type as any
+        opponentActiveCard.type[0]!,
+        playerActiveCard.type[0]!
       );
-
       playerValue += calculateCombatAdvantage(
         selectedPower,
         opponentSelectedPower
@@ -190,7 +197,6 @@ export default function Game() {
         opponentSelectedPower,
         selectedPower
       );
-
       if (playerValue > opponentValue) {
         setPlayerScore((prev) => prev + 1);
         setSize("tall");
@@ -337,7 +343,9 @@ export default function Game() {
             <DynamicTitle className="text-4xl font-black tracking-tighter text-white">
               {playerScore > opponentScore
                 ? "You Win This Round!"
-                : "Opponent Wins This Round!"}
+                : (playerScore < opponentScore 
+                  ? "Opponent Wins This Round!" 
+                  : "It's a Draw!")}
             </DynamicTitle>
           </DynamicContainer>
         );
