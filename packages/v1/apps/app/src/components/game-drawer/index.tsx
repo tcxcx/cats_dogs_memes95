@@ -12,7 +12,7 @@ import {
 } from "@v1/ui/drawer";
 import { useWeb3Auth } from "@/lib/context/web3auth";
 import { Alert, AlertDescription, AlertTitle } from "@v1/ui/alert";
-import { Deck, GameStateLog } from "@/lib/types";
+import { GameState } from "@/lib/types";
 import { useAction } from "@/lib/hooks/useAction";
 import { useMruInfo } from "@/lib/hooks/useMruInfo";
 
@@ -20,16 +20,8 @@ interface GameDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   currentAction: 'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null;
-  gameState: GameStateLog | null;
-  deck1: Deck;
-  deck2: Deck;
-  playerScore: number;
-  opponentScore: number;
-  turnCount: number;
-  handIndexP1?: number;
-  powIndexP1?: number;
-  handIndexP2?: number;
-  powIndexP2?: number;
+  gameState: GameState | null;
+  onActionComplete: (result: any) => void;
 }
 
 export default function GameDrawer({
@@ -37,15 +29,7 @@ export default function GameDrawer({
   onClose,
   currentAction,
   gameState,
-  deck1,
-  deck2,
-  playerScore,
-  opponentScore,
-  turnCount,
-  handIndexP1,
-  powIndexP1,
-  handIndexP2,
-  powIndexP2
+  onActionComplete
 }: GameDrawerProps) {
   const { isLoggedIn } = useWeb3Auth();
   const { submit } = useAction();
@@ -69,24 +53,22 @@ export default function GameDrawer({
       let result;
       switch (currentAction) {
         case 'initializeGame':
-          result = await submit(currentAction, { deckP1: deck1, deckP2: deck2 });
+          // The actual submission is handled in the Game component
           break;
         case 'playTurn':
-          if (handIndexP1 === undefined || powIndexP1 === undefined || handIndexP2 === undefined || powIndexP2 === undefined) {
-            throw new Error("Missing required parameters for playTurn");
-          }
-          result = await submit(currentAction, { handIndexP1, powIndexP1, handIndexP2, powIndexP2 });
+          // The actual submission is handled in the Game component
           break;
         case 'checkGameOver':
           result = await submit(currentAction, {});
           break;
         case 'determineWinner':
-          result = await submit(currentAction, { playerScore, opponentScore, turnCount });
+          // The actual submission is handled in the Game component
           break;
         default:
           throw new Error("Invalid action");
       }
       setActionResult(result);
+      onActionComplete(result);
     } catch (error) {
       console.error(`Error during ${currentAction}:`, error);
       setError(`Failed to ${currentAction}. Please try again.`);

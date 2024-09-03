@@ -15,6 +15,7 @@ import { Web3AuthProvider } from "@/lib/context/web3auth";
 import { Toaster } from "@v1/ui/toaser";
 import Room from "../Room";
 import TransactionDrawer from "@/components/transaction-drawer";
+import { LogsProvider } from "@/lib/context/logs.context";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cats-dogs-memes-etc.wtf"),
@@ -57,6 +58,7 @@ export default function RootLayout({
             <React95App>
               {/* NAVBAR */}
               <Room>
+                <LogsProvider>
                 <Navbar />
                 {/* MAIN LAYOUT */}
                 <div className="flex h-screen">
@@ -82,6 +84,7 @@ export default function RootLayout({
                 </div>
                 {/* CLOSING LINE */}
                 <Footer />
+                </LogsProvider>
               </Room>
             </React95App>
           </Web3AuthProvider>

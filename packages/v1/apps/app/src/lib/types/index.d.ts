@@ -96,6 +96,10 @@ export type GameStateLog = {
   gameLog: GameLog;
 };
 
+export type GameStateLog = GameState & {
+  gameLog: GameLog;
+};
+
 // ========================================
 
 // The result of a turn, indicating how many points each player scored
