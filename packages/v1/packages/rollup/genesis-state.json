@@ -8,6 +8,14 @@
     "turnCount": 0,
     "cardCollection": {},
     "powerList": ["attack", "defense", "speed"],
-    "typeList": ["Cat", "Dog", "Meme"]
+    "typeList": ["Cat", "Dog", "Meme"],
+    "gameLog": {
+      "initialDecks": {
+        "deckP1": [],
+        "deckP2": []
+      },
+      "turns": [],
+      "winner": null
+    }
   }
 }

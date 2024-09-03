@@ -1,15 +1,19 @@
-// /home/tcxcx/coding_projects/cats_dogs_memes95/packages/v1/packages/rollup/src/index.ts
-
+// packages/v1/packages/rollup/src/index.ts
 import { ActionConfirmationStatus } from "@stackr/sdk";
 import { mru } from "./stackr/mru";
 import {
   InitializeGameSchema,
   PlayTurnSchema,
-  CheckGameOverSchema,
-  DetermineWinnerSchema,
+  FinalizeGameSchema,
 } from "./stackr/schemas";
 import { signMessage } from "./utils";
-import { CardData } from "@v1/app/types";
+import {
+  CardData,
+  Power,
+  GameState,
+  GameLog,
+  GameStateLog,
+} from "@v1/app/types";
 import { userCards } from "@v1/app/mock-cards";
 import { useWeb3Auth, EthereumRpc } from "@v1/app/web3auth";
 
@@ -40,7 +44,6 @@ const main = async () => {
   const initializeInputs = {
     deckP1,
     deckP2,
-    timestamp: Date.now(),
   };
 
   const initializeSignature = await signMessage(
@@ -60,13 +63,12 @@ const main = async () => {
   let { logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1);
   console.log("Initialize Game Result:", { logs, errors });
 
-  // Play a turn
+  // Play a turn (example)
   const playTurnInputs = {
     handIndexP1: 0,
     powIndexP1: 0,
     handIndexP2: 0,
     powIndexP2: 0,
-    timestamp: Date.now(),
   };
 
   const playTurnSignature = await signMessage(
@@ -86,43 +88,36 @@ const main = async () => {
   ({ logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1));
   console.log("Play Turn Result:", { logs, errors });
 
-  // Check if game is over
-  const checkGameOverInputs = { timestamp: Date.now() };
-  const checkGameOverSignature = await signMessage(
+  // Finalize the game
+  const gameState = mru.stateMachines.get("cardGame")?.state as GameStateLog;
+  if (!gameState) {
+    console.error("Game state not found");
+    return;
+  }
+
+  const finalizeGameInputs = {
+    playerScore: gameState.score[0],
+    opponentScore: gameState.score[1],
+    turnCount: gameState.turnCount,
+    gameLog: JSON.stringify(gameState.gameLog),
+  };
+
+  const finalizeGameSignature = await signMessage(
     rpc as EthereumRpc,
-    CheckGameOverSchema,
-    checkGameOverInputs
+    FinalizeGameSchema,
+    finalizeGameInputs
   );
-  const checkGameOverAction = CheckGameOverSchema.actionFrom({
-    inputs: checkGameOverInputs,
-    signature: checkGameOverSignature,
+  const finalizeGameAction = FinalizeGameSchema.actionFrom({
+    inputs: finalizeGameInputs,
+    signature: finalizeGameSignature,
     msgSender: address,
   });
 
-  ack = await mru.submitAction("checkGameOver", checkGameOverAction);
-  console.log("Check Game Over Action Hash:", ack.hash);
+  ack = await mru.submitAction("finalizeGame", finalizeGameAction);
+  console.log("Finalize Game Action Hash:", ack.hash);
 
   ({ logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1));
-  console.log("Check Game Over Result:", { logs, errors });
-
-  // Determine winner
-  const determineWinnerInputs = { timestamp: Date.now() };
-  const determineWinnerSignature = await signMessage(
-    rpc as EthereumRpc,
-    DetermineWinnerSchema,
-    determineWinnerInputs
-  );
-  const determineWinnerAction = DetermineWinnerSchema.actionFrom({
-    inputs: determineWinnerInputs,
-    signature: determineWinnerSignature,
-    msgSender: address,
-  });
-
-  ack = await mru.submitAction("determineWinner", determineWinnerAction);
-  console.log("Determine Winner Action Hash:", ack.hash);
-
-  ({ logs, errors } = await ack.waitFor(ActionConfirmationStatus.C1));
-  console.log("Determine Winner Result:", { logs, errors });
+  console.log("Finalize Game Result:", { logs, errors });
 };
 
 main().catch(console.error);
