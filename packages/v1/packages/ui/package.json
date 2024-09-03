@@ -47,7 +47,7 @@
     "./tabs": "./src/components/tabs.tsx",
     "./toast": "./src/components/toast.tsx",
     "./toaser": "./src/components/toaster.tsx",
-    "./use-toast": "./src/components/use-toast.tsx",
+    "./use-toast": "./src/components/use-toast.ts",
     "./retro-grid": "./src/components/magicui/retro-grid.tsx",
     "./tailwind.config": "./tailwind.config.ts",
     "./postcss": "./postcss.config.js"
