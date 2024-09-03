@@ -1,6 +1,0 @@
-@ds-test/=lib/forge-std/lib/ds-test/src/
-@forge-std/=lib/forge-std/src/
-@erc6551/=lib/reference/
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-solidity-bytes-utils/=lib/solidity-bytes-utils/
