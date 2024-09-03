@@ -6,20 +6,16 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 import {Coins} from "./Coins.sol";
 
-// chainlink VRF imports. see the docs here: https://docs.chain.link/vrf/v2-5/direct-funding/get-a-random-number
 import {ConfirmedOwner} from "../lib/chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import {VRFV2PlusWrapperConsumerBase} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 import {VRFV2PlusClient} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 /**
- * ERC-1155 based contract that stores cards structs and manages their distribution through the sell of card packs.
- * It integrates a Coins.sol contract to distributed coins on every sell of a card pack.
- *
- * Integretation with chainlink VRF 2.5 (direct funding) for randomisation of assigned cards.
- *
- * authors: Argos, CriptoPoeta, 7cedars
+ * @title VRFDirectFundingConsumer
+ * @notice A smart contract that utilizes Chainlink VRF - Direct Funding method and
+ * transfers the cost of each VRF call to the end user.
  */
-contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
+contract Cards2 is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     /* errors */
     error Cards__ArraysNotSameLength(uint256 lengthOne, uint256 lengthTwo);
     error Cards__OnlyAvatarBasedAccount(address playerAccount);

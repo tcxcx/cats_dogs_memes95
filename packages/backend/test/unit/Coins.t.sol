@@ -70,7 +70,6 @@ contract CoinsTest is Test {
         DeployGames deployerGames = new DeployGames();
         (cards, games, helperConfig) = deployerGames.run();
         (
-            , //address erc6551account;
             , // address erc6551Registry;
             vrfWrapper, // address vrfWrapper;
             , // uint16 vrfRequestConfirmations;

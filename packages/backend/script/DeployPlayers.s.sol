@@ -16,7 +16,9 @@ contract DeployPlayers is Script {
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 
     function run() external returns (Players, AvatarBasedAccount, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig(); 
-        (address account, address registry, , , ) = helperConfig.activeNetworkConfig(); 
+        // £note: deterministic deployment created problems. So now, with each deployment ALSO new Avatar Based Account deployed.
+        AvatarBasedAccount account = new AvatarBasedAccount();   
+        (address registry, , , ) = helperConfig.activeNetworkConfig(); 
         uint256 version = 1;
    
         vm.startBroadcast();

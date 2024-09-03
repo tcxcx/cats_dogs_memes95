@@ -15,11 +15,11 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 #&& git commit -m "modules"
 
 # Install modules
-install :; forge install foundry-rs/forge-std@v1.9.1 --no-commit && \
-	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-commit && \
-	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-commit && \
-	forge install https://github.com/erc6551/reference --no-commit && \
-	forge install smartcontractkit/chainlink --no-commit  
+install :; forge install foundry-rs/forge-std@v1.9.1 --no-git --no-commit && \
+	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-git --no-commit && \
+	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-git --no-commit && \
+	forge install https://github.com/erc6551/reference --no-git --no-commit && \
+	forge install smartcontractkit/chainlink --no-git --no-commit  
 
 # Update Dependencies
 # update:; forge update
@@ -104,9 +104,36 @@ baseSepoliaForkedTest:
 # --no-match-contract Games_fuzz
 
 baseSepoliaForkedDeployTest:
-	@forge script script/DeployPlayers.s.sol:DeployPlayers $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+	@forge script script/DeployPlayers.s.sol $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
 	
 baseSepoliaForkedDeploy: 
-	@forge script script/DeployPlayers.s.sol:DeployPlayers $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
+	@forge script script/DeployPlayers.s.sol $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
+
+###############################
+#    Bug Fixing Deployment	  #
+###############################
+BASE_SEPOLIA_TEST_ARGS := --fork-url $(BASE_SEPOLIA_RPC_URL) 
+BASE_SEPOLIA_DEPLOY_ARGS := --rpc-url $(BASE_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+
+base2SepoliaForkedTest: 
+	@forge test $(BASE_SEPOLIA_TEST_ARGS)
+# --no-match-contract Games_fuzz
+
+base2SepoliaForkedDeployGamesTest:
+	@forge script script/DeployGames.s.sol $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+
+base2SepoliaForkedGamesDeploy: 
+	@forge script script/DeployGames.s.sol $(BASE_SEPOLIA_DEPLOY_ARGS) --gas-limit 20000000 --gas-price 12000000000 -vvvv 
+
+baseSepoliaForkedDeployPlayersTest: 
+	@forge script script/DeployPlayers.s.sol $(BASE_SEPOLIA_TEST_ARGS) -vvvv 
+
+base2SepoliaForkedPlayersDeploy: 
+	@forge script script/DeployPlayers.s.sol $(BASE_SEPOLIA_DEPLOY_ARGS) -vvvv 
+
+resend: 
+	cast send 
+
+

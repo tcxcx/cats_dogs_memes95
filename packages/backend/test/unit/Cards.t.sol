@@ -4,17 +4,17 @@ pragma solidity ^0.8.0;
 import {Test, console, console2} from "@forge-std/Test.sol";
 
 import {Players} from "../../src/Players.sol";
-import {Cards} from "../../src/Cards.sol";
+import {Cards2} from "../../src/Cards2.sol";
 import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 
-import {DeployGames} from "../../script/DeployGames.s.sol";
+import {DeployGames2} from "../../script/DeployGames2.s.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract CardsTest is Test {
     /* Type declarations */
-    Cards cards;
+    Cards2 cards;
     Games games;
     Players players;
     AvatarBasedAccount avatarBasedAccount;
@@ -34,10 +34,9 @@ contract CardsTest is Test {
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
-        DeployGames deployerGames = new DeployGames();
+        DeployGames2 deployerGames = new DeployGames2();
         (cards, games, helperConfig) = deployerGames.run();
         (
-            , //address erc6551account;
             , // address erc6551Registry;
             vrfWrapper, // address vrfWrapper;
             , // uint16 vrfRequestConfirmations;
@@ -89,7 +88,7 @@ contract CardsTest is Test {
 
         vm.deal(avatarAccountAddress, 1 ether);
         // 4: open pack of cards.
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+        bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
         vm.prank(userOne);
         bytes memory result =
             AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
@@ -127,22 +126,22 @@ contract CardsTest is Test {
     function testCardsCanBeUpdated() public {
         address ownerCards = cards.owner();
         uint256[] memory mintAmounts = new uint256[](9);
-        Cards.Card[] memory CardData = new Cards.Card[](9);
+        Cards2.Card[] memory CardData = new Cards2.Card[](9);
         string memory newuri =
             "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json";
         for (uint256 i; i < 9; i++) {
             mintAmounts[i] = i * 2;
         }
         CardData[0] =
-            Cards.Card({name: "Ragamuffin", cardType: "Cat", atk: 5, hp: 4, spd: 5, infRange: 0, supRange: 93});
-        CardData[1] = Cards.Card({name: "Burmese", cardType: "Cat", atk: 6, hp: 2, spd: 9, infRange: 93, supRange: 139});
+            Cards2.Card({name: "Ragamuffin", cardType: "Cat", atk: 5, hp: 4, spd: 5, infRange: 0, supRange: 93});
+        CardData[1] = Cards2.Card({name: "Burmese", cardType: "Cat", atk: 6, hp: 2, spd: 9, infRange: 93, supRange: 139});
         CardData[2] =
-            Cards.Card({name: "Tonkinese", cardType: "Cat", atk: 4, hp: 7, spd: 4, infRange: 139, supRange: 170});
+            Cards2.Card({name: "Tonkinese", cardType: "Cat", atk: 4, hp: 7, spd: 4, infRange: 139, supRange: 170});
         CardData[3] =
-            Cards.Card({name: "Siberian", cardType: "Cat", atk: 8, hp: 7, spd: 2, infRange: 170, supRange: 193});
+            Cards2.Card({name: "Siberian", cardType: "Cat", atk: 8, hp: 7, spd: 2, infRange: 170, supRange: 193});
         CardData[4] =
-            Cards.Card({name: "Russian Blue", cardType: "Cat", atk: 5, hp: 6, spd: 4, infRange: 193, supRange: 212});
-        CardData[5] = Cards.Card({
+            Cards2.Card({name: "Russian Blue", cardType: "Cat", atk: 5, hp: 6, spd: 4, infRange: 193, supRange: 212});
+        CardData[5] = Cards2.Card({
             name: "Norwegian Forest Cat",
             cardType: "Cat",
             atk: 4,
@@ -151,7 +150,7 @@ contract CardsTest is Test {
             infRange: 212,
             supRange: 227
         });
-        CardData[6] = Cards.Card({
+        CardData[6] = Cards2.Card({
             name: "American Shorthair",
             cardType: "Cat",
             atk: 3,
@@ -161,8 +160,8 @@ contract CardsTest is Test {
             supRange: 240
         });
         CardData[7] =
-            Cards.Card({name: "Devon Rex", cardType: "Cat", atk: 4, hp: 3, spd: 10, infRange: 240, supRange: 252});
-        CardData[8] = Cards.Card({
+            Cards2.Card({name: "Devon Rex", cardType: "Cat", atk: 4, hp: 3, spd: 10, infRange: 240, supRange: 252});
+        CardData[8] = Cards2.Card({
             name: "Oriental Shorthair",
             cardType: "Cat",
             atk: 6,
@@ -194,7 +193,7 @@ contract CardsTest is Test {
         vm.deal(avatarAccountAddress, 1 ether);
 
         // 4: open pack of cards.
-        bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
+        bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
         vm.prank(userOne);
         bytes memory result =
             AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
