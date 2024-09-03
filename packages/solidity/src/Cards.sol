@@ -6,7 +6,6 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 import {Coins} from "./Coins.sol";
 
-// chainlink VRF imports. see the docs here: https://docs.chain.link/vrf/v2-5/direct-funding/get-a-random-number
 import {ConfirmedOwner} from "../lib/chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import {VRFV2PlusWrapperConsumerBase} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 import {VRFV2PlusClient} from "../lib/chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";

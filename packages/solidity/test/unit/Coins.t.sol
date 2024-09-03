@@ -140,7 +140,7 @@ contract CoinsTest is Test {
         coins.mintCoins(amountCoinsToMint);
     }
 
-    function testAccessAllowanceOfCoinsCannotBeMinted() public createUserOneAndOpenCardPack {
+    function testExcessAllowanceOfCoinsCannotBeMinted() public createUserOneAndOpenCardPack {
         // Prep: check if account received allowance.
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress);
         vm.assertEq(packCoinAmounts[0], coinAllowance);

@@ -7,41 +7,12 @@ import {Games} from "../src/Games.sol";
 import {HelperConfig} from "./HelperConfig.s.sol"; 
 
 /**
-* This deploys the Games, Cards and Coins contracts. It ALSO saves cards to cards.sol. 
+* This script is meant to only upload the cards - for easier (anc cheaper) deployment of the contracts. Still WIP/ 
 */ 
-contract DeployGames is Script {
-  // NB: for the game to be sustainable, a pack of cards needs to cost more that around .6 ether in these tests. I hope this is not for real! 
-  uint256 cardPackPrice = 1 ether; 
-  uint256[] packThresholds = [5, 15, 30, 100]; 
-  uint256[] packCoinAmounts = [500, 100, 25, 5]; 
-  Cards cardsContract; 
-  Games gamesContract;
+contract UploadCards is Script {
 
-  function run() external returns (Cards, Games, HelperConfig) {
-    HelperConfig helperConfig = new HelperConfig{salt: hex'22'}(); 
-     (, address wrapperAddress, uint32 callbackGasLimit, uint16 requestConfirmations) = helperConfig.activeNetworkConfig(); 
-
-    vm.startBroadcast();
-      // deploy cards contract, which also deploys the coins address. 
-      cardsContract = new Cards(
-        cardPackPrice, 
-        packThresholds, 
-        packCoinAmounts, 
-        callbackGasLimit, 
-        requestConfirmations, 
-        wrapperAddress
-        );
-      createCards(); // saves cards to blockchain
-
-      gamesContract = new Games(
-        address(cardsContract)  
-      ); 
-    vm.stopBroadcast();
-
-    return (cardsContract, gamesContract, helperConfig); 
-  }
-
-  function createCards() public {
+  function upload(address cardsAddress) external {
+    Cards cardsContract = Cards(payable(cardsAddress)); // saves cards to blockchain
     string memory newuri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmPWxjBsLvVs7pMBDL6xssr71b3ynvkgDDZgpDA6hbZ4BM/{id}.json";  
     Cards.Card[] memory CardData = new Cards.Card[](60);
 
@@ -106,13 +77,15 @@ contract DeployGames is Script {
     CardData[58] = Cards.Card({name: 'Shiba Inu' , cardType:'Meme'	, atk: 8	, hp: 9	, spd:2	, infRange:990	, supRange:995}); 
     CardData[59] = Cards.Card({name: 'Dogecoin' , cardType:'Meme'	, atk: 3	, hp: 7	, spd:7	, infRange:995	, supRange:1000}); 
 
-    // £message: We still have to decide on rarity of cards
     uint256[] memory mintAmounts = new uint256[](60); 
     for (uint256 i; i < 60; i++) { 
-      mintAmounts[i] = 25 + (i * 2); 
+      mintAmounts[i] = 25 + (i * 2); // £message: We still have to decide on rarity of cards
     }  
 
-    cardsContract.createCards(CardData, mintAmounts, newuri);
+    vm.startBroadcast();  
+      cardsContract.createCards(CardData, mintAmounts, newuri);
+    vm.stopBroadcast();
+
   }
 }
 
