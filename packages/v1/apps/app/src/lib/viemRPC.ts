@@ -95,6 +95,24 @@ export default class EthereumRpc {
     // other functions...
   ];
 
+  private avatarBasedAccountABI = [
+    {
+    inputs: [
+        { "name": "to", "type": "address", "internalType": "address" },
+        { "name": "value", "type": "uint256", "internalType": "uint256" },
+        { "name": "data", "type": "bytes", "internalType": "bytes" },
+        { "name": "operation", "type": "uint8", "internalType": "uint8" }
+      ],
+      name: "execute",
+      outputs: [
+        { "name": "result", "type": "bytes", "internalType": "bytes" }
+      ],
+      stateMutability: "payable",
+      type: "function",
+    }
+    // other functions...
+  ];
+
   constructor(provider: IProvider) {
     this.provider = provider;
   }
@@ -547,6 +565,79 @@ export default class EthereumRpc {
     }
   }
 
+  ////////////////////////////////////////////
+  //              START OF EXAMPLE          //
+  ////////////////////////////////////////////
+
+ // * player action : *
+ // Takes as params: 
+ // - avatarBasedAccount: the avatarBasedAccount address (which has to belong to the player). 
+ // - to: the address to call  
+ // - value: the amount of ether to send in the transaction. 
+ // - calldata: the encoded call to the contract. 
+ // See usePlayerAction for explanation of how to create this calldata. 
+
+  async playerAction(
+   avatarBasedAccount: string, to: string, value: bigint, calldata: string, 
+  ): Promise<{ reply: string }> {
+    try {
+      const walletClient = createWalletClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const address = await this.getAddresses();
+
+      // Submit the transaction to create the player
+      const hash = await walletClient.writeContract({
+        account: address[0] as `0x${string}` | Account,
+        address: avatarBasedAccount, // Avatar
+        abi: this.avatarBasedAccountABI,
+        functionName: "execute",
+        args: [to, value, calldata, 0], // this last 0 is the type of transaction. Only 0 is allowed. 
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      // Manually decode the event logs
+      const events = receipt.logs
+        .map((log) => {
+          try {
+            return decodeEventLog({
+              abi: this.avatarBasedAccountABI,
+              data: log.data, // Log data to decode
+              topics: log.topics, // Log topics to decode
+            });
+          } catch (error) {
+            console.error("Error decoding log:", error);
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      if (events.length === 0 || !events[0]?.args) {
+        throw new Error("No valid events found in transaction receipt");
+      }
+
+      // Accessing the avatarId safely
+      const reply = events[0].args?.[0] as string;
+
+      return { reply };
+    } catch (error) {
+      console.error("Error creating player:", error);
+      throw error;
+    }
+  }
+
+  ////////////////////////////////////////////
+  //              END OF EXAMPLE            //
+  ////////////////////////////////////////////
+
   toObject<T>(data: T): T {
     return JSON.parse(
       JSON.stringify(data, (key, value) =>
@@ -555,5 +646,6 @@ export default class EthereumRpc {
     ) as T;
   }
 }
+
 
 export { EthereumRpc };
