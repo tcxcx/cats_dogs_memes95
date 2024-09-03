@@ -45,12 +45,12 @@ sepoliaForkedTest:
 	@forge test --no-match-contract Games_fuzz --mt testVRFReturnsWithRandomValue -vvvv $(SEPOLIA_TEST_ARGS)
 
 sepoliaForkedDeployTest:
-	@forge script script/DeployPlayers.s.sol:DeployPlayers $(SEPOLIA_TEST_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) -vvvv 
+#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 20000000 --gas-price 12000000000 -vvvv 
 	
 sepoliaForkedDeploy: 
-	@forge script script/DeployPlayers.s.sol:DeployPlayers $(SEPOLIA_DEPLOY_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+	@forge script script/DeployGames.s.sol $(SEPOLIA_DEPLOY_ARGS) --gas-limit 20000000 --gas-price 12000000000 -vvvv
 
 
 ###############################

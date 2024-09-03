@@ -18,8 +18,6 @@ contract DeployGames is Script {
   Games gamesContract;
 
   function run() external returns (Cards, Games, HelperConfig) {
-    uint64 nonce = vm.getNonce(vm.envAddress("DEV2_ADDRESS")); 
-    vm.setNonce(vm.envAddress("DEV2_ADDRESS"), nonce + 1);   
     HelperConfig helperConfig = new HelperConfig{salt: hex'22'}(); 
      (, address wrapperAddress, uint32 callbackGasLimit, uint16 requestConfirmations) = helperConfig.activeNetworkConfig(); 
 
@@ -39,8 +37,6 @@ contract DeployGames is Script {
         address(cardsContract)  
       ); 
     vm.stopBroadcast();
-
-    console2.log("cards deployed at: ", address(cardsContract));
 
     return (cardsContract, gamesContract, helperConfig); 
   }
