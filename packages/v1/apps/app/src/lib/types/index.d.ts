@@ -83,6 +83,19 @@ export type GameState = {
   typeList: TypeList;
 };
 
+export type GameStateLog = {
+  deckP1: Deck;
+  deckP2: Deck;
+  handP1: CardData[];
+  handP2: CardData[];
+  score: [number, number];
+  turnCount: number;
+  cardCollection: CardCollection;
+  powerList: Power["type"][];
+  typeList: Type["type"][];
+  gameLog: GameLog;
+};
+
 // ========================================
 
 // The result of a turn, indicating how many points each player scored

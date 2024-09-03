@@ -1,3 +1,4 @@
+// packages/v1/packages/rollup/src/stackr/schemas.ts
 import { ActionSchema, SolidityType } from "@stackr/sdk";
 
 export const InitializeGameSchema = new ActionSchema("initialize-game", {
@@ -12,6 +13,9 @@ export const PlayTurnSchema = new ActionSchema("play-turn", {
   powIndexP2: SolidityType.UINT,
 });
 
-export const CheckGameOverSchema = new ActionSchema("check-gameover", {});
-
-export const DetermineWinnerSchema = new ActionSchema("determine-winner", {});
+export const FinalizeGameSchema = new ActionSchema("finalize-game", {
+  playerScore: SolidityType.UINT,
+  opponentScore: SolidityType.UINT,
+  turnCount: SolidityType.UINT,
+  gameLog: SolidityType.STRING,
+});

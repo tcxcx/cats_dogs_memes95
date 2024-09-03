@@ -1,12 +1,15 @@
-// packages/v1/packages/rollup/src/stackr/mru.ts
 import { MicroRollup } from "@stackr/sdk";
 import { stackrConfig } from "../../stackr.config";
 import { gameMachine } from "./machine";
-import { InitializeGameSchema, PlayTurnSchema, CheckGameOverSchema, DetermineWinnerSchema } from "./schemas";
+import {
+  InitializeGameSchema,
+  PlayTurnSchema,
+  FinalizeGameSchema,
+} from "./schemas";
 
 const mru = await MicroRollup({
   config: stackrConfig,
-  actionSchemas: [InitializeGameSchema, PlayTurnSchema, CheckGameOverSchema, DetermineWinnerSchema],
+  actionSchemas: [InitializeGameSchema, PlayTurnSchema, FinalizeGameSchema],
   stateMachines: [gameMachine],
 });
 
