@@ -10,13 +10,24 @@ import {
     TypeList,
     Type,
     PowerList,
-    GameLog
+    GameLog,
+    Player
 } from '@/lib/types'; // Assuming these types exist based on your project structure
 import { userCards } from '@/lib/mock-cards';
 
-// Mock deck for demonstration purposes
-const Deck1: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
-const Deck2: Deck = shuffleDeck([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
+// Shuffle Functions
+export function shuffleDeck(array: any[]) {
+for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+}
+return array;
+}
+export function shuffleDeckAction(deck: Deck): Deck {
+    return deck.sort(() => Math.random() - 0.5);
+}
+const Deck1: Deck = shuffleDeckAction([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
+const Deck2: Deck = shuffleDeckAction([...userCards].slice(0, 10).map((card) => card.name).filter((name): name is string => name !== undefined));
 
 const cardCollection: CardCollection = userCards.reduce((collection, card) => {
     if (card.name) {
@@ -25,8 +36,8 @@ const cardCollection: CardCollection = userCards.reduce((collection, card) => {
     return collection;
   }, {} as CardCollection);
 
-  const iniHandP1: CardData[] = Deck1.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
-  const iniHandP2: CardData[] = Deck2.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+const iniHandP1: CardData[] = Deck1.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
+const iniHandP2: CardData[] = Deck2.map((cardName) => cardCollection[cardName]).filter((card): card is CardData => card !== undefined).slice(0, 2);
   
 // Mock Game state for demonstration purposes
 let currentGameState: GameState = {
@@ -40,7 +51,8 @@ let currentGameState: GameState = {
   powerList: ["attack", "defense", "speed"], // Populate with Power type data
   typeList: ['Cat', 'Dog', 'Meme'], // Assuming these are the types
 };
-// Mock Game log
+
+// Empty Game log
 let gameLog: GameLog = {
     initialDecks: {
         deckP1: [],
@@ -63,17 +75,12 @@ export async function fetchGameState(): Promise<GameState> {
     throw error; // Re-throw the error to handle it in the service or calling function
   }
 }
-
-function shuffleDeck(deck: Deck): Deck {
-    return deck.sort(() => Math.random() - 0.5);
-}
-
-function drawInitialHand(deck: Deck): Hand {
+// ========== INITIALIZE GAME FUNCTIONS ==========
+export function drawInitialHand(deck: Deck): Hand {
     return deck.slice(0, 2).map((cardNameOrId) => cardCollection[cardNameOrId]).filter((card): card is CardData => card !== undefined);
 }
 
-
-function calculateTurnOutcome(
+export function calculateTurnOutcome(
     coll: CardCollection,
     card1: string,
     card2: string,
@@ -126,19 +133,18 @@ function calculateTurnOutcome(
 }
 
 // build Card Collection
-function buildCardCollection(cards: CardData[]): CardCollection {
+export function buildCardCollection(cards: CardData[]): CardCollection {
     return cards.reduce((collection, card) => {
         collection[card.name] = card;
         return collection;
     }, {} as CardCollection);
 }
 
-
-// Game management
+// Game initialization
 export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
     console.log("initializing game");
-    const sDeckP1 = shuffleDeck(deckP1);
-    const sDeckP2 = shuffleDeck(deckP2);
+    const sDeckP1 = shuffleDeckAction(deckP1);
+    const sDeckP2 = shuffleDeckAction(deckP2);
     console.log(sDeckP1);
     //console.log(sDeckP2);
     //console.log(drawInitialHand(deckP1), drawInitialHand(deckP2));
@@ -164,29 +170,39 @@ export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
         turns: [],
         winner: null,
     };
-    console.log(gameLog);
     return initialGameState;
 }
 
+// ========== GAME LOG FUNCTIONS ==========
 // Function to update the game log after each turn
-function updateGameLog(
+export function updateGameLog(
+    gameLog: GameLog,
     turnNumber: number,
     cardP1: CardData,
     cardP2: CardData,
     powerP1: Power,
     powerP2: Power,
     currentScore: Score
-  ) {
-    gameLog.turns.push({
-      turnNumber,
-      playedCards: { cardP1, cardP2, powerP1, powerP2 },
-      currentScore: {
-        player1Points: currentScore[0],
-        player2Points: currentScore[1],
-      },
-    });
+  ): GameLog {
+    const updatedGameLog = {
+        ...gameLog,
+        turns: [
+            ...gameLog.turns,
+            {
+                turnNumber,
+                playedCards: { cardP1, cardP2, powerP1, powerP2 },
+                currentScore: {
+                    player1Points: currentScore[0],
+                    player2Points: currentScore[1],
+                },
+            },
+        ],
+    };
+    return updatedGameLog;
   }
 
+// ========== PLAY TURN FUNCTIONS ==========
+// Play Turn Function Handler
 export function playTurn(
     gameState: GameState,
     handIndexP1: number, // Index of the card in the player's hand
@@ -242,9 +258,15 @@ export function playTurn(
     const finalHandP1: CardData[] = updatedHandP1.length ? updatedHandP1 : [...updatedHandP1, newCardP1!].filter(card => card !== undefined);
     const finalHandP2: CardData[] = updatedHandP2.length ? updatedHandP2 : [...updatedHandP2, newCardP2!].filter(card => card !== undefined);
     
-    updateGameLog(turnCount + 1, playerCardP1, playerCardP2, gameState.powerList[powIndexP1], gameState.powerList[powIndexP2], updatedScore);
-
-    console.log(gameLog);
+    updateGameLog(
+        gameLog,
+        turnCount + 1,
+        playerCardP1,
+        playerCardP2,
+        gameState.powerList[powIndexP1],
+        gameState.powerList[powIndexP2],
+        updatedScore);
+    console.log(turnCount);
 
     return {
         ...gameState,
@@ -254,21 +276,109 @@ export function playTurn(
         turnCount: turnCount + 1,
     };
 }
+// Play Turn Function Handler
+export async function playTurnHandler(
+    gameState: GameState,
+    handIndexP1: number, // Index of the card in the player's hand
+    powIndexP1: number, // Index of the power in the player's hand
+    handIndexP2: number, // Index of the card in the opponent's hand
+    powIndexP2: number, // Index of the power in the opponent's hand
+): Promise<GameState> {
+    const selCardIndexP1 = handIndexP1;
+    const selPowerIndexP1 = powIndexP1;
+    const selCardIndexP2 =
+        handIndexP2 ?? Math.floor(Math.random() * gameState.handP2.length);
+    const selPowerIndexP2 =
+        powIndexP2 ??Math.floor(Math.random() * gameState.powerList.length);
 
+    try {
+        const result = await playTurn(
+            gameState,
+            selCardIndexP1,
+            selPowerIndexP1,
+            selCardIndexP2,
+            selPowerIndexP2,
+            gameState.typeList,
+            gameState.powerList
+        );
+        return result; // Update the game state after the turn is played
+    } catch (error) {
+        console.error("Failed to play turn:", error);
+        throw error;
+    }
+};
+
+// ========== GAME OVER FUNCTIONS ==========
 export function checkGameOver(gameState: GameState): boolean {
     const maxScore = Math.max(...gameState.score);
     return maxScore >= 4 || gameState.turnCount >= 8;
 }
 
-export function determineWinner(gameState: GameState): number {
+export function determineWinner(gameState: GameState): Player | null {
     const [scoreP1, scoreP2] = gameState.score;
-    const winner = scoreP1 > scoreP2 ? 1 : scoreP2 > scoreP1 ? 2 : 0;
+    const winner = scoreP1 > scoreP2 ? "player" : scoreP2 > scoreP1 ? "opponent" : null;
     gameLog.winner = winner;
     return winner;
 }
 
-///// DUMP
-//use my game logic to create a game action file that will be used to constantly check the game engine and update the game state as per the rules
-// which are written in python and I just translated them to typescript
-// make sure you export all this functions to be used in next js app router using the API attach route in which the game logic is present
-// needs to be separated as concerns and not mixed with the UI nor the API fetching
+// ========== COMBAT FUNCTIONS ==========
+// Calculate type advantage
+export function calculateTypeAdvantage(playerType: Type, opponentType: Type): number {
+    if (
+      (playerType.type === "Cat" && opponentType.type === "Meme") ||
+      (playerType.type === "Meme" && opponentType.type === "Dog") ||
+      (playerType.type === "Dog" && opponentType.type === "Cat")
+    ) {
+      return 8;
+    }
+    return 0;
+  };
+// Calculate combat advantage
+export function calculateCombatAdvantage(
+    playerPower: Power,
+    opponentPower: Power
+  ): number {
+    if (
+      (playerPower.type === "attack" && opponentPower.type === "defense") ||
+      (playerPower.type === "defense" && opponentPower.type === "speed") ||
+      (playerPower.type === "speed" && opponentPower.type === "attack")
+    ) {
+      return 4;
+    }
+    return 0;
+  };
+
+// ========== CHOOSE FUNCTIONS ==========
+/*const chooseCard = (player: "P1" | "P2", index: number) => {
+    setPlayerMove((prevMove) => {
+      // Ensure prevMove is not null and has the necessary structure
+      if (!prevMove) {
+        return player === "P1"
+          ? { cardIndexP1: index, powerIndexP1: 0 } // Initialize P1 values
+          : { cardIndexP1: 0, powerIndexP1: 0, cardIndexP2: index }; // Initialize P2 values
+      }
+      return {
+        ...prevMove,
+        cardIndexP1: player === "P1" ? index : prevMove.cardIndexP1,
+        cardIndexP2: player === "P2" ? index : prevMove.cardIndexP2,
+      };
+    });
+  };
+const choosePower = (player: "P1" | "P2", index: number) => {
+    setPlayerMove((prevMove) => {
+      // Ensure prevMove is not null and has the necessary structure
+      if (!prevMove) {
+        return player === "P1"
+          ? { cardIndexP1: 0, powerIndexP1: index } // Initialize P1 values
+          : { cardIndexP1: 0, powerIndexP1: 0, powerIndexP2: index }; // Initialize P2 values
+      }
+      return {
+        ...prevMove,
+        powerIndexP1: player === "P1" ? index : prevMove.powerIndexP1,
+        powerIndexP2: player === "P2" ? index : prevMove.powerIndexP2,
+      };
+    });
+  };
+  */
+
+ // =========== DUMP ==========

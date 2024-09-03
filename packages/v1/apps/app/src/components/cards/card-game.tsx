@@ -18,12 +18,8 @@ const typeColors = {
 
 export function CardGame({
   card,
-  onAddToDeck,
-  inDeck,
 }: {
   card: CardData;
-  onAddToDeck?: () => void;
-  inDeck?: boolean;
 }) {
   const cardColor =
     typeColors[card.type[0]?.type as keyof typeof typeColors] || "bg-gray-200";

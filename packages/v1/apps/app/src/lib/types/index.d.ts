@@ -14,6 +14,10 @@ export declare type UserInfo = {
   picture: string;
 };
 
+export type Player = "player" | "opponent";
+export type GamePhase = "draw" | "prep" | "combat" | "check";
+export type Winner = "player" | "opponent" | null;
+
 // === CARD TYPES ===
 // ========================================
 
@@ -111,7 +115,7 @@ export type GameLog = {
       player2Points: number;
     }
   }[];
-    winner: Player | null;
+    winner: Winner;
 };
 
 // ========================================
