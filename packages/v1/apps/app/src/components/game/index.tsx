@@ -11,7 +11,7 @@ import {
   calculateTypeAdvantage,
   calculateCombatAdvantage,
   resolveCombat,
-  attestWinner,
+  finalizeGame,
   updateGameLog,
 } from "@/lib/actions/game.actions";
 import {
@@ -112,6 +112,14 @@ export default function Game() {
   const initializeGameHandler = async () => {
     try {
       const initialGameState = await initializeGame(Deck1, Deck2);
+      const initialGameLog = {
+        initialDecks: {
+          deckP1: initialGameState.deckP1,
+          deckP2: initialGameState.deckP2,
+        },
+        turns: [],
+        winner: null,
+      };
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
       setOpponentHand(initialGameState.handP2); // Reset the opponent hand
@@ -123,6 +131,8 @@ export default function Game() {
       setGamePhase("draw");
       setPlayerScore(0);
       setOpponentScore(0);
+      setTurnCount(1);
+      setGameLog(initialGameLog);
     } catch (error) {
       console.error("Failed to initialize game:", error);
     }
@@ -194,8 +204,8 @@ export default function Game() {
       setSize(size);
 
       setTimeout(() => setSize("compact"), 2000);
-      //Winner attestation
-      const { winner, updatedGameLog} = attestWinner(
+      //Winner declaration
+      const { winner, updatedGameLog} = finalizeGame(
         playerScore,
         opponentScore,
         turnCount,
@@ -221,6 +231,13 @@ export default function Game() {
   };
 
   const nextPhase = () => {
+    const { winner, updatedGameLog} = finalizeGame(
+      playerScore,
+      opponentScore,
+      turnCount,
+      gameLog!);
+    setGameLog(updatedGameLog);
+    setWinner(winner);
     switch (gamePhase) {
       case "draw":
         drawCard("player");
