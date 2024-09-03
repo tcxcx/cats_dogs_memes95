@@ -11,7 +11,7 @@ import {
   calculateTypeAdvantage,
   calculateCombatAdvantage,
   resolveCombat,
-  attestWinner,
+  finalizeGame,
   updateGameLog,
 } from "@/lib/actions/game.actions";
 import {
@@ -195,7 +195,7 @@ export default function Game() {
 
       setTimeout(() => setSize("compact"), 2000);
       //Winner attestation
-      const { winner, updatedGameLog} = attestWinner(
+      const { winner, updatedGameLog} = finalizeGame(
         playerScore,
         opponentScore,
         turnCount,

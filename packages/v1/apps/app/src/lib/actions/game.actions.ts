@@ -394,7 +394,7 @@ export function determineWinner(gameState: GameState): Player | null {
   return winner;
 }
 // win attestation
-export function attestWinner(
+export function finalizeGame(
     playerScore: number,
     opponentScore: number,
     turnCount: number,
