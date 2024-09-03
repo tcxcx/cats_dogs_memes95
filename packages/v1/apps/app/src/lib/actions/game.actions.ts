@@ -80,7 +80,10 @@ let gameLog: GameLog = {
 };
 
 // Function to fetch the current game state
-export async function fetchGameState(): Promise<GameState> {
+export async function fetchGameState(
+    gameState: GameState,
+    gameLog: GameLog,
+): Promise<GameState> {
   try {
     console.log("fetching game state");
     // Logic to retrieve the current game state
