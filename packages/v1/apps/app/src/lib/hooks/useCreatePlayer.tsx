@@ -14,6 +14,7 @@ export const useCreatePlayer = () => {
         setError("Web3Auth RPC instance is not available");
         return;
       }
+      console.log("Here is the avatarURI", avatarURI)
 
       setIsCreating(true);
       setError(null);
@@ -22,8 +23,14 @@ export const useCreatePlayer = () => {
 
       try {
         const result = await rpc.createPlayer(avatarURI);
+        console.log("Here is the avatarURI 2", avatarURI)
         setAvatarId(result.avatarId);
         setAvatarAddress(result.avatarAddress);
+
+        console.log("Here is the avatarId", setAvatarId)
+        console.log("Here is the avatarId", setAvatarAddress)
+
+
       } catch (err) {
         setError((err as Error).message || "Error creating player");
       } finally {
