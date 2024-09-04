@@ -19,14 +19,13 @@ contract DeployPlayers is Script {
         (address registry, , , ) = helperConfig.activeNetworkConfig(); 
         uint256 version = 1;
 
-        // make sure the correct nonce is set: 
-        uint64 nonce = vm.getNonce(msg.sender);
-        console2.log("nonce:", nonce);
-        vm.setNonce(msg.sender, nonce + 1);
-   
+        AvatarBasedAccount account = new AvatarBasedAccount(); 
+        uint256 codelength = address(account).code.length; 
+
+
         vm.startBroadcast();
             // £note: deterministic deployment created problems. So now, with each deployment ALSO new Avatar Based Account deployed.
-            AvatarBasedAccount account = new AvatarBasedAccount();   
+            if (codelength == 0) {AvatarBasedAccount account = new AvatarBasedAccount();}
             players = new Players(
                 version,
                 address(account), 

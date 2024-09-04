@@ -28,10 +28,9 @@ contract GamesTest is Test {
 
     address ownerGames;
     address ownerCards;
-
-    uint256 numberOfCardsPerPlayer = 25;
-    uint256[] cardPackIds = [0, 3, 4, 5, 7, 9, 12, 45, 51, 52];
-    uint256[] cardPackValues = [1, 2, 1, 2, 2, 1, 3, 4, 5, 1];
+    address vrfWrapper;
+    uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
+    uint256 numberOfCardPacks = 5; 
 
     address[] users;
     string[] userNames = ["alice", "bob", "claire", "doug", "7cedars", "test"];
@@ -65,18 +64,32 @@ contract GamesTest is Test {
     }
 
     modifier setupAvatarBasedAccounts() {
-        for (uint256 i; i < userNames.length; i++) {
-            // ... 1: create an address and AvatarBasedAccount
-            users.push(makeAddr(userNames[i]));
+       for (uint256 i; i < userNames.length; i++) {
+            vm.warp(block.timestamp + 50);
+            vm.roll(block.number + 5);
+
+            // 1: create an address and AvatarBasedAccount
             vm.prank(users[i]);
             (, address avatarAccountAddress) = players.createPlayer(avatarUri);
 
-            vm.prank(ownerGames);
-            cards.transferCards(avatarAccountAddress, cardPackIds, cardPackValues);
-
-            // ... 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
+            // 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
             avatarBasedAccounts[users[i]] = avatarAccountAddress;
             vm.deal(avatarBasedAccounts[users[i]], 1 ether);
+
+            // 3: get price pack
+            uint256 priceCardPack = cards.PRICE_CARD_PACK();
+            
+            // 4: open packs of cards, providing player with cards.
+            for (uint256 j; j < numberOfCardPacks; j++) {
+                bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, j);
+                vm.prank(users[i]);
+                bytes memory result = AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+                uint256 requestId = uint256(bytes32(result));
+
+                // (Mock callback from vrfWrapper)
+                vm.prank(vrfWrapper);
+                cards.rawFulfillRandomWords(requestId, mockRandomWords);
+            }
         }
 
         // ...3: for readability, create object for player and accounts used through this contract.
@@ -97,10 +110,20 @@ contract GamesTest is Test {
 
         DeployGames deployerGames = new DeployGames();
         (cards, games, helperConfig) = deployerGames.run();
+        (
+            , // address erc6551Registry;
+            vrfWrapper, // address vrfWrapper;
+            , // uint16 vrfRequestConfirmations;
+            // uint32 vrfCallbackGasLimit
+        ) = helperConfig.activeNetworkConfig();
 
         coins = Coins(cards.COINS_CONTRACT());
         ownerGames = games.OWNER();
         ownerCards = cards.owner();
+        
+        for (uint256 i; i < userNames.length; i++) {
+            users.push(makeAddr(userNames[i]));
+        }
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
         vm.deal(address(cards), 100 ether);

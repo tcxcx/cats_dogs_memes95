@@ -12,6 +12,7 @@ import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 
 import {DeployGames} from "../../script/DeployGames.s.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
+import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract GamesFuzzTest is Test {
     /* State vars */
@@ -19,6 +20,8 @@ contract GamesFuzzTest is Test {
     Games games;
     Coins coins;
     Players players;
+    AvatarBasedAccount avatarBasedAccount;
+    HelperConfig helperConfig;
 
     address ownerGames;
     address ownerCards;
@@ -26,11 +29,12 @@ contract GamesFuzzTest is Test {
     address avatarBasedAddressB;
     AvatarBasedAccount avatarBasedAccountA;
     AvatarBasedAccount avatarBasedAccountB;
+    address vrfWrapper;
+    uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
     address[2] winnerAddress;
     uint256 nonce = 1;
     uint256 numberOfCardsPerPlayer = 25;
-    uint256[] cardPack = [23, 34, 4, 3, 2, 8, 9, 12, 45, 46, 43, 7, 10, 24, 22];
-    uint256[] cardValues = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    uint256 numberOfCardPacks = 5; 
 
     address[] users;
     string[] userNames = ["alice", "bob", "claire", "doug", "7cedars", "test"];
@@ -62,7 +66,13 @@ contract GamesFuzzTest is Test {
         (players,,) = deployerPlayers.run();
 
         DeployGames deployerGames = new DeployGames();
-        (cards, games,) = deployerGames.run();
+        (cards, games, helperConfig) = deployerGames.run();
+        (
+            , // address erc6551Registry;
+            vrfWrapper, // address vrfWrapper;
+            , // uint16 vrfRequestConfirmations;
+            // uint32 vrfCallbackGasLimit
+        ) = helperConfig.activeNetworkConfig();
 
         coins = Coins(cards.COINS_CONTRACT());
         ownerGames = games.OWNER();
@@ -72,17 +82,30 @@ contract GamesFuzzTest is Test {
             vm.warp(block.timestamp + 50);
             vm.roll(block.number + 5);
 
-            // ... 1: create an address and AvatarBasedAccount
+            // 1: create an address and AvatarBasedAccount
             users.push(makeAddr(userNames[i]));
             vm.prank(users[i]);
             (, address avatarAccountAddress) = players.createPlayer(avatarUri);
 
-            vm.prank(ownerGames);
-            cards.transferCards(avatarAccountAddress, cardPack, cardValues);
-
-            // ... 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
-            avatarBasedAccounts[users[i]] = avatarAccountAddress;
+            // 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
+             avatarBasedAccounts[users[i]] = avatarAccountAddress;
             vm.deal(avatarBasedAccounts[users[i]], 1 ether);
+
+            // 3: get price pack
+            uint256 priceCardPack = cards.PRICE_CARD_PACK();
+            
+            // 4: open packs of cards, providing player with cards.
+            for (uint256 i; i < numberOfCardPacks; i++) {
+                bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, i);
+                vm.prank(users[i]);
+                bytes memory result =
+                    AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
+                uint256 requestId = uint256(bytes32(result));
+
+                // (Mock callback from vrfWrapper)
+                vm.prank(vrfWrapper);
+                cards.rawFulfillRandomWords(requestId, mockRandomWords);
+            }
         }
         vm.prank(ownerGames);
         games.startTournament();

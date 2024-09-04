@@ -55,30 +55,27 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     /* State variables */
     uint32 public constant NUMBER_CARDS_IN_PACK = 5;
     address public immutable COINS_CONTRACT; // This allows the Coins.sol address to be read through the functions 'COINS_CONTRACT()'.
+    uint256 public immutable PRICE_CARD_PACK; // is the price for each pack.
 
     uint256[] public cardIds;
     uint256 public cardPackCounter; // tracks how many card packs have been bought.
-    uint256 public priceCardPack; // is the price for each pack.
-    uint256[] public packThresholds; // an array that holds the thresholds for decreasing amount of coins to be distributed on sell of card pack.
-    uint256[] public packCoinAmounts; // an array that holds the amount of coins to be distributed per threshold on sell of card pack.
     uint256 cardPackNumber;
     
     RequestConfig public requestConfig;
     mapping(uint256 cardId => Card card) public s_cards; // maps cardId to its characteristics.
+    uint256 public currentCoinAllowance = 42 * 10**18; // the default start coin allowance. Can be reset through the function setCoinAllowance. 
     mapping(address avatarBasedAccount => uint256 allowance) public s_coinAllowance;
     mapping(uint256 => VRFRequestStatus) public s_requests; /* requestId --> requestStatus */
-    address public linkAddress = 0xE4aB69C077896252FAFBD49EFD26B5D171A32410;
     uint256[] public requestIds; // past requests Id.
     uint256 public lastRequestId;
-    // uint32 public callbackGasLimit;
-    // uint16 public requestConfirmations; // The default is 3, but you can set this higher.
 
     /* Events */
     event Log(string func, uint256 gas);
-    event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed priceCardPack);
-    event ChangedCardPackPrice(uint256 newPrice, uint256 oldPrice);
+    event DeployedCardsContract(address indexed owner, address indexed coinsContract, uint256 indexed PRICE_CARD_PACK);
+    event SetNewCointAllowance(uint256 indexed newAllowance); 
     event RequestSent(uint256 requestId, uint32 NUMBER_CARDS_IN_PACK);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords, uint256 payment);
+    
 
     /* modifiers */
     modifier onlyAvatarBasedAccount(address playerAccount) {
@@ -94,8 +91,6 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      * @notice Sets up the base cards contract.
      *
      * @param _priceCardPack price of a pack of cards in Wei. 
-     * @param _packThresholds thresholds at which coins allowance decreases. NB: this needs to be an incrementing array. 
-     * @param _packCoinAmounts the amount of coins allocated per threshold. 
      * @param _callbackGasLimit Chainlink VRF: limit of gas to be used in VRF callback (see the function 'fulfillRandomWords'). @notice these differ between chains and are therefore set at construction time. 
      * @param _requestConfirmations Chainlink VRF: the number of blocks to wait for confirmation of vrf random number. standard is 3. 
      * @param _wrapperAddress Chainlink VRF: the address of the wrapper contract for chainlinks VRF 2.5 protocol. 
@@ -105,32 +100,24 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      */
     constructor(
         uint256 _priceCardPack,
-        uint256[] memory _packThresholds,
-        uint256[] memory _packCoinAmounts,
         uint32 _callbackGasLimit,
         uint16 _requestConfirmations,
         address _wrapperAddress
     )
         ERC1155(
-            "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmXNViBTskhd61bjKoE8gZMXZW4dcSzPjVkkGqFdpZugFG/{id}.json" // check if this is the correct contract. 
+            "" // gets updated when uploading cards through the function 'createCards'.
         )
         ConfirmedOwner(msg.sender)
         VRFV2PlusWrapperConsumerBase(_wrapperAddress)
     {
-        if (_packThresholds.length != _packCoinAmounts.length) {
-            revert Cards__ArraysNotSameLength(_packThresholds.length, _packCoinAmounts.length);
-        }
         if (_wrapperAddress == address(0)) revert Cards__AddressCannotBe0();
         COINS_CONTRACT = address(new Coins());
-
-        priceCardPack = _priceCardPack;
-        packThresholds = _packThresholds;
-        packCoinAmounts = _packCoinAmounts;
+        PRICE_CARD_PACK = _priceCardPack;
 
         requestConfig =
             RequestConfig({callbackGasLimit: _callbackGasLimit, requestConfirmations: _requestConfirmations, numWords: 1});
 
-        emit DeployedCardsContract(msg.sender, COINS_CONTRACT, priceCardPack);
+        emit DeployedCardsContract(msg.sender, COINS_CONTRACT, PRICE_CARD_PACK);
     }
 
     /* receive & fallback */
@@ -205,7 +192,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         onlyAvatarBasedAccount(msg.sender)
         returns (uint256 requestId)
     {
-        if (msg.value < priceCardPack) {
+        if (msg.value < PRICE_CARD_PACK) {
             revert Cards__InsufficientPayment();
         }
         if (cardIds.length == 0) {
@@ -258,11 +245,11 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         // ...for each card in the pack... 
         for (uint256 i; i < NUMBER_CARDS_IN_PACK; i++) {
             // ..create a random number between 0 and total number of cards owned by the contract...  
-            uint256 pseudoRandomNumber = uint256(keccak256(abi.encode(_randomWords[i] + cardPackNumber)))
+            uint256 randomNumber = uint256(keccak256(abi.encode(_randomWords[i] + cardPackNumber)))
                 % incrementedArray[incrementedArray.length - 1]; 
             // ...see where this number falls in the incremented array: this is the index & cardId that will be assigned to the pack of cards.  
             uint256 cardId;
-            while (incrementedArray[cardId] < pseudoRandomNumber) {
+            while (incrementedArray[cardId] < randomNumber) {
                 cardId++;
             }
             selectedCards[i] = cardId; // the cardId assigned to the pack.  
@@ -283,70 +270,9 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
 
         // if above did not revert:
         // step 7: add coin allowance to the avatar based account.
-        //
-        uint256 allowanceIndex;
-        // step A: read the index of the 'cardPackCounter' (= number of sold packs) at 'packThresholds'.
-        if (cardPackCounter < packThresholds[packThresholds.length - 1]) {
-            while (packThresholds[allowanceIndex] < cardPackCounter) {
-                allowanceIndex++;
-            }
-            // step B: add the matched allowance at index to the avatar based account.
-            s_coinAllowance[player] = s_coinAllowance[player] + packCoinAmounts[allowanceIndex];
-        } else {
-            // step C: if 'cardPackCounter' was higher than the highest amount in 'packThresholds', add 1 to the allowance.
-            s_coinAllowance[player]++;
-        }
-    }
-
-    /**
-     * @notice allows owner of the contract to transfer cards - for free - from the contract to an Avatar Based Account.
-     *
-     * @param recipient address of the Avatar Based Account to receive the cards. 
-     * @param _cardIds an array of cardIds
-     * @param _cardvalues an array of number of card of each Id to transfer. 
-     *
-     * emits a TransferBatch event.
-     *
-     * @dev The function is only accesible to the owner of the contract.
-     * @dev the _cardIds and _cardvalues arrays need to be of the same length. 
-     * @dev the recipient has to be an Avatar Based Account. 
-     *
-     */
-    function transferCards(address recipient, uint256[] memory _cardIds, uint256[] memory _cardvalues)
-        public
-        payable
-        onlyOwner
-    {
-        if (_cardIds.length != _cardvalues.length) {
-            revert Cards__ArraysNotSameLength(_cardIds.length, _cardvalues.length);
-        }
-        if (!ERC165Checker.supportsInterface(recipient, type(IAvatarExecutable).interfaceId)) {
-            revert Cards__OnlyAvatarBasedAccount(recipient);
-        }
-        _safeBatchTransferFrom(
-            address(this), // address from,
-            recipient, // address to,
-            _cardIds, // uint256[] memory ids,
-            _cardvalues, // uint256[] memory values,
-            "" // bytes memory data
-        );
-    }
-
-    /**
-     * @notice resetsPrice of a card pack.
-     *
-     * @param newPrice The new price of a card pack.
-     *
-     * @dev The function is only accesible to the owner of the contract.
-     *
-     * emits a ChangedCardPackPrice event.
-     */
-    function setPriceCardPack(uint256 newPrice) public onlyOwner {
-        uint256 oldPrice = priceCardPack;
-
-        priceCardPack = newPrice;
-
-        emit ChangedCardPackPrice(newPrice, oldPrice);
+        /// 
+        currentCoinAllowance = currentCoinAllowance - (currentCoinAllowance / 10); 
+        s_coinAllowance[player] = s_coinAllowance[player] + currentCoinAllowance;
     }
 
     /**
@@ -364,6 +290,19 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     }
 
     /**
+     * @notice retrieves all accumulated funds from the contract.
+     *
+     * @dev The function is only accesible to the owner of the contract.
+     *
+     */
+    function setCoinAllowance(uint256 newAllowance) public onlyOwner {
+        currentCoinAllowance = newAllowance; 
+        emit SetNewCointAllowance(newAllowance); 
+    }
+
+    
+
+    /**
      * @notice Chainlink VRF function.
      *
      * @param requester the Avatar Based Account buying a pack of cards and requesting the random words. 
@@ -373,12 +312,12 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      * @dev the function is an almost exact copy from Chainlinks example contract.
      * 
      */
-    function _requestRandomWords(address requester) public returns (uint256) {
+    function _requestRandomWords(address requester) internal returns (uint256) {
         bytes memory extraArgs = VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: true}));
         (uint256 requestId, uint256 reqPrice) =
             requestRandomnessPayInNative(requestConfig.callbackGasLimit, requestConfig.requestConfirmations, NUMBER_CARDS_IN_PACK, extraArgs);
         s_requests[requestId] =
-            VRFRequestStatus({paid: reqPrice, randomWords: new uint256[](0), fulfilled: false, requester: requester});
+            VRFRequestStatus({paid: reqPrice, randomWords: new uint256[](NUMBER_CARDS_IN_PACK), fulfilled: false, requester: requester});
         requestIds.push(requestId);
         lastRequestId = requestId;
         emit RequestSent(requestId, NUMBER_CARDS_IN_PACK);
@@ -401,6 +340,22 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         }
         return incrementArray;
     }
+
+    // £NB: Have to test if I can leave this out... 
+    // /**
+    //  * @dev Calculates and returns the price required for a VRF request based on the configured gas limit and number of words requested.
+    //  * @return price The cost in LINK tokens for the VRF request, derived from the current configuration settings of the contract.
+    //  */
+    // function calculateRequestPrice() internal view returns (uint256) {
+    //     return i_vrfV2PlusWrapper.calculateRequestPrice(requestConfig.callbackGasLimit, requestConfig.numWords);
+    // }
+
+    // /**
+    //  * @notice function required for the contract to be able to received ERC-1155 tokens. 
+    //  */
+    // function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+    //     return this.onERC1155Received.selector;
+    // }
 
     /* getter functions */
     /**
@@ -436,21 +391,6 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         require(s_requests[_requestId].paid > 0, "request not found");
         VRFRequestStatus memory request = s_requests[_requestId];
         return (request.paid, request.fulfilled, request.randomWords);
-    }
-
-    /**
-     * @dev Calculates and returns the price required for a VRF request based on the configured gas limit and number of words requested.
-     * @return price The cost in LINK tokens for the VRF request, derived from the current configuration settings of the contract.
-     */
-    function calculateRequestPrice() internal view returns (uint256) {
-        return i_vrfV2PlusWrapper.calculateRequestPrice(requestConfig.callbackGasLimit, requestConfig.numWords);
-    }
-
-    /**
-     * @notice function required for the contract to be able to received ERC-1155 tokens. 
-     */
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
-        return this.onERC1155Received.selector;
     }
 
     /**
@@ -494,100 +434,3 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
 // for guidance on security see:   
 // - https://github.com/transmissions11/solcurity
 // - https://github.com/nascentxyz/simple-security-toolkit
-
-
-
-// Code Style and Structure:
-// Write concise and technical Solidity code with clear examples and precise logic.
-// Prefer modularization and reuse over code duplication; use libraries and inheritance where applicable.
-// Use descriptive variable names with clear intent (e.g., isCompleted, hasBalance).
-// Follow the structure: main contract, libraries, modifiers, functions, events, and state variables.
-// Naming Conventions:
-// Use CamelCase for contract names (e.g., TokenSale).
-// Use lowerCamelCase for function, variable, and modifier names (e.g., transferTokens, totalSupply).
-// Prefix private or internal variables with an underscore (e.g., _owner).
-// Use ALL_CAPS with underscores for constants (e.g., MAX_SUPPLY).
-// Solidity Usage:
-// Use Solidity version pragmas carefully; avoid floating pragmas (^) to ensure consistency across environments.
-// Favor interfaces over abstract contracts when possible for interoperability.
-// Use require for validation and guard clauses to fail early with meaningful error messages.
-// Leverage modifiers for repetitive checks (e.g., access control).
-// Syntax and Formatting:
-// Use 4 spaces per indentation level; avoid tabs.
-// Place the most important logic first in functions, followed by validations and finally state updates.
-// Organize contracts with a clear separation between functions that read state (view/pure) and those that modify state.
-// Avoid long functions; break down complex logic into smaller, reusable functions.
-// Error Handling and Validation:
-// Prioritize error handling with require, assert, and revert; provide clear and informative error messages.
-// Use custom error types with Solidity 0.8.x for gas efficiency and clarity (e.g., error InsufficientFunds(uint256 available, uint256 required);).
-// Handle edge cases explicitly and ensure proper checks are in place for input validation.
-// Security Best Practices:
-// Follow the Checks-Effects-Interactions pattern to avoid reentrancy attacks.
-// Use OpenZeppelin libraries where applicable to prevent common vulnerabilities.
-// Implement proper access control using Ownable or AccessControl patterns.
-// Avoid using tx.origin for authorization; use msg.sender instead.
-// Test for integer overflows/underflows and favor Solidity 0.8.x's built-in overflow protections.
-// Gas Optimization:
-// Minimize storage writes by using memory variables where applicable.
-// Pack storage variables to reduce gas costs.
-// Favor uint256 types over smaller uints for efficient gas usage.
-// Use external visibility for functions that don't modify the state but are called from outside the contract.
-// Batch operations where possible to reduce transaction overhead.
-// Contract Structure and Design:
-// Use a clear and logical inheritance structure; avoid deep inheritance trees.
-// Separate contract logic from data storage when appropriate (e.g., use Proxy patterns).
-// Design contracts to be upgradable if needed, but ensure rigorous testing.
-// Document your code with NatSpec comments for functions, events, and complex logic.
-// NatSpec Documentation:
-// Use NatSpec format for all public and external functions, events, and complex logic to provide clarity and facilitate automatic documentation.
-// Add a summary tag (@notice) to describe the purpose and high-level function of the contract, function, or event.
-// Use the @dev tag for more detailed explanations of the logic, especially for complex or non-obvious code.
-// Document all function parameters with @param, specifying the name and purpose of each parameter.
-// Use the @return tag to describe return values for functions.
-// Apply the @inheritdoc tag when overriding or implementing functions from a base contract or interface to inherit the documentation.
-// Include custom error documentation with @custom:error, describing when and why the error is used.
-// Annotate custom modifiers with the @custom:modifier tag, providing a brief explanation of their purpose.
-// Use @title and @author tags at the top of each contract file to indicate the contract's name and author(s).
-// Example NatSpec Usage:
-// solidity
-// Copiar código
-// /**
-//  * @title TokenSale
-//  * @notice This contract handles the sale of tokens to investors.
-//  * @dev Implements a simple ERC20 token sale with a fixed price.
-//  */
-// contract TokenSale {
-
-//     /**
-//      * @notice Buys tokens for the sender, based on the amount of Ether sent.
-//      * @dev Requires that the sale is active and the amount sent is non-zero.
-//      * @param beneficiary The address that will receive the purchased tokens.
-//      */
-//     function buyTokens(address beneficiary) external payable {
-//         // Function logic
-//     }
-
-//     /**
-//      * @notice Returns the remaining tokens available for sale.
-//      * @dev Uses a view function to avoid altering state.
-//      * @return The number of tokens left for sale.
-//      */
-//     function remainingTokens() external view returns (uint256) {
-//         return _remainingTokens;
-//     }
-
-//     /**
-//      * @custom:error InsufficientFunds
-//      * @notice Thrown when the sender does not have enough balance to complete the transaction.
-//      */
-//     error InsufficientFunds(uint256 available, uint256 required);
-// }
-// Testing and Deployment:
-// Write extensive unit tests using Foundry's forge test to cover all edge cases and scenarios.
-// Use invariant testing and fuzzing to ensure the robustness of your contracts.
-// Deploy contracts with proper initial settings; consider using a deployment script for consistency.
-// Key Conventions:
-// Use SPDX-License-Identifier at the top of each Solidity file to declare the license type.
-// Follow the Ethereum Smart Contract Best Practices for security and design guidelines.
-// Limit contract size to avoid exceeding the block gas limit, which can result in deployment issues.
-// This rule set now includes guidelines for NatSpec documentation, which is essential for providing clarity and ensuring that smart contracts are well-documented and easier to understand, maintain, and audit.

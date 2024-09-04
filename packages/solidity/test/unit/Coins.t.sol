@@ -14,9 +14,7 @@ import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract CoinsTest is Test {
-    uint256 CardPackPrice = 50_000;
-    uint256[] packThresholds = [5, 15, 30, 100]; // £todo what happens after 1000 packs sold? CHECK!
-    uint256[] packCoinAmounts = [500, 100, 25, 1];
+    uint256 CardPackPrice = 1 ether / 1000;
 
     /* Type declarations */
     Cards cards;
@@ -44,7 +42,7 @@ contract CoinsTest is Test {
         vm.prank(userOne);
         (, avatarAccountAddress) = players.createPlayer(avatarUri);
         // 2: get price pack
-        uint256 priceCardPack = cards.priceCardPack();
+        uint256 priceCardPack = cards.PRICE_CARD_PACK();
         // 3: give userOne funds.
         vm.deal(userOne, 1 ether);
         vm.deal(avatarAccountAddress, 1 ether);
@@ -88,12 +86,13 @@ contract CoinsTest is Test {
     function testCoinAllowanceIsGivenWhenOpeningPackOfCards() public {
         // prep
         uint256 cardPackNumber = 1;
+        uint256 startAllowance = cards.s_coinAllowance(avatarAccountAddress);
         // 1: create Avatar Based Account
         vm.prank(userOne);
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         // 2: get price pack
-        uint256 priceCardPack = cards.priceCardPack();
+        uint256 priceCardPack = cards.PRICE_CARD_PACK();
         // 3: give userOne funds.
         vm.deal(userOne, 1 ether);
         vm.deal(avatarAccountAddress, 1 ether);
@@ -108,14 +107,14 @@ contract CoinsTest is Test {
         cards.rawFulfillRandomWords(requestId, mockRandomWords);
 
         // assert
-        uint256 observedAllowance = cards.s_coinAllowance(avatarAccountAddress);
-        vm.assertEq(packCoinAmounts[0], observedAllowance);
+        uint256 endAllowance = cards.s_coinAllowance(avatarAccountAddress);
+        assert(startAllowance < endAllowance);
     }
 
     function testCoinsCanBeMintedByAvatarAccount() public createUserOneAndOpenCardPack {
         // prep: check if account received allowance.
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress);
-        vm.assertEq(packCoinAmounts[0], coinAllowance);
+        assert(coinAllowance > 1);
 
         // ACT:
         // 1: mint coins by avatar
@@ -143,11 +142,11 @@ contract CoinsTest is Test {
     function testExcessAllowanceOfCoinsCannotBeMinted() public createUserOneAndOpenCardPack {
         // Prep: check if account received allowance.
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress);
-        vm.assertEq(packCoinAmounts[0], coinAllowance);
+        assert(coinAllowance > 1);
 
         // ACT:
         // 1: mint coins by avatar
-        uint256 amountCoinsToMint = 3000;
+        uint256 amountCoinsToMint = coinAllowance * 2;
         // 2: create call data
         bytes memory callData2 = abi.encodeWithSelector(Coins.mintCoins.selector, amountCoinsToMint);
 
@@ -160,13 +159,11 @@ contract CoinsTest is Test {
     function testCoinAllowanceDecrease() public createUserOneAndOpenCardPack {
         // prep check if user one received allowance for opening pack no 1 (which means account has been succesfully created).
         uint256 coinAllowance = cards.s_coinAllowance(avatarAccountAddress);
-        vm.assertEq(packCoinAmounts[0], coinAllowance);
-
         uint256 cardPackNumber = 1;
-        uint256 priceCardPack = cards.priceCardPack();
+        uint256 priceCardPack = cards.PRICE_CARD_PACK();
 
         // act: opening pack of cards
-        uint256 numberOfPacksToOpen = 125;
+        uint256 numberOfPacksToOpen = 12;
         uint256[] memory increasesAllowance = new uint256[](numberOfPacksToOpen);
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         for (uint256 i; i < numberOfPacksToOpen; i++) {

@@ -64,7 +64,7 @@ contract ChainLinkVRFTest is Test {
         (, address avatarAccountAddress) = players.createPlayer(avatarUri);
         vm.deal(avatarAccountAddress, 1 ether);
         // 2: get price pack
-        uint256 priceCardPack = cards.priceCardPack();
+        uint256 priceCardPack = cards.PRICE_CARD_PACK();
 
         // 3: create callData for opening pack of cards.
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
