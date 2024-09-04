@@ -8,12 +8,14 @@ import {
   type TransactionReceipt,
   decodeEventLog,
   type Account,
+  IntegerOutOfRangeError,
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
 import { TypedDataField } from 'ethers';
 import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
 import { TypedDataDomain } from "viem";
+import { Domain, Schema } from "@/app/api/rollup/types";
 
 export type EIP712Types = Record<string, TypedDataField[]>;
 
@@ -426,7 +428,7 @@ export default class EthereumRpc {
 
   // * Coin Share Minting: *
 
-  // * The mintCoinShare function ties in with your game’s reward system, where purchasing packs or other in-game actions grant players coin shares. *
+  // * The mintCoinShare function ties in with your game's reward system, where purchasing packs or other in-game actions grant players coin shares. *
   // * This function correctly handles the transaction process, ensuring players receive their allocated coin shares based on their actions. *
 
   async mintCoinShare(): Promise<TransactionReceipt> {
@@ -561,29 +563,56 @@ export default class EthereumRpc {
     ) as T;
   }
 
-async sign712Message(schema: ActionSchema, payload: any): Promise<string> {
+
+async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
   const walletClient = createWalletClient({
     chain: this.getViewChain(),
     transport: custom(this.provider),
   });
 
   const address = await this.getAccounts();
-    const domain = schema.domain as TypedDataDomain;
-  const types = schema.EIP712TypedData.types as EIP712Types;
+  
+  let salt: string;
+  const domainSalt = domain.salt as string | ArrayBuffer;
 
-   const signature = await walletClient.signTypedData({
-      account: address[0] as `0x${string}` | Account,
-      domain: {
-        ...domain,
-        chainId: domain.chainId ? Number(domain.chainId) : undefined,
-      },
-      types,
-      primaryType: schema.EIP712TypedData.primaryType,
-      message: payload,
-    });
-
-    return signature;
+  if (domainSalt instanceof ArrayBuffer) {
+    salt = Buffer.from(domainSalt).toString('hex').slice(0, 64).padStart(64, '0');
+  } else if (typeof domainSalt === 'string') {
+    salt = domainSalt.slice(0, 64).padStart(64, '0');
+  } else {
+    throw new Error('Invalid salt format. Expected ArrayBuffer or string.');
   }
+
+  // Ensure salt is a valid positive 256-bit number
+  const saltBigInt = BigInt(`0x${salt}`);
+  if (saltBigInt < 0n) {
+    throw new IntegerOutOfRangeError({
+      value: salt,
+      min: '0',
+    });
+  }
+
+  // Validate and sanitize payload
+  Object.keys(payload).forEach(key => {
+    if (typeof payload[key] === 'number' && payload[key] < 0) {
+      throw new Error(`Invalid payload value for ${key}: ${payload[key]}. Must be a non-negative integer.`);
+    }
+  });
+
+  const signature = await walletClient.signTypedData({
+    account: address[0] as `0x${string}` | Account,
+    domain: {
+      ...domain,
+      chainId: domain.chainId,
+      salt: `0x${salt}`,
+    },
+    types: schema.types,
+    primaryType: schema.primaryType,
+    message: payload,
+  });
+
+  return signature;
+}
 
 }
 

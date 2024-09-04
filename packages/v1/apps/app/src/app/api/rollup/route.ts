@@ -19,6 +19,7 @@ const getState = async () => {
   return get<{ state: number }>();
 };
 
+/* SUBMIT ACTION */
 const submitAction = async (
   path: string,
   data: any

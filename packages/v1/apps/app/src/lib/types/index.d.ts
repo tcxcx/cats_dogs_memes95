@@ -37,6 +37,7 @@ export declare type Power = {
   type: "attack" | "defense" | "speed";
   value: number;
 };
+
 export const PowerList: Power["type"][];
 
 // ========================================
@@ -99,6 +100,19 @@ export type GameStateLog = {
 export type GameStateLog = GameState & {
   gameLog: GameLog;
 };
+
+export interface GameStateResponse {
+  gameState: GameState;
+  logs: { name: string; value: number }[];
+  ackHash: string;
+  card?: CardData; // Optional if not always returned
+  newPlayerScore?: number; // Optional if not always returned
+  newOpponentScore?: number; // Optional if not always returned
+  winner?: Winner; // Optional if not always returned
+  updatedGameLog?: GameLog; // Optional if not always returned
+  newGamePhase?: GamePhase; // Optional if not always returned
+  newTurnCount?: number; // Optional if not always returned
+}
 
 // ========================================
 
