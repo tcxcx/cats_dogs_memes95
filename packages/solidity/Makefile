@@ -39,12 +39,17 @@ anvil :; anvil --steps-tracing --block-time 1
 ###############################
 SEPOLIA_TEST_ARGS := --fork-url $(SEPOLIA_RPC_URL) 
 SEPOLIA_DEPLOY_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+SEPOLIA_LIVE_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast -vvvv
+
 
 sepoliaForkedTest: 
 	@forge test $(SEPOLIA_TEST_ARGS)
 
 sepoliaLiveForkedTest: 
 	@forge script script/LiveInteractions.s.sol $(SEPOLIA_TEST_ARGS)
+
+sepoliaLive: 
+	@forge script script/LiveInteractions.s.sol $(SEPOLIA_LIVE_ARGS)
 
 sepoliaForkedDeployTest:
 	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 

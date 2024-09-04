@@ -127,6 +127,7 @@ contract GamesTest is Test {
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
         vm.deal(address(cards), 100 ether);
+        vm.txGasPrice(1);
     }
 
     ///////////////////////////////////////////////

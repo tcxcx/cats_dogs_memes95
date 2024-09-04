@@ -30,7 +30,7 @@ contract DeployGames is Script {
         requestConfirmations, 
         wrapperAddress
         );
-      // createCards(); // saves cards to blockchain. NB: VERY EXPENSIVE (deployment costs around 0.8 eth.)
+      createCards(); // saves cards to blockchain. NB: VERY EXPENSIVE (deployment costs around 0.8 eth.)
 
       gamesContract = new Games(
         address(cardsContract)  
@@ -40,6 +40,7 @@ contract DeployGames is Script {
     return (cardsContract, gamesContract, helperConfig); 
   }
 
+  // NB: I found that uploading them by hand (via etherscan) is the easiest approach for now. 
   function createCards() public {
     string memory newuri = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmPWxjBsLvVs7pMBDL6xssr71b3ynvkgDDZgpDA6hbZ4BM/{id}.json";  
     Cards.Card[] memory CardData = new Cards.Card[](10); 
