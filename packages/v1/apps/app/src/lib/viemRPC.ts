@@ -487,7 +487,7 @@ export default class EthereumRpc {
       // Submit the transaction to create the player
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
-        address: "0xPlayersContractAddressHere",
+        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
         abi: this.playersContractABI,
         functionName: "createPlayer",
         args: [avatarURI],
@@ -542,7 +542,7 @@ export default class EthereumRpc {
       // Call the getAvatarAddress function on the Players contract to get the avatar's address
 
       const result = await publicClient.readContract({
-        address: "0xPlayersContractAddressHere",
+        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
         abi: this.playersContractABI,
         functionName: "getAvatarAddress",
         args: [avatarId],

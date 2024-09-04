@@ -35,10 +35,11 @@ contract LiveInteractions is Script {
     uint256 priceCardPack = (1 ether / 1000) + 100; 
     bytes callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
     address avatarAddress = 0x40aCE4e246C61707219aE16eC4771C4D67bF23BC;
+    AvatarBasedAccount avatarAccount = AvatarBasedAccount(payable(avatarAddress)); 
 
     function run() external {
         vm.startBroadcast();
-        bytes memory result = AvatarBasedAccount(payable(avatarAddress)).execute(address(cards), priceCardPack, callData, 0);
+        bytes memory result = avatarAccount.execute(address(cards), priceCardPack, callData, 0);
         uint256 requestId = uint256(bytes32(result)); 
         console2.log("requestID:", requestId); 
         vm.stopBroadcast();

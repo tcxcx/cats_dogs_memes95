@@ -51,6 +51,10 @@ sepoliaLiveForkedTest:
 sepoliaLive: 
 	@forge script script/LiveInteractions.s.sol $(SEPOLIA_LIVE_ARGS)
 
+sepoliaVerifyAvatarBasedAccount:
+	@forge verify-contract --guess-constructor-args --etherscan-api-key $(ETHERSCAN_API_KEY) --chain 11155111 --num-of-optimizations 200 --watch 0xC9c668345CC64A45083ae1AdAB5c6F65320D6543 src/AvatarBasedAccount.sol:IAvatarExecutable
+
+
 sepoliaForkedDeployTest:
 	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
 # @forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 500000000 --gas-price 5000000000 -vvvv 
