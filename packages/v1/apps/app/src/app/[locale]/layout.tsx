@@ -13,7 +13,9 @@ import DashboardSidebar from "@/components/sidebar/index";
 import React95App from "@/lib/context/react95";
 import { Web3AuthProvider } from "@/lib/context/web3auth";
 import { Toaster } from "@v1/ui/toaser";
-import Room  from "../Room";
+import Room from "../Room";
+import TransactionDrawer from "@/components/transaction-drawer";
+import { LogsProvider } from "@/lib/context/logs.context";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cats-dogs-memes-etc.wtf"),
@@ -56,6 +58,7 @@ export default function RootLayout({
             <React95App>
               {/* NAVBAR */}
               <Room>
+                <LogsProvider>
                 <Navbar />
                 {/* MAIN LAYOUT */}
                 <div className="flex h-screen">
@@ -74,12 +77,14 @@ export default function RootLayout({
                       </div>
                       <div className="relative z-1 px-5 py-2 max-h-fit">
                         {children}
+                        <TransactionDrawer />
                       </div>
                     </div>
                   </main>
                 </div>
                 {/* CLOSING LINE */}
                 <Footer />
+                </LogsProvider>
               </Room>
             </React95App>
           </Web3AuthProvider>
