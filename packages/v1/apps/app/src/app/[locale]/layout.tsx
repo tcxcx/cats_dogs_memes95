@@ -68,7 +68,6 @@ export default function RootLayout({
                   {/* MAIN CONTENT */}
                   <main className="flex-grow">
                     <div className="relative flex-shrink h-screen">
-                      {" "}
                       <div className="absolute inset-0 z-0 ">
                         <FlickeringGrid />
                       </div>
