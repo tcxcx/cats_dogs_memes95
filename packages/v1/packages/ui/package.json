@@ -46,6 +46,8 @@
     "./sheet": "./src/components/sheet.tsx",
     "./tabs": "./src/components/tabs.tsx",
     "./toast": "./src/components/toast.tsx",
+    "./textarea": "./src/components/textarea.tsx",
+    "./drawer": "./src/components/drawer.tsx",
     "./toaser": "./src/components/toaster.tsx",
     "./use-toast": "./src/components/use-toast.ts",
     "./retro-grid": "./src/components/magicui/retro-grid.tsx",

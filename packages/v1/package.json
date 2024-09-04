@@ -27,6 +27,8 @@
   },
   "packageManager": "bun@1.1.26",
   "dependencies": {
-    "@stackr/sdk": "^0.5.4"
+    "@stackr/sdk": "^0.5.4",
+    "swr": "^2.2.5",
+    "vaul": "^0.9.1"
   }
 }

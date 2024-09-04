@@ -24,3 +24,11 @@ export const CURSOR_NAMES = [
   "🦀",
   "🐝",
 ];
+
+export function formatHash(hash: string) {
+  return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+}
+
+export function urlJoin(...parts: string[]) {
+  return parts.map((part) => part.replace(/\/$/, "")).join("/");
+}
