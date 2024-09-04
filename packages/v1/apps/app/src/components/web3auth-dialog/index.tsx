@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
+import Link from "next/link";
 import { useWeb3Auth } from "@/lib/context/web3auth";
 import { Avatar } from "react95";
 import { Input } from "@v1/ui/input";
@@ -51,12 +52,22 @@ import {
   WindowContent,
 } from "react95";
 import { generateOtp, sendOtpToEmail, verifyOtp } from "@/lib/otp-utils";
+import { useHasPlayer } from "@/lib/hooks/useHasPlayer";
+import { useCreatePlayer } from "@/lib/hooks/useCreatePlayer";
 
 interface UserInfo {
   email: string;
   name: string;
   picture: string;
 }
+
+const avatarURIs = {
+  1: "https://bafkreicschxbrjxonakuojkhafe55qux7humwwtqraxzrj2hzsarmtgngm.ipfs.web3approved.com/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJiYWZrcmVpY3NjaHhicmp4b25ha3VvamtoYWZlNTVxdXg3aHVtd3d0cXJheHpyajJoenNhcm10Z25nbSIsInByb2plY3RfdXVpZCI6Ijc2YTA4NzgxLTViMDctNGRhMy1iZDNhLTBiNDc2ZjRhY2YyMiIsImlhdCI6MTcyNTQ4NzU2Niwic3ViIjoiSVBGUy10b2tlbiJ9.PAMcuLRqg5vqfotYJ6mE_YmX6udo7rAi8cgYmPq164M",
+  2: "https://bafkreienvbbsasyy3afsegjc4lz6p6lffzezvi7el2yvfhxvhsy3ewg7gm.ipfs.web3approved.com/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJiYWZrcmVpZW52YmJzYXN5eTNhZnNlZ2pjNGx6NnA2bGZmemV6dmk3ZWwyeXZmaHh2aHN5M2V3ZzdnbSIsInByb2plY3RfdXVpZCI6Ijc2YTA4NzgxLTViMDctNGRhMy1iZDNhLTBiNDc2ZjRhY2YyMiIsImlhdCI6MTcyNTQ4NzU2Niwic3ViIjoiSVBGUy10b2tlbiJ9.oXj49IfN-IRhQM26r7VB1YGfInKkn6W1__Th0D-Dq4w",
+  3: "https://bafkreici3hwu7zsp74hndcwktfwkqgsjk4bvffg7a47mw27vl7t5fzqoim.ipfs.web3approved.com/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJiYWZrcmVpY2kzaHd1N3pzcDc0aG5kY3drdGZ3a3Fnc2prNGJ2ZmZnN2E0N213Mjd2bDd0NWZ6cW9pbSIsInByb2plY3RfdXVpZCI6Ijc2YTA4NzgxLTViMDctNGRhMy1iZDNhLTBiNDc2ZjRhY2YyMiIsImlhdCI6MTcyNTQ4NzU2Niwic3ViIjoiSVBGUy10b2tlbiJ9.5M7smcE2cdUVT2ieXB1UVSW5lrgXF2ElGtWE-oVBdXs",
+  4: "https://bafkreibi2kkfcmecgiuzqdcz3xpyr2zga6dkwkw37wu2776drivgjr4d6e.ipfs.web3approved.com/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJiYWZrcmVpYmkya2tmY21lY2dpdXpxZGN6M3hweXIyemdhNmRrd2t3Mzd3dTI3NzZkcml2Z2pyNGQ2ZSIsInByb2plY3RfdXVpZCI6Ijc2YTA4NzgxLTViMDctNGRhMy1iZDNhLTBiNDc2ZjRhY2YyMiIsImlhdCI6MTcyNTQ4NzU2Niwic3ViIjoiSVBGUy10b2tlbiJ9.2TRMNNZxn2OJVHKd9CxropTzfaq04-jfLz3QBLpdC0k",
+};
+
 
 type MfaStep = "initial" | "otpVerification" | "setupComplete";
 
@@ -83,6 +94,8 @@ export default function Web3AuthDialog() {
   const [otpCode, setOtpCode] = useState<string>("");
   const [mfaError, setMfaError] = useState<string>("");
   const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const { hasPlayer, avatarImage } = useHasPlayer();
+  const { createPlayer, isCreating, error, avatarId, avatarAddress } = useCreatePlayer();
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -183,7 +196,7 @@ export default function Web3AuthDialog() {
           <Button
             onClick={handleSetupMFA}
             disabled={mfaEnabled}
-            className="w-full"
+            className="w-full font-departure"
           >
             {mfaEnabled ? "MFA Enabled" : "Set up MFA"}
           </Button>
@@ -191,7 +204,7 @@ export default function Web3AuthDialog() {
       case "otpVerification":
         return (
           <div className="space-y-4">
-            <Label htmlFor="otpCode">Enter OTP Code</Label>
+            <Label htmlFor="otpCode" className="font-departure">Enter OTP Code</Label>
             <InputOTP
               maxLength={6}
               pattern={REGEXP_ONLY_DIGITS as any}
@@ -209,34 +222,34 @@ export default function Web3AuthDialog() {
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
-            <Button onClick={handleOTPVerification} className="w-full">
+            <Button onClick={handleOTPVerification} className="w-full font-departure">
               Verify OTP and Enable MFA
             </Button>
-            {mfaError && <p className="text-red-500">{mfaError}</p>}
+            {mfaError && <p className="text-red-500 font-departure">{mfaError}</p>}
           </div>
         );
       case "setupComplete":
         return (
           <div className="space-y-4">
             <Alert>
-              <AlertTitle>MFA Setup Complete</AlertTitle>
-              <AlertDescription>
+              <AlertTitle className="font-departure">MFA Setup Complete</AlertTitle>
+              <AlertDescription className="font-departure">
                 Your MFA setup is complete. Please save the following factor key
                 securely:
               </AlertDescription>
             </Alert>
             <div className="space-y-2">
-              <Label htmlFor="factorKey">Factor Key</Label>
+              <Label htmlFor="factorKey" className="font-departure">Factor Key</Label>
               <Input
                 id="factorKey"
                 value={factorKey || ""}
                 readOnly
-                className="cursor-pointer"
+                className="cursor-pointer font-departure"
                 onClick={() =>
                   factorKey && navigator.clipboard.writeText(factorKey)
                 }
               />
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 font-departure">
                 Click on the key to copy it to your clipboard.
               </p>
             </div>
@@ -247,10 +260,6 @@ export default function Web3AuthDialog() {
     }
   };
 
-  const handleBuyAvatar = () => {
-    console.log("Buying avatar...");
-  };
-
   const handleCarouselSelect = (
     event: React.SyntheticEvent,
     index: number | null
@@ -258,21 +267,24 @@ export default function Web3AuthDialog() {
     setCurrentSlide(index as number);
   };
 
-  const handleSelectAvatar = () => {
-    console.log(`Selected avatar ${currentSlide + 1} as game avatar`);
+const handleSelectAvatar = async () => {
+    const selectedAvatarIndex = currentSlide + 1;
+    const selectedAvatarURI = avatarURIs[selectedAvatarIndex as keyof typeof avatarURIs];
+    console.log(`Selected avatar ${selectedAvatarIndex} with URI: ${selectedAvatarURI}`);
+    await createPlayer(selectedAvatarURI);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#D8B4FE] text-black ml-4">
+        <Button className="bg-[#D8B4FE] text-black ml-4 font-departure">
           {isLoggedIn ? "My Wallet" : "Connect Wallet"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>Web3Auth MPC Login</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="font-departure">Web3Auth MPC Login</DialogTitle>
+          <DialogDescription className="font-departure">
             {isLoggedIn
               ? "Welcome! Manage your wallet and game assets here."
               : "Connect your wallet using Web3Auth MPC. Choose a social login method."}
@@ -281,14 +293,14 @@ export default function Web3AuthDialog() {
         {!isLoggedIn ? (
           <Card>
             <CardHeader>
-              <CardTitle>Social Login</CardTitle>
-              <CardDescription>
+              <CardTitle className="font-departure">Social Login</CardTitle>
+              <CardDescription className="font-departure">
                 Login using your Google account.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button
-                className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText"
+                className="w-full bg-white text-text dark:bg-secondaryBlack dark:text-darkText font-departure"
                 onClick={handleLogin}
                 disabled={isLoading}
               >
@@ -303,7 +315,7 @@ export default function Web3AuthDialog() {
           <Card>
             <CardContent>
               <div className="flex items-center justify-between mt-4 mb-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 font-departure">
                   <Avatar
                     src={userInfo?.picture}
                     alt="Profile"
@@ -322,7 +334,7 @@ export default function Web3AuthDialog() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="mb-2 flex items-center cursor-help">
+                        <div className="mb-2 flex items-center cursor-help font-departure">
                           Multi-factor Authentication (MFA)
                           <Info size={16} className="ml-2" />
                         </div>
@@ -339,74 +351,101 @@ export default function Web3AuthDialog() {
                 </div>
               </div>
               <div className="flex space-x-4">
-                <div className="flex-1 space-y-6">
-                  <GroupBox label="Buy Avatar">
+                <div className="flex-1">
+                  <GroupBox label="Buy Avatar" className="font-departure">
                     <CardContent>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="mb-4 flex items-center cursor-help">
-                              Purchase a new ERC6551 Avatar
+                            <div className="mb-4 flex items-center cursor-help font-departure">
+                              Purchase Card packs!
                               <Info size={16} className="ml-2" />
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>
-                              Each avatar is an ERC6551 item. Your game assets
-                              are stored in this NFT. If you sell or transfer
-                              this NFT, your entire inventory will be
-                              transferred as well.
+                            <p className="font-departure">
+                              Each pack contains 5 unique cards. Every pack includes a
+                              memecoin allocation you can redeem.
                             </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Button95 onClick={handleBuyAvatar} className="w-full">
-                        <ShoppingCart size={16} className="mr-2" />
-                        Buy
+                      <Link href={"/open-packs"}>
+                        <Button95  className="w-full">
+                        <ShoppingCart size={16} className="mr-2 font-departure" />
+                        Buy Card Packs
                       </Button95>
+                      </Link>
                     </CardContent>
                   </GroupBox>
-                  <GroupBox label="My Cats, Memes & Dog's Coins ($CMD)">
+                  <GroupBox className="font-departure" label="My Cats, Memes & Dog's Coins ($CMD)">
                     <CardContent>
-                      <Frame variant="field" className="p-4">
+                      <Frame variant="field" className="p-2">
                         <div className="flex items-center justify-between mb-2">
-                          <Counter value={142424} minLength={6} size="lg" />
+                          <Counter value={142424} minLength={8} size="lg" />
                         </div>
                       </Frame>
                     </CardContent>
                   </GroupBox>
+                       <GroupBox label="My Tournament Position" className="font-departure">
+                    <CardContent>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <span role="img" aria-label="trophy" className="m-3 text-7xl">🏆</span>
+                            <span className="font-departure text-xl">Position:</span>
+                          </div>
+                        </div>
+                    </CardContent>
+                  </GroupBox>
                 </div>
                 <div className="flex-1">
-                  <GroupBox label="GAME AVATAR ERC6551">
+                  <GroupBox label="GAME AVATAR ERC6551" className="font-departure">
                     <Window>
                       <WindowContent>
-                        <Carousel onSelect={handleCarouselSelect as any}>
-                          <CarouselContent>
-                            {Array.from({ length: 5 }).map((_, index) => (
-                              <CarouselItem key={index}>
-                                <div className="p-1">
-                                  <Card>
-                                    <CardContent className="flex aspect-square items-center justify-center p-2">
-                                      <span className="text-3xl font-base">
-                                        {index + 1}
-                                      </span>
-                                    </CardContent>
-                                  </Card>
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselPrevious />
-                          <CarouselNext />
-                        </Carousel>
-                        <div className="mt-4">
-                          <Button95
-                            onClick={handleSelectAvatar}
-                            className="w-full"
-                          >
-                            Select Avatar {currentSlide + 1}
-                          </Button95>
-                        </div>
+                        {hasPlayer ? (
+                          <div className="flex flex-col items-center">
+                            <img src={avatarImage} alt="User Avatar" className="w-full h-auto mb-4" />
+                            <span className="text-lg font-semibold">Your Current Avatar</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Carousel onSelect={handleCarouselSelect as any}>
+                              <CarouselContent>
+                                {Object.entries(avatarURIs).map(([id, uri]) => (
+                                  <CarouselItem key={id}>
+                                    <div className="p-2">
+                                      <Card>
+                                        <CardContent className="flex aspect-square items-center justify-center p-2">
+                                          <img src={uri} alt={`Avatar ${id}`} className="w-full h-auto" />
+                                        </CardContent>
+                                      </Card>
+                                    </div>
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              <CarouselPrevious />
+                              <CarouselNext />
+                            </Carousel>
+                            <div className="mt-4 flex justify-center">
+                              <Button95
+                                onClick={() => {
+                                  handleSelectAvatar().catch(error => {
+                                    console.error('Error selecting avatar:', error);
+                                  });
+                                }}
+                                className="w-full max-w-xs"
+                                disabled={isCreating}
+                              >
+                                {isCreating ? "Creating..." : `Select ${
+                                  currentSlide === 0 ? "Pablo" : 
+                                  currentSlide === 1 ? "Papi Frog" : 
+                                  currentSlide === 2 ? "Doggy Master" : 
+                                  "Kween"
+                                }`}
+                              </Button95>
+                            </div>
+                          </>
+                        )}
                       </WindowContent>
                     </Window>
                   </GroupBox>
@@ -416,10 +455,10 @@ export default function Web3AuthDialog() {
               <Button
                 onClick={handleLogout}
                 disabled={isLoading}
-                className="w-full"
+                className="w-full font-departure uppercase"
               >
                 {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin font-departure" />
                 ) : null}
                 Logout
               </Button>

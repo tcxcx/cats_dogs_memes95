@@ -5,6 +5,7 @@ import { useMruInfo } from "./useMruInfo";
 import { EthereumRpc } from "@/lib/viemRPC";
 import { Domain, Schema, MRUInfo } from "@/app/api/rollup/types";
 import { submitAction } from "../../app/api/rollup/route";
+
 export const useAction = () => {
   const { rpc, isLoggedIn } = useWeb3Auth();
   const { mruInfo } = useMruInfo();

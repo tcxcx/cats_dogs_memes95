@@ -16,6 +16,8 @@ import { TypedDataField } from 'ethers';
 import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
 import { TypedDataDomain } from "viem";
 import { Domain, Schema } from "@/app/api/rollup/types";
+import playersABI from '../../../../../solidity/out/Players.sol/Players.json'
+
 
 export type EIP712Types = Record<string, TypedDataField[]>;
 
@@ -85,23 +87,46 @@ export default class EthereumRpc {
     // other functions...
   ];
 
-  private playersContractABI = [
-    {
-      inputs: [{ internalType: "string", name: "avatarURI", type: "string" }],
-      name: "createPlayer",
-      outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "avatarId", type: "uint256" }],
-      name: "getAvatarAddress",
-      outputs: [{ internalType: "address", name: "", type: "address" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    // other functions...
-  ];
+
+//   private playersContractABI = playersABI.abi.map((item) => {
+//   if (item.type === "function") {
+//     return {
+//       inputs: item.inputs,
+//       name: item.name,
+//       outputs: item.outputs,
+//       stateMutability: item.stateMutability,
+//       type: item.type,
+//     };
+//   }
+//   return item;
+// });
+
+private playersContractABI = [
+  {
+    inputs: [
+      {
+        name: "avatarURI",
+        type: "string",
+        internalType: "string",
+      },
+    ],
+    name: "createPlayer",
+    outputs: [
+      {
+        name: "newAvatarId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "AvatarAddress",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
 
   constructor(provider: IProvider) {
     this.provider = provider;
@@ -309,7 +334,7 @@ export default class EthereumRpc {
       // Submit transaction to the blockchain
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
-        address: "0x9554a5CC8F600F265A89511e5802945f2e8A5F5D",
+        address: "0x9554a5CC8F600F265A89511e5802945f2e8A5F5D" as `0x${string}`,
         abi: this.contractABI,
         functionName: "store",
         args: [randomNumber],
@@ -323,6 +348,42 @@ export default class EthereumRpc {
       throw error;
     }
   }
+
+  async playerAction(
+    avatarBasedAccount: string,
+    to: string,
+    value: bigint,
+    calldata: string
+  ): Promise<{ reply: string }> {
+    try {
+      const walletClient = createWalletClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      // Submit the transaction to the blockchain
+      const hash = await walletClient.sendTransaction({
+        account: avatarBasedAccount as `0x${string}` | Account,
+        to: to as `0x${string}`,
+        value,
+        data: calldata as `0x${string}`,
+      });
+
+      // Wait for the transaction receipt
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      return { reply: `Transaction successful with hash: ${hash}` };
+    } catch (error) {
+      console.error("Error performing player action:", error);
+      throw error;
+    }
+  }
+
 
   // * NFT Minting: *
 
@@ -484,10 +545,17 @@ export default class EthereumRpc {
 
       const address = await this.getAddresses();
 
+
+      console.log("Account:", address[0]);
+      console.log("Contract Address:", "0xA070608Bc65116D860f3aCF3086Bc345DccA484C");
+      console.log("ABI:", this.playersContractABI);
+      console.log("Function Name:", "createPlayer");
+      console.log("Args:", [avatarURI]);
+
       // Submit the transaction to create the player
       const hash = await walletClient.writeContract({
-        account: address[0] as `0x${string}` | Account,
-        address: "0xPlayersContractAddressHere",
+        account: address[0] as `0x${string}`,
+        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C",
         abi: this.playersContractABI,
         functionName: "createPlayer",
         args: [avatarURI],
