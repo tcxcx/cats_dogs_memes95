@@ -324,6 +324,44 @@ export default class EthereumRpc {
     }
   }
 
+
+
+  async playerAction(
+    avatarBasedAccount: string,
+    to: string,
+    value: bigint,
+    calldata: string
+  ): Promise<{ reply: string }> {
+    try {
+      const walletClient = createWalletClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      // Submit the transaction to the blockchain
+      const hash = await walletClient.sendTransaction({
+        account: avatarBasedAccount as `0x${string}` | Account,
+        to: to as `0x${string}`,
+        value,
+        data: calldata as `0x${string}`,
+      });
+
+      // Wait for the transaction receipt
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      return { reply: `Transaction successful with hash: ${hash}` };
+    } catch (error) {
+      console.error("Error performing player action:", error);
+      throw error;
+    }
+  }
+
+
   // * NFT Minting: *
 
   // * The mintNFT function enables the minting of NFTs to a specified recipient. This is crucial for your game's mechanics, where players acquire NFTs representing in-game assets. *
