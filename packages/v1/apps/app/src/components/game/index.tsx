@@ -13,6 +13,7 @@ import {
   resolveCombat,
   finalizeGame,
   updateGameLog,
+  drawInitialHand,
 } from "@/lib/actions/game.actions";
 import {
   CardData,
@@ -36,6 +37,7 @@ import {
 } from "@v1/ui/dynamic-island";
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
+import { log } from "console";
 
 export default function Game() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -54,6 +56,12 @@ export default function Game() {
 
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
+
+  const [handIndexP1, setHandIndexP1] = useState<number>(0);
+  const [handIndexP2, setHandIndexP2] = useState<number>(0);
+  //const [powIndexP1, setPowIndexP1] = useState<number>(0);
+  //const [powIndexP2, setPowIndexP2] = useState<number>(0);
+
 
   // Mock decks for demonstration purposes Assuming user has all userCards
   const Deck1: Deck = shuffleDeck([...userCards])
@@ -77,8 +85,8 @@ export default function Game() {
           winner: null,
         };
         setGameState(initialGameState);
-        setPlayerHand(initialGameState.handP1);
-        setOpponentHand(initialGameState.handP2);
+        setPlayerHand(drawInitialHand(Deck1));
+        setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
         setTurnCount(1);
@@ -137,8 +145,9 @@ export default function Game() {
     }
   };
 
-  const drawCard = (player: Player) => {
-    const newCard = userCards[Math.floor(Math.random() * userCards.length)];
+  const drawCard = (player: Player, deck: string[], turnNumber: number) => {
+    const newCardName = deck[(turnNumber + 1) % deck.length];
+    const newCard = userCards.find(card => card.name === newCardName);
     if (!newCard) {
       console.error("Failed to draw a card: no cards available.");
       return; // Exit the function early if no card was drawn
@@ -158,9 +167,11 @@ export default function Game() {
     };
 
     if (player === "player") {
+      setHandIndexP1(playerHand.indexOf(card));
       setPlayerActiveCard(card);
       setPlayerHand((prev) => removeOneCard(prev));
     } else {
+      setHandIndexP2(opponentHand.indexOf(card));
       setOpponentActiveCard(card);
       setOpponentHand((prev) => removeOneCard(prev));
     }
@@ -180,11 +191,11 @@ export default function Game() {
   const opponentPlay = () => {
     // Opponent selects a card and a power if not already selected
     if (!opponentActiveCard) {
-      const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+      const randomCard = opponentHand[1];//[Math.floor(Math.random() * opponentHand.length)];
       if (randomCard) {
         playCard(randomCard, "opponent");
         if (!opponentSelectedPower) {
-          const randomPower = randomCard.powers[Math.floor(Math.random() * randomCard.powers.length)];
+          const randomPower = randomCard.powers[1];//[Math.floor(Math.random() * randomCard.powers.length)];
           if (randomPower) {
             selectPower(randomPower, "opponent");
           }
@@ -235,12 +246,13 @@ export default function Game() {
       turnCount,
       gameLog!
     );
+
     setGameLog(updatedGameLog);
     setWinner(winner);
     switch (gamePhase) {
       case "draw":
-        drawCard("player");
-        drawCard("opponent");
+        drawCard("player", Deck1, turnCount);
+        drawCard("opponent", Deck1, turnCount);
         setGamePhase("prep");
         break;
       case "prep":
@@ -256,7 +268,6 @@ export default function Game() {
           console.warn("Opponent has not selected a card or power.");
           return;
         }
-
         setGamePhase("combat");
         break;
       case "combat":
@@ -266,16 +277,16 @@ export default function Game() {
       case "check":
         setTurnCount((prevCount) => prevCount + 1);
 
-        const handIndexP1 = playerHand.indexOf(playerActiveCard!);
         const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
-        const handIndexP2 = opponentHand.indexOf(opponentActiveCard!);
         const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
 
         // Check that all indices are valid before proceeding
+        console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
         if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
           console.error("Invalid card or power selection: cannot find indices.");
           return;
         }
+        
 
         const updatedGameLog = updateGameLog(
           gameLog!,

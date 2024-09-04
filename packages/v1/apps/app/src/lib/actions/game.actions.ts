@@ -169,7 +169,7 @@ export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
   const sDeckP1 = shuffleDeckAction(deckP1);
   const sDeckP2 = shuffleDeckAction(deckP2);
   console.log(sDeckP1);
-  //console.log(sDeckP2);
+  console.log(sDeckP2);
   //console.log(drawInitialHand(deckP1), drawInitialHand(deckP2));
   //console.log(buildCardCollection(userCards));
 
