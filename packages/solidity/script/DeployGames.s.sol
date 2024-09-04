@@ -11,7 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 */ 
 contract DeployGames is Script {
   // NB: for the game to be sustainable, a pack of cards needs to cost more that around .6 ether in these tests. I hope this is not for real! 
-  uint256 cardPackPrice = 1 ether; 
+  uint256 cardPackPrice = 1 ether / 100; 
   uint256[] packThresholds = [5, 15, 30, 100]; 
   uint256[] packCoinAmounts = [500, 100, 25, 5]; 
   Cards cardsContract; 
@@ -19,9 +19,19 @@ contract DeployGames is Script {
 
   function run() external returns (Cards, Games, HelperConfig) {
     HelperConfig helperConfig = new HelperConfig{salt: hex'22'}(); 
-     (, address wrapperAddress, uint32 callbackGasLimit, uint16 requestConfirmations) = helperConfig.activeNetworkConfig(); 
+    (, address wrapperAddress, uint32 callbackGasLimit, uint16 requestConfirmations) = helperConfig.activeNetworkConfig(); 
+    // make sure the correct nonce is set: 
+    uint64 nonce = vm.getNonce(msg.sender);
+    console2.log("nonce:", nonce);
 
-    vm.startBroadcast();
+    vm.startBroadcast(); 
+      // set updated nonce. 
+      vm.setNonce(msg.sender, nonce);
+      uint64 updatedNonce = vm.getNonce(msg.sender);
+      console2.log("updated nonce:", updatedNonce);
+    vm.stopBroadcast();
+    
+    vm.startBroadcast(); 
       // deploy cards contract, which also deploys the coins address. 
       cardsContract = new Cards(
         cardPackPrice, 
@@ -31,7 +41,7 @@ contract DeployGames is Script {
         requestConfirmations, 
         wrapperAddress
         );
-      createCards(); // saves cards to blockchain
+      // createCards(); // saves cards to blockchain. NB: VERY EXPENSIVE (deployment costs around 0.8 eth.)
 
       gamesContract = new Games(
         address(cardsContract)  
