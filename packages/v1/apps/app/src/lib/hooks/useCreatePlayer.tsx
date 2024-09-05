@@ -14,16 +14,19 @@ export const useCreatePlayer = () => {
         setError("Web3Auth RPC instance is not available");
         return;
       }
+      console.log("waypoint 1") 
 
       setIsCreating(true);
       setError(null);
       setAvatarId(null);
       setAvatarAddress(null);
+      console.log("waypoint 2") 
 
       try {
-        const result = await rpc.createPlayer(avatarURI);
-        setAvatarId(result.avatarId);
-        setAvatarAddress(result.avatarAddress);
+        const result = await rpc.createPlayer(avatarURI); 
+        console.log("waypoint exit", result.avatarId); // FIXED 
+        setAvatarId(result.avatarId ? result.avatarId : null);
+        setAvatarAddress(result.avatarAddress ? result.avatarAddress : null);
       } catch (err) {
         setError((err as Error).message || "Error creating player");
       } finally {

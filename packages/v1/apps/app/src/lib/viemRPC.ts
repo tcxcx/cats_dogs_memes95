@@ -100,7 +100,15 @@ export default class EthereumRpc {
       stateMutability: "view",
       type: "function",
     },
-    // other functions...
+    {
+      inputs: [
+        {name: "avatarId", type: "uint256", indexed: true, internalType: "uint256"},
+        {name: "avatarAccountAddress", type: "address", indexed: true, internalType: "address" }],
+      name: "CreatedPlayer",
+      anonymous: "false",
+      type: "event"
+    },
+    // other functions and events...
   ];
 
   constructor(provider: IProvider) {
@@ -223,8 +231,10 @@ export default class EthereumRpc {
         transport: custom(this.provider),
       });
 
+      const wcAddresses = await walletClient.getAddresses(); 
+
       // Data for the transaction
-      const destination = "0x40e1c367Eca34250cAF1bc8330E9EddfD403fC56";
+      const destination = "0x1ABe345C38Abf38799Cc5248d747b4ec1B8429dE";
       const amount = parseEther("0.0001");
       const address = await this.getAccounts();
 
@@ -261,8 +271,6 @@ export default class EthereumRpc {
         message: originalMessage,
       });
 
-      console.log(`Message signed with signature: ${signature}`);
-
       return signature;
     } catch (error) {
       console.error("Error signing message:", error);
@@ -289,7 +297,7 @@ export default class EthereumRpc {
       throw error;
     }
   }
-
+  
   async writeContract(): Promise<TransactionReceipt> {
     try {
       const walletClient = createWalletClient({
@@ -323,44 +331,6 @@ export default class EthereumRpc {
       throw error;
     }
   }
-
-
-
-  async playerAction(
-    avatarBasedAccount: string,
-    to: string,
-    value: bigint,
-    calldata: string
-  ): Promise<{ reply: string }> {
-    try {
-      const walletClient = createWalletClient({
-        chain: this.getViewChain(),
-        transport: custom(this.provider),
-      });
-
-      // Submit the transaction to the blockchain
-      const hash = await walletClient.sendTransaction({
-        account: avatarBasedAccount as `0x${string}` | Account,
-        to: to as `0x${string}`,
-        value,
-        data: calldata as `0x${string}`,
-      });
-
-      // Wait for the transaction receipt
-      const publicClient = createPublicClient({
-        chain: this.getViewChain(),
-        transport: custom(this.provider),
-      });
-
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-      return { reply: `Transaction successful with hash: ${hash}` };
-    } catch (error) {
-      console.error("Error performing player action:", error);
-      throw error;
-    }
-  }
-
 
   // * NFT Minting: *
 
@@ -405,7 +375,6 @@ export default class EthereumRpc {
   }
 
   // * Opening Card Packs: *
-
   // * The openCardPack function manages the purchasing and opening of card packs, which are represented as ERC-1155 tokens. Each pack contains multiple cards (likely ERC-1155 tokens themselves). *
   // * The function handles both the transaction to open the pack and the retrieval of transaction receipts, ensuring the process is smooth and the game logic can proceed based on the outcome. *
 
@@ -499,8 +468,6 @@ export default class EthereumRpc {
     }
   }
 
-  // * Creating a player (an ERC-6551 wallet) *
-
   // * Player Creation (ERC-6551 Wallet): *
 
   // * The createPlayer function allows the creation of a player associated with an ERC-6551 account. The process involves sending a transaction, waiting for its confirmation, and decoding the logs to extract the avatarId and corresponding avatarAddress. *
@@ -508,32 +475,49 @@ export default class EthereumRpc {
 
   async createPlayer(
     avatarURI: string
-  ): Promise<{ avatarId: number; avatarAddress: string }> {
+  ): Promise<{ avatarId: number | undefined; avatarAddress: string | undefined }> {
+    console.log("waypoint 3"); 
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
+      console.log("waypoint 4, walletclient:", walletClient); 
 
       const publicClient = createPublicClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
+      console.log("waypoint 5, publicClient:", publicClient); 
 
       const address = await this.getAddresses();
+      console.log("waypoint 6, address:", address);
 
       // Submit the transaction to create the player
-      const hash = await walletClient.writeContract({
-        account: address[0] as `0x${string}` | Account,
-        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
-        abi: this.playersContractABI,
-        functionName: "createPlayer",
-        args: [avatarURI],
-      });
 
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+       console.log("walletClient.getAddresses: ", walletClient.getAddresses); 
+      
+        const hash = await walletClient.writeContract({
+          account: address[0] as `0x${string}` | Account, // does this go wrong? 
+          address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
+          abi: this.playersContractABI,
+          functionName: "createPlayer",
+          args: [avatarURI],
+        });
+        console.log("waypoint 7, hash:", hash);
 
-      // Manually decode the event logs
+        const receiptRaw = await publicClient.waitForTransactionReceipt({ hash });
+        const receipt = this.toObject(receiptRaw) as TransactionReceipt;
+
+        // const unwatch = await publicClient.watchContractEvent({
+        //   address: '0xA070608Bc65116D860f3aCF3086Bc345DccA484C',
+        //   abi: this.playersContractABI,
+        //   eventName: 'CreatedPlayer',
+        //   onLogs: logs => console.log("CreatedPlayer logs: ", logs)
+        // })
+        // console.log("waypoint 8, receipt", receipt);
+
+      // Manually decode the event logs. And works perfectly! 
       const events = receipt.logs
         .map((log) => {
           try {
@@ -548,21 +532,72 @@ export default class EthereumRpc {
           }
         })
         .filter(Boolean);
+        console.log("waypoint 8, events:", events); 
 
-      if (events.length === 0 || !events[0]?.args) {
-        throw new Error("No valid events found in transaction receipt");
+        if (events.length === 0 || !events[0]?.args) {
+          throw new Error("No valid events found in transaction receipt");
+        }
+
+        // Accessing the avatarId and address safely
+        if (
+          'avatarId' in events[0].args && 
+          'avatarAccountAddress' in events[0].args
+        ) {
+          const avatarId = events[0].args.avatarId as number;
+          const avatarAddress = events[0].args.avatarAccountAddress as string // `0x${string}`; 
+          
+          // console.log("waypoint9, avatarId: ", avatarId); 
+          // console.log("waypoint9, avatarAddress: ", avatarAddress); 
+
+          return { avatarId, avatarAddress };
+        } else {
+          throw new Error("No valid arguments found in transaction receipt");
+        }
+        
+      } catch (error) {
+        console.error("Error creating player:", error);
+        throw error;
       }
+  }
 
-      // Accessing the avatarId safely
-      const avatarId = events[0].args?.[0] as number;
-      const avatarAddress = await this.getAvatarAddress(avatarId);
 
-      return { avatarId, avatarAddress };
+  async playerAction(
+    avatarBasedAccount: string,
+    to: string,
+    value: bigint,
+    calldata: string
+  ): Promise<{ reply: string }> {
+    try {
+      const walletClient = createWalletClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      // Submit the transaction to the blockchain
+      const hash = await walletClient.sendTransaction({
+        account: avatarBasedAccount as `0x${string}` | Account,
+        to: to as `0x${string}`,
+        value,
+        data: calldata as `0x${string}`,
+      });
+
+      // Wait for the transaction receipt
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      return { reply: `Transaction successful with hash: ${hash}` };
     } catch (error) {
-      console.error("Error creating player:", error);
+      console.error("Error performing player action:", error);
       throw error;
     }
   }
+
+
+
 
   // * Get Avatar Address: *
 
