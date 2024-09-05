@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
@@ -45,9 +44,30 @@ import { useMyPresence, useOthers } from "@liveblocks/react";
 const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
 const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
 
+const initialGameState: GameState = {
+  deckP1: Deck1,
+  deckP2: Deck2,
+  handP1: [],
+  handP2: [],
+  score: [0 , 0],
+  turnCount: 1,
+  cardCollection: {}, // Replace with actual collection data
+  powerList: [], // Replace with actual power list
+  typeList: [], // Replace with actual type list
+};
+interface MultiplayerCardGameProps {
+  isPlayer1: boolean;
+}
 
-export default function Game() {
-  const [gameState, setGameState] = useState<GameState | null>(null);
+const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
+  const boardStyle = isPlayer1 ? "player1-board" : "player2-board flipped";
+
+  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [playerReady, setPlayerReady] = useState<boolean>(false);
+  const [opponentReady, setOpponentReady] = useState<boolean>(false);
+  const [presence, updatePresence] = useMyPresence();
+  const others = useOthers();
+  
   const [gameLog, setGameLog] = useState<GameLog | null>(null);
   const [playerMove, setPlayerMove] = useState<{
     cardIndexP1: number;
@@ -60,12 +80,8 @@ export default function Game() {
   const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
-  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
-    null
-  );
-  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(
-    null
-  );
+  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>( null );
+  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>( null );
   const [turnCount, setTurnCount] = useState<number>(1);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
@@ -84,10 +100,7 @@ export default function Game() {
 
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);
-  // const [powIndexP1, setPowIndexP1] = useState<number>(0);
-  // const [powIndexP2, setPowIndexP2] = useState<number>(0);
 
-  // Fetch the initial game state when the component mounts
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
@@ -103,6 +116,7 @@ export default function Game() {
           turns: [],
           winner: null,
         };
+
         setGameState(initialGameState);
         setPlayerHand(drawInitialHand(Deck1));
         setOpponentHand(drawInitialHand(Deck2));
@@ -115,6 +129,8 @@ export default function Game() {
           deckP1: playerDeck,
           deckP2: opponentDeck,
         });
+
+        console.log("Game initialized successfully");
 
       } catch (error) {
         console.error("Failed to initialize game:", error);
@@ -143,6 +159,7 @@ export default function Game() {
         turns: [],
         winner: null,
       };
+      setCurrentGameAction('initializeGame');
       // console.log("Gamestate deck1: " , initialGameState.deckP1);
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
@@ -568,7 +585,7 @@ export default function Game() {
             {/* Opponent's Hand */}
             <div className="absolute h-1/5 top-2 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
               <AnimatePresence>
-                {opponentHand.map((icon_type, index) => (
+                {opponentHand.map((opponentCard, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -577,7 +594,8 @@ export default function Game() {
                     transition={{ duration: 0.3 }}
                     className="aspect-[3/4] bg-red-400 rounded-lg shadow-2xl flex items-center justify-center"
                   >
-                    {getTypeIcon(icon_type as any)}
+                    <CardGame card={opponentCard} />
+                    {/*getTypeIcon(icon_type as any)
                     <Image
                       src={"/CardbackS1_2.png"}
                       alt="Banner"
@@ -585,7 +603,7 @@ export default function Game() {
                       priority
                       width={200}
                       height={300}
-                    />
+                    />*/}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -600,14 +618,12 @@ export default function Game() {
                 backgroundPosition: "center",
               }}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-100%", animationDelay: "1s" }}
               animate={{ x: "50%", y: "-250%" }}
             >
               Opponent`s Deck
             </motion.div>
-
             {/* Player's Deck */}
             <motion.div
               style={{
@@ -617,7 +633,6 @@ export default function Game() {
                 backgroundPosition: "center",
               }}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               className="relative h-1/5 aspect-[3/4] bg-blue-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-200%", animationDelay: "1s" }}
               animate={{ x: "650%", y: "-50%" }}
@@ -738,4 +753,24 @@ export default function Game() {
   );
 }
 
-//// DUMP
+export default MultiplayerCardGame;
+
+/* REFERENCE
+<div className={boardStyle}>
+{"Render player's hand"}
+<div className={isPlayer1 ? "player-hand" : "opponent-hand"}>
+  <h2>{isPlayer1 ? "Your Hand" : "Opponent's Hand"}</h2>
+  {" Display cards based on the player's view "}
+  {" Card rendering logic "}
+</div>
+
+{" Render opponent's hand "}
+<div className={isPlayer1 ? "opponent-hand flipped" : "player-hand"}>
+  <h2>{isPlayer1 ? "Opponent's Hand" : "Your Hand"}</h2>
+  {" Display cards based on the opponent's view "}
+  {" Card rendering logic "}
+</div>
+
+{" Any additional game rendering logic "}
+<Button onClick={() => {" Handle player turn logic "}}>End Turn</Button>
+</div> */

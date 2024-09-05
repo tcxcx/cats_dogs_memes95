@@ -98,7 +98,6 @@ export async function fetchGameState(
 // ========== INITIALIZE GAME FUNCTIONS ==========
 export function drawInitialHand(deck: Deck): Hand {
   console.log("Deck from hand: ", deck);
-  console.log(deck.length);
   try {
     if (!deck || deck.length < 10) {
       throw new Error("Deck must contain 10 cards.");
@@ -111,14 +110,10 @@ export function drawInitialHand(deck: Deck): Hand {
     console.error("Error in drawInitialHand:", error);
     throw error;
   }
-  console.log("INITIAL HAND", deck[0], deck[1]);
-  console.log(deck);
   const newCardName1 = deck[0 % deck.length];
   const newCardName2 = deck[1 % deck.length];
-  console.log(newCardName1, newCardName2);
   const newCard1 = userCards.find(card => card.name === newCardName1);
   const newCard2 = userCards.find(card => card.name === newCardName2);
-  console.log(newCard1, newCard2);
   return [newCard1!, newCard2!];
 
   //return deck.slice(0, 2).map((cardNameOrId) => cardCollection[cardNameOrId]).filter((card): card is CardData => card !== undefined);
