@@ -9,6 +9,7 @@ import {
   decodeEventLog,
   type Account,
   IntegerOutOfRangeError,
+  toBytes
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
@@ -631,8 +632,7 @@ private playersContractABI = [
     ) as T;
   }
 
-
-async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
+  async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
   const walletClient = createWalletClient({
     chain: this.getViewChain(),
     transport: custom(this.provider),
@@ -640,39 +640,31 @@ async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<stri
 
   const address = await this.getAccounts();
   
-  let salt: string;
-  const domainSalt = domain.salt as string | ArrayBuffer;
+  let salt: `0x${string}`;
 
-  if (domainSalt instanceof ArrayBuffer) {
-    salt = Buffer.from(domainSalt).toString('hex').slice(0, 64).padStart(64, '0');
-  } else if (typeof domainSalt === 'string') {
-    salt = domainSalt.slice(0, 64).padStart(64, '0');
+  if (typeof domain.salt === 'string') {
+    const saltStr = domain.salt.startsWith('0x') ? domain.salt.slice(2) : domain.salt;
+    salt = `0x${saltStr}`;
+  } else if (typeof domain.salt === 'number') {
+    salt = `0x${domain.salt.toString(16).padStart(64, '0')}`;
+  } else if (address[0]) {
+    const owner = BigInt(address[0]);
+    salt = `0x${(owner << 96n).toString(16).padStart(64, '0')}`;
   } else {
-    throw new Error('Invalid salt format. Expected ArrayBuffer or string.');
+    throw new Error("Unable to generate salt: address is undefined");
   }
 
-  // Ensure salt is a valid positive 256-bit number
-  const saltBigInt = BigInt(`0x${salt}`);
-  if (saltBigInt < 0n) {
-    throw new IntegerOutOfRangeError({
-      value: salt,
-      min: '0',
-    });
+  // Ensure salt is not undefined
+  if (!salt) {
+    throw new Error("Salt must be provided or generated.");
   }
-
-  // Validate and sanitize payload
-  Object.keys(payload).forEach(key => {
-    if (typeof payload[key] === 'number' && payload[key] < 0) {
-      throw new Error(`Invalid payload value for ${key}: ${payload[key]}. Must be a non-negative integer.`);
-    }
-  });
 
   const signature = await walletClient.signTypedData({
     account: address[0] as `0x${string}` | Account,
     domain: {
       ...domain,
       chainId: domain.chainId,
-      salt: `0x${salt}`,
+      salt,
     },
     types: schema.types,
     primaryType: schema.primaryType,
@@ -681,6 +673,7 @@ async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<stri
 
   return signature;
 }
+
 
 }
 
