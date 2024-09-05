@@ -40,9 +40,9 @@ export default function TransactionDrawer() {
   const [currentAction, setCurrentAction] = useState<string | null>(null);
 
   // New states for usePlayerAction
-  const [actionAddress, setActionAddress] = useState("0xAb8C015e1cE576948e48dBBf2DE322f821BC858A"); // default value = graffiti address. 
+  const [actionAddress, setActionAddress] = useState("0x5e48B24C922eB20Bbc3C08222165Eeb5D4593b14"); // default value = graffiti address. 
   const [actionValue, setActionValue] = useState<number>(1e15); // default value = cards address. 1e15
-  const [actionCallData, setActionCallData] = useState("0xedf03734000000000000000000000000000000000000000000000000000000000000002a"); // calldata: hex. 
+  const [actionCallData, setActionCallData] = useState("0xe5c291d40000000000000000000000000000000000000000000000000000000000000005"); // calldata: hex. 
 
   // New states for useMintNFT
   const [tokenURI, setTokenURI] = useState("");
