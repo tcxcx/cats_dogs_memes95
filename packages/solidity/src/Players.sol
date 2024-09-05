@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 /**
  * Basic ERC-721 contract, but with ERC-6551 integration.
- * Integretation with layerZero, to create an omni-chain ERC-6551 is tbd.
  *
  * authors: Argos, CriptoPoeta, 7cedars
  */
@@ -25,6 +24,7 @@ contract Players is ERC721URIStorage {
     bytes32 private constant SALT = bytes32(hex"7ceda5");
     address private immutable ERC6551_REGISTRY;
     address private immutable ERC6551_ACCOUNT;
+    mapping(address => uint256 avatarId) public s_avatarIds; 
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
@@ -79,6 +79,9 @@ contract Players is ERC721URIStorage {
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
         AvatarAddress = _createAvatarAddress(newAvatarId);
+
+        // note: avatarIds can be overwritten, in effect resetting Avatar Based Account. 
+        s_avatarIds[msg.sender] = newAvatarId; 
 
         emit CreatedPlayer(newAvatarId, AvatarAddress);
 
