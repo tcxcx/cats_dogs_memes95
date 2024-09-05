@@ -584,13 +584,19 @@ export default class EthereumRpc {
       })
       console.log("playerAction waypoint 2.1, tokenboundClient: ", tokenboundClient)
 
-      console.log("playerAction waypoint 3")
+      console.log("playerAction waypoint 3:", {
+        account: avatarBasedAddress, 
+        to: to, 
+        value: BigInt(value), 
+        calldata: calldata
+      })
       // Submit the transaction to the blockchain
       const hash = await tokenboundClient.execute({
-        account: getAddress(avatarBasedAddress),
+        account: avatarBasedAddress,
         to: to as `0x${string}`,
         value: BigInt(value),
         data: calldata,
+        // operation: 0
       })
       console.log("playerAction waypoint 3.1: tokenBound hash:", hash); 
       

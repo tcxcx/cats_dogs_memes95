@@ -40,6 +40,13 @@ export const usePlayerAction = () => {
     // other functions...
   ];
 
+  const encodedFunctionCall1 = encodeFunctionData({
+    abi: cardsContractABI,
+    functionName: 'openCardPack', 
+    args: [42]
+  })
+  // console.log("encodedFunctionCall: ", encodedFunctionCall1) // => 0xe5c291d40000000000000000000000000000000000000000000000000000000000000005
+
   const graffitiContractABI = [
     {
       inputs: [
@@ -53,12 +60,14 @@ export const usePlayerAction = () => {
   ];
 
   //step 2: encode function data with viem's encodeFunctionData function.   
-  const encodedFunctionCall = encodeFunctionData({
+  const encodedFunctionCall2 = encodeFunctionData({
     abi: graffitiContractABI,
     functionName: 'leaveYourMark', 
     args: [42]
   })
-  console.log("encodedFunctionCall: ", encodedFunctionCall) // => 0xe5c291d40000000000000000000000000000000000000000000000000000000000000005
+  // console.log("encodedFunctionCall: ", encodedFunctionCall2)   // => 0xedf03734000000000000000000000000000000000000000000000000000000000000002a
+  // the address is: 0xAb8C015e1cE576948e48dBBf2DE322f821BC858A
+
   //////////////////////////////////////////////
   ///// EXAMPLE OF VIEM encodeFunctionData ///// 
   //////////////////////////////////////////////
