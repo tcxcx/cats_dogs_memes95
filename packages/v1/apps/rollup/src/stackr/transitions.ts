@@ -66,7 +66,7 @@ const getTopNPlayers = (state: TournamentState, n?: number) => {
 };
 
 // === TOURNAMENT TRANSITIONS ===
-const startTournament: STF<State<TournamentState, TournamentState>> = {
+const startTournamentTransition: STF<State<TournamentState, TournamentState>> = {
   handler: ({ state, block }: Args<TournamentState>) => {
     if (hasTournamentEnded(state)) {
       throw new Error("TOURNAMENT_ALREADY_ENDED");
@@ -86,7 +86,7 @@ const startTournament: STF<State<TournamentState, TournamentState>> = {
   },
 };
 
-const registerPlayer: STF<State<TournamentState, TournamentState>, { playerId: number; playerName: string; deck: Deck }> = {
+const registerPlayerTransition: STF<State<TournamentState, TournamentState>, { playerId: number; playerName: string; deck: Deck }> = {
   handler: ({ state, inputs }: Args<TournamentState, { playerId: number; playerName: string; deck: Deck }>) => {
     const { playerId, playerName, deck } = inputs;
     if (state.players.find((p) => p.id === playerId)) {
@@ -101,7 +101,7 @@ const registerPlayer: STF<State<TournamentState, TournamentState>, { playerId: n
 };
 
 
-const startMatch: STF<State<TournamentState, TournamentState>, MatchRequest> = {
+const startMatchTransition: STF<State<TournamentState, TournamentState>, MatchRequest> = {
   handler: ({ state, inputs, block }: Args<TournamentState, MatchRequest>) => {
     if (hasTournamentEnded(state)) {
       throw new Error("TOURNAMENT_ENDED");
@@ -128,7 +128,7 @@ const startMatch: STF<State<TournamentState, TournamentState>, MatchRequest> = {
 };
 
 // Ensure that `endMatch` is correctly defined like the other transitions above.
-const endMatch: STF<State<TournamentState, TournamentState>, { matchId: number; winnerId: number }> = {
+const endMatchTransition: STF<State<TournamentState, TournamentState>, { matchId: number; winnerId: number }> = {
   handler: ({ state, inputs, block }: Args<TournamentState, { matchId: number; winnerId: number }>) => {
     const { matchId, winnerId } = inputs;
     const match = state.matches.find((m) => m.id === matchId);
@@ -289,28 +289,23 @@ const finalizeGameTransition: STF<CardGameState, { playerScore: number; opponent
 // === === === === ===
 
 
-
-
 // === EXPORT TRANSITIONS ===
 
 
-
-export const tournamentTransitions: Transitions<State<TournamentState, TournamentState>> = {
-  startTournament,
-  registerPlayer,
-  startMatch,
-  endMatch,
-  logWin,
-  logLost,
+export const tournamentTransitions = {
+  starttournament: startTournamentTransition,
+  registerplayer: registerPlayerTransition,
+  startMatch: startMatchTransition,
+  endMatch: endMatchTransition,
 };
 
-export const cardGameTransitions: Transitions<State<GameStateLog, GameStateLog>> = {
-  initializeGame: initializeGameTransition,
-  playTurn: playTurnTransition,
-  finalizeGame: finalizeGameTransition,
+export const cardGameTransitions = {
+  initializegame: initializeGameTransition,
+  playturn: playTurnTransition,
+  finalizegame: finalizeGameTransition,
 };
 
-export const transitions = {
+export const allTransitions = {
   ...tournamentTransitions,
   ...cardGameTransitions,
 };

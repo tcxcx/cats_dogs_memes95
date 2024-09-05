@@ -53,14 +53,17 @@ export type Logs = {
   action: string;
 };
 
-export type TournamentState = {
-  admins: string[];
-  meta: TournamentMeta;
-  matches: Match[];
+export interface TournamentState {
   players: Player[];
+  matches: Match[];
   logs: Logs[];
-};
-
+  meta: {
+    season: number;
+    startTime: number;
+    endTime: number;
+  };
+  admins: string[];
+}
 
 // === GAME STATE TYPES ===
 export type Deck = string[];

@@ -17,5 +17,16 @@
       "turns": [],
       "winner": null
     }
+  },
+  "tournamentState": {
+    "players": [],
+    "matches": [],
+    "logs": [],
+    "meta": {
+      "season": 0,
+      "startTime": 0,
+      "endTime": 0
+    },
+    "admins": []
   }
 }
