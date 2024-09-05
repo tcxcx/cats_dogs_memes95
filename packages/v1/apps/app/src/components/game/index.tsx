@@ -42,7 +42,10 @@ import { log } from "console";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
 import { useXMTP } from "@/lib/hooks/useXMTP";
 
-
+const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
+//console.log("First P1 Shuffle: ",Deck1);
+const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
+//console.log("First P2 Shuffle: ",Deck2);
 //type CardType = "CAT" | "DOG" | "MEME";
 
 export default function Game() {
@@ -55,6 +58,8 @@ export default function Game() {
     powerIndexP2?: number;
   } | null>(null);
 
+  const [playerDeck, setPlayerDeck] = useState<string[]>(Deck1);
+  const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
   const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
@@ -85,22 +90,13 @@ export default function Game() {
   //const [powIndexP1, setPowIndexP1] = useState<number>(0);
   //const [powIndexP2, setPowIndexP2] = useState<number>(0);
 
-
-  // Mock decks for demonstration purposes Assuming user has all userCards
-  // Or use card.id if Deck should contain IDs
-  const Deck1: Deck = shuffleDeck([...userCards])
-    .slice(0, 10)
-    .map((card) => card.name);
-  const Deck2: Deck = shuffleDeck([...userCards])
-    .slice(0, 10)
-    .map((card) => card.name);
-
-
   // Fetch the initial game state when the component mounts
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
-        const initialGameState = await initializeGame(Deck1, Deck2);
+        setPlayerDeck(Deck1);
+        setOpponentDeck(Deck2);
+        const initialGameState = await initializeGame(playerDeck, opponentDeck);
         setCurrentGameAction('initializeGame');
         setIsGameDrawerOpen(true);
         const initialGameLog = {
@@ -120,8 +116,8 @@ export default function Game() {
 
         // Submit the initialize game action to the rollup server
         await submit('initializeGame', {
-          deckP1: Deck1,
-          deckP2: Deck2,
+          deckP1: playerDeck,
+          deckP2: opponentDeck,
         });
 
       } catch (error) {
@@ -140,7 +136,9 @@ export default function Game() {
   // New handler for initializing game on button click
   const initializeGameHandler = async () => {
     try {
-      const initialGameState = await initializeGame(Deck1, Deck2);
+      setPlayerDeck(Deck1);
+      setOpponentDeck(Deck2);
+      const initialGameState = await initializeGame(playerDeck, opponentDeck);
       const initialGameLog = {
         initialDecks: {
           deckP1: initialGameState.deckP1,
@@ -149,6 +147,7 @@ export default function Game() {
         turns: [],
         winner: null,
       };
+      console.log("Gamestate deck1: " , initialGameState.deckP1);
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
       setOpponentHand(initialGameState.handP2); // Reset the opponent hand
@@ -165,8 +164,8 @@ export default function Game() {
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
    // Submit the initialize game action to the rollup server
       await submit('initializeGame', {
-        deckP1: Deck1,
-        deckP2: Deck2,
+        deckP1: playerDeck ,
+        deckP2: opponentDeck,
       });
 
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
@@ -300,8 +299,8 @@ export default function Game() {
     setWinner(winner);
     switch (gamePhase) {
       case "draw":
-        drawCard("player", Deck1, turnCount);
-        drawCard("opponent", Deck1, turnCount);
+        drawCard("player", playerDeck, turnCount);
+        drawCard("opponent", opponentDeck, turnCount);
         setGamePhase("prep");
         break;
       case "prep":
@@ -730,7 +729,7 @@ export default function Game() {
                 </h2>
                 <Button
                   className="bg-green-500 text-white hover:bg-green-600"
-                  onClick={initializeGameHandler}
+                  onClick={initializeGameHandler /*Reset Game or send contract to reset game*/}
                 >
                   Play Again
                 </Button>

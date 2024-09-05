@@ -97,10 +97,31 @@ export async function fetchGameState(
 }
 // ========== INITIALIZE GAME FUNCTIONS ==========
 export function drawInitialHand(deck: Deck): Hand {
-  return deck
-    .slice(0, 2)
-    .map((cardNameOrId) => cardCollection[cardNameOrId])
-    .filter((card): card is CardData => card !== undefined);
+  console.log("Deck from hand: ", deck);
+  console.log(deck.length);
+  try {
+    if (!deck || deck.length < 10) {
+      throw new Error("Deck must contain 10 cards.");
+    }
+    /*if (!cardCollection) {
+      throw new Error("Card collection must be non-null.");
+    }*/
+  }
+  catch (error) {
+    console.error("Error in drawInitialHand:", error);
+    throw error;
+  }
+  console.log("INITIAL HAND", deck[0], deck[1]);
+  console.log(deck);
+  const newCardName1 = deck[0 % deck.length];
+  const newCardName2 = deck[1 % deck.length];
+  console.log(newCardName1, newCardName2);
+  const newCard1 = userCards.find(card => card.name === newCardName1);
+  const newCard2 = userCards.find(card => card.name === newCardName2);
+  console.log(newCard1, newCard2);
+  return [newCard1!, newCard2!];
+
+  //return deck.slice(0, 2).map((cardNameOrId) => cardCollection[cardNameOrId]).filter((card): card is CardData => card !== undefined);
 }
 
 export function calculateTurnOutcome(
@@ -166,12 +187,8 @@ export function buildCardCollection(cards: CardData[]): CardCollection {
 // Game initialization
 export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
   console.log("initializing game");
-  const sDeckP1 = shuffleDeckAction(deckP1);
-  const sDeckP2 = shuffleDeckAction(deckP2);
-  console.log(sDeckP1);
-  console.log(sDeckP2);
-  //console.log(drawInitialHand(deckP1), drawInitialHand(deckP2));
-  //console.log(buildCardCollection(userCards));
+  const sDeckP1 = deckP1;//shuffleDeckAction(deckP1);
+  const sDeckP2 = deckP2;//shuffleDeckAction(deckP2);
 
   const initialGameState: GameState = {
     deckP1: sDeckP1,
