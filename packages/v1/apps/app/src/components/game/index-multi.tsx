@@ -6,7 +6,6 @@ import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
 import {
   initializeGame,
-  playTurn,
   shuffleDeck,
   calculateTypeAdvantage,
   calculateCombatAdvantage,

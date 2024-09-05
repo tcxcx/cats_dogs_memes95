@@ -26,16 +26,18 @@ export function shuffleDeck(array: any[]) {
   }
   return array;
 }
-export function shuffleDeckAction(deck: Deck): Deck {
-  return deck.sort(() => Math.random() - 0.5);
-}
-const Deck1: Deck = shuffleDeckAction(
+// export function shuffleDeckAction(deck: Deck): Deck {
+//   return deck.sort(() => Math.random() - 0.5);
+// }
+
+const Deck1: Deck = shuffleDeck(
   [...userCards]
     .slice(0, 10)
     .map((card) => card.name)
     .filter((name): name is string => name !== undefined)
 );
-const Deck2: Deck = shuffleDeckAction(
+
+const Deck2: Deck = shuffleDeck(
   [...userCards]
     .slice(0, 10)
     .map((card) => card.name)
@@ -97,32 +99,27 @@ export async function fetchGameState(
 }
 // ========== INITIALIZE GAME FUNCTIONS ==========
 export function drawInitialHand(deck: Deck): Hand {
-  console.log("Deck from hand: ", deck);
-  console.log(deck.length);
-  try {
-    if (!deck || deck.length < 10) {
-      throw new Error("Deck must contain 10 cards.");
-    }
-    /*if (!cardCollection) {
-      throw new Error("Card collection must be non-null.");
-    }*/
+  console.log("Drawing initial hand from deck:", deck);
+  
+  if (!deck || deck.length < 10) {
+    throw new Error("Deck must contain at least 10 cards.");
   }
-  catch (error) {
-    console.error("Error in drawInitialHand:", error);
-    throw error;
-  }
-  console.log("INITIAL HAND", deck[0], deck[1]);
-  console.log(deck);
+
   const newCardName1 = deck[0 % deck.length];
   const newCardName2 = deck[1 % deck.length];
-  console.log(newCardName1, newCardName2);
+  
   const newCard1 = userCards.find(card => card.name === newCardName1);
   const newCard2 = userCards.find(card => card.name === newCardName2);
-  console.log(newCard1, newCard2);
-  return [newCard1!, newCard2!];
 
-  //return deck.slice(0, 2).map((cardNameOrId) => cardCollection[cardNameOrId]).filter((card): card is CardData => card !== undefined);
+  if (!newCard1 || !newCard2) {
+    throw new Error("Failed to draw initial hand. Cards not found.");
+  }
+
+  console.log("Drawn cards:", newCard1, newCard2);
+  
+  return [newCard1!, newCard2!];
 }
+
 
 export function calculateTurnOutcome(
   coll: CardCollection,
@@ -186,15 +183,21 @@ export function buildCardCollection(cards: CardData[]): CardCollection {
 
 // Game initialization
 export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
-  console.log("initializing game");
-  const sDeckP1 = deckP1;//shuffleDeckAction(deckP1);
-  const sDeckP2 = deckP2;//shuffleDeckAction(deckP2);
+  console.log("Initializing game with decks:", deckP1, deckP2);
+
+  const sDeckP1 = shuffleDeck(deckP1);
+  const sDeckP2 = shuffleDeck(deckP2);
+
+  const initialHandP1 = drawInitialHand(sDeckP1);
+  const initialHandP2 = drawInitialHand(sDeckP2);
+
+  console.log("Initial hands:", initialHandP1, initialHandP2);
 
   const initialGameState: GameState = {
     deckP1: sDeckP1,
     deckP2: sDeckP2,
-    handP1: drawInitialHand(sDeckP1),
-    handP2: drawInitialHand(sDeckP2),
+    handP1: initialHandP1,
+    handP2: initialHandP2,
     score: [0, 0],
     turnCount: 0,
     cardCollection: buildCardCollection(userCards),
@@ -210,8 +213,10 @@ export function initializeGame(deckP1: Deck, deckP2: Deck): GameState {
     turns: [],
     winner: null,
   };
+
   return initialGameState;
 }
+
 
 // ========== GAME LOG FUNCTIONS ==========
 // Function to update the game log after each turn
@@ -243,119 +248,122 @@ export function updateGameLog(
 
 // ========== PLAY TURN FUNCTIONS ==========
 // Play Turn Function Handler
-export function playTurn(
-  gameState: GameState,
-  handIndexP1: number, // Index of the card in the player's hand
-  powIndexP1: number, // Index of the power in the player's hand
-  handIndexP2: number, // Index of the card in the opponent's hand
-  powIndexP2: number, // Index of the power in the opponent's hand
-  types: typeof TypeList,
-  powers: typeof PowerList
-): GameState {
-  const { deckP1, deckP2, handP1, handP2, score, turnCount, cardCollection } =
-    gameState;
-  // Check if indices are within the bounds of the hands
-  if (
-    handIndexP1 < 0 ||
-    handIndexP1 >= handP1.length ||
-    handIndexP2 < 0 ||
-    handIndexP2 >= handP2.length
-  ) {
-    throw new Error("Invalid hand index provided.");
-  }
+// Play turn is not beign used
+// export function playTurn(
+//   gameState: GameState,
+//   handIndexP1: number, // Index of the card in the player's hand
+//   powIndexP1: number, // Index of the power in the player's hand
+//   handIndexP2: number, // Index of the card in the opponent's hand
+//   powIndexP2: number, // Index of the power in the opponent's hand
+//   types: typeof TypeList,
+//   powers: typeof PowerList
+// ): GameState {
+//   const { deckP1, deckP2, handP1, handP2, score, turnCount, cardCollection } =
+//     gameState;
+//   // Check if indices are within the bounds of the hands
+//   if (
+//     handIndexP1 < 0 ||
+//     handIndexP1 >= handP1.length ||
+//     handIndexP2 < 0 ||
+//     handIndexP2 >= handP2.length
+//   ) {
+//     throw new Error("Invalid hand index provided.");
+//   }
 
-  const playerCardP1 = handP1[handIndexP1]!; // CardData object from player's hand
-  const playerCardP2 = handP2[handIndexP2]!; // CardData object from opponent's hand
+//   const playerCardP1 = handP1[handIndexP1]!; // CardData object from player's hand
+//   const playerCardP2 = handP2[handIndexP2]!; // CardData object from opponent's hand
 
-  const turnResult = calculateTurnOutcome(
-    gameState.cardCollection,
-    playerCardP1.name, // Use the name property of the CardData object
-    playerCardP2.name, // Use the name property of the CardData object
-    gameState.powerList[powIndexP1],
-    gameState.powerList[powIndexP2],
-    types,
-    powers
-  );
+//   const turnResult = calculateTurnOutcome(
+//     gameState.cardCollection,
+//     playerCardP1.name, // Use the name property of the CardData object
+//     playerCardP2.name, // Use the name property of the CardData object
+//     gameState.powerList[powIndexP1],
+//     gameState.powerList[powIndexP2],
+//     types,
+//     powers
+//   );
 
-  // Update score and hands
-  const updatedScore: Score = [
-    score[0] + turnResult.player1Points,
-    score[1] + turnResult.player2Points,
-  ];
+//   // Update score and hands
+//   const updatedScore: Score = [
+//     score[0] + turnResult.player1Points,
+//     score[1] + turnResult.player2Points,
+//   ];
 
-  const updatedHandP1 = handP1.filter((_, idx) => idx !== handIndexP1);
-  const updatedHandP2 = handP2.filter((_, idx) => idx !== handIndexP2);
+//   const updatedHandP1 = handP1.filter((_, idx) => idx !== handIndexP1);
+//   const updatedHandP2 = handP2.filter((_, idx) => idx !== handIndexP2);
 
-  // Draw a new card from the deck if hands are empty
-  const newCardIndexP1 = (turnCount + 3) % deckP1.length;
-  const newCardIndexP2 = (turnCount + 3) % deckP2.length;
+//   // Draw a new card from the deck if hands are empty
+//   const newCardIndexP1 = (turnCount + 3) % deckP1.length;
+//   const newCardIndexP2 = (turnCount + 3) % deckP2.length;
 
-  // Draw a new card from the deck if hands are empty
-  const newCardP1: CardData = cardCollection[deckP1[newCardIndexP1]!]!;
-  const newCardP2: CardData = cardCollection[deckP2[newCardIndexP2]!]!;
+//   // Draw a new card from the deck if hands are empty
+//   const newCardP1: CardData = cardCollection[deckP1[newCardIndexP1]!]!;
+//   const newCardP2: CardData = cardCollection[deckP2[newCardIndexP2]!]!;
 
-  if (!newCardP1 || !newCardP2) {
-    throw new Error("A new card could not be drawn from the deck.");
-  }
+//   if (!newCardP1 || !newCardP2) {
+//     throw new Error("A new card could not be drawn from the deck.");
+//   }
 
-  // Update hands to ensure they contain only CardData objects
-  const finalHandP1: CardData[] = updatedHandP1.length
-    ? updatedHandP1
-    : [...updatedHandP1, newCardP1!].filter((card) => card !== undefined);
-  const finalHandP2: CardData[] = updatedHandP2.length
-    ? updatedHandP2
-    : [...updatedHandP2, newCardP2!].filter((card) => card !== undefined);
+//   // Update hands to ensure they contain only CardData objects
+//   const finalHandP1: CardData[] = updatedHandP1.length
+//     ? updatedHandP1
+//     : [...updatedHandP1, newCardP1!].filter((card) => card !== undefined);
+//   const finalHandP2: CardData[] = updatedHandP2.length
+//     ? updatedHandP2
+//     : [...updatedHandP2, newCardP2!].filter((card) => card !== undefined);
 
-  updateGameLog(
-    gameLog,
-    turnCount + 1,
-    playerCardP1,
-    playerCardP2,
-    gameState.powerList[powIndexP1],
-    gameState.powerList[powIndexP2],
-    updatedScore
-  );
-  console.log(turnCount);
+//   updateGameLog(
+//     gameLog,
+//     turnCount + 1,
+//     playerCardP1,
+//     playerCardP2,
+//     gameState.powerList[powIndexP1],
+//     gameState.powerList[powIndexP2],
+//     updatedScore
+//   );
+//   console.log(turnCount);
 
-  return {
-    ...gameState,
-    score: updatedScore,
-    handP1: finalHandP1,
-    handP2: finalHandP2,
-    turnCount: turnCount + 1,
-  };
-}
+//   return {
+//     ...gameState,
+//     score: updatedScore,
+//     handP1: finalHandP1,
+//     handP2: finalHandP2,
+//     turnCount: turnCount + 1,
+//   };
+// }
+
+
 // Play Turn Function Handler
-export async function playTurnHandler(
-  gameState: GameState,
-  handIndexP1: number, // Index of the card in the player's hand
-  powIndexP1: number, // Index of the power in the player's hand
-  handIndexP2: number, // Index of the card in the opponent's hand
-  powIndexP2: number // Index of the power in the opponent's hand
-): Promise<GameState> {
-  const selCardIndexP1 = handIndexP1;
-  const selPowerIndexP1 = powIndexP1;
-  const selCardIndexP2 =
-    handIndexP2 ?? Math.floor(Math.random() * gameState.handP2.length);
-  const selPowerIndexP2 =
-    powIndexP2 ?? Math.floor(Math.random() * gameState.powerList.length);
+// export async function playTurnHandler(
+//   gameState: GameState,
+//   handIndexP1: number, // Index of the card in the player's hand
+//   powIndexP1: number, // Index of the power in the player's hand
+//   handIndexP2: number, // Index of the card in the opponent's hand
+//   powIndexP2: number // Index of the power in the opponent's hand
+// ): Promise<GameState> {
+//   const selCardIndexP1 = handIndexP1;
+//   const selPowerIndexP1 = powIndexP1;
+//   const selCardIndexP2 =
+//     handIndexP2 ?? Math.floor(Math.random() * gameState.handP2.length);
+//   const selPowerIndexP2 =
+//     powIndexP2 ?? Math.floor(Math.random() * gameState.powerList.length);
 
-  try {
-    const result = await playTurn(
-      gameState,
-      selCardIndexP1,
-      selPowerIndexP1,
-      selCardIndexP2,
-      selPowerIndexP2,
-      gameState.typeList,
-      gameState.powerList
-    );
-    return result; // Update the game state after the turn is played
-  } catch (error) {
-    console.error("Failed to play turn:", error);
-    throw error;
-  }
-}
+//   try {
+//     const result = await playTurn(
+//       gameState,
+//       selCardIndexP1,
+//       selPowerIndexP1,
+//       selCardIndexP2,
+//       selPowerIndexP2,
+//       gameState.typeList,
+//       gameState.powerList
+//     );
+//     return result; // Update the game state after the turn is played
+//   } catch (error) {
+//     console.error("Failed to play turn:", error);
+//     throw error;
+//   }
+// }
 // Resolve combat
 export function resolveCombat(
     playerActiveCard: CardData,

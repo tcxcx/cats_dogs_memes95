@@ -6,7 +6,6 @@ import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
 import {
   initializeGame,
-  playTurn,
   shuffleDeck,
   calculateTypeAdvantage,
   calculateCombatAdvantage,
@@ -40,7 +39,7 @@ import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { log } from "console";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
-import { useXMTP } from "@/lib/hooks/useXMTP";
+// import { useXMTP } from "@/lib/hooks/useXMTP";
 
 const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
 //console.log("First P1 Shuffle: ",Deck1);
@@ -83,12 +82,13 @@ export default function Game() {
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  const { receivedAction } = useXMTP();
-
+  // const { receivedAction } = useXMTP();
+  const [localHandP1, setLocalHandP1] = useState<CardData[]>([]);
+  const [localHandP2, setLocalHandP2] = useState<CardData[]>([]);
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);
-  //const [powIndexP1, setPowIndexP1] = useState<number>(0);
-  //const [powIndexP2, setPowIndexP2] = useState<number>(0);
+  const [powIndexP1, setPowIndexP1] = useState<number>(0);
+  const [powIndexP2, setPowIndexP2] = useState<number>(0);
 
   // Fetch the initial game state when the component mounts
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function Game() {
         setOpponentDeck(Deck2);
         const initialGameState = await initializeGame(playerDeck, opponentDeck);
         setCurrentGameAction('initializeGame');
-        setIsGameDrawerOpen(true);
+        
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
@@ -112,13 +112,7 @@ export default function Game() {
         setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
-        setTurnCount(1);
-
-        // Submit the initialize game action to the rollup server
-        await submit('initializeGame', {
-          deckP1: playerDeck,
-          deckP2: opponentDeck,
-        });
+        setTurnCount(1);        
 
       } catch (error) {
         console.error("Failed to initialize game:", error);
@@ -129,7 +123,27 @@ export default function Game() {
 
   useEffect(() => {
     if (gameLog !== null) {
-      console.log(gameLog);
+      try {
+        if (Deck1.length > 0 && Deck2.length > 0) {
+          console.log(gameLog);
+        } else {
+          throw new Error("Card decks are not available.");
+        }
+      } catch (error) {
+        console.error("Error in useEffect:", error);
+      }
+    } else {
+      const deckP1str  = JSON.stringify(Deck1)
+      const deckP2str  = JSON.stringify(Deck2)
+      
+      async function trySubmit() {
+        await submit('initializeGame', {
+          deckP1: deckP1str,
+          deckP2: deckP2str,
+        });
+        console.log("Decks being sent to submit:", { deckP1: Deck1, deckP2: Deck2 });
+      }
+    trySubmit();
     }
   }, [gameLog]);
 
@@ -167,6 +181,8 @@ export default function Game() {
         deckP1: playerDeck ,
         deckP2: opponentDeck,
       });
+      console.log("This is the deck 1", Deck1)
+      console.log("This is the deck 2", Deck2)
 
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
     } catch (error) {
@@ -216,8 +232,14 @@ export default function Game() {
   const selectPower = (power: Power, player: Player) => {
     if (player === "player") {
       setSelectedPower(power);
+      if (playerActiveCard) {
+        setPowIndexP1(playerActiveCard.powers.indexOf(power));
+      }
     } else {
       setOpponentSelectedPower(power);
+      if (opponentActiveCard) {
+        setPowIndexP2(opponentActiveCard.powers.indexOf(power));
+      }
     }
   };
 
@@ -272,6 +294,7 @@ export default function Game() {
     }
   };
 
+
     const nextPhase = async () => {
     const { winner, updatedGameLog } = finalizeGame(
       playerScore,
@@ -282,13 +305,32 @@ export default function Game() {
 
     setGameLog(updatedGameLog);
     setWinner(winner);
+
+    if (winner ||  turnCount >= 8) {
+      try {
+        await submit("finalizeGame", {
+          playerScore,
+          opponentScore,
+          turnCount,
+          gameLog: JSON.stringify(updatedGameLog),
+        });
+        console.log("Finalized game log and winner submitted successfully.");
+      } catch (error) {
+        console.error("Failed to submit finalized game log and winner:", error);
+      }
+    }
+
+    
     switch (gamePhase) {
       case "draw":
         drawCard("player", playerDeck, turnCount);
         drawCard("opponent", opponentDeck, turnCount);
+   
         setGamePhase("prep");
         break;
       case "prep":
+        setLocalHandP1(playerHand)
+        setLocalHandP2(opponentHand)
         if (!playerActiveCard) {
           const randomCard =
             playerHand[Math.floor(Math.random() * playerHand.length)];
@@ -339,8 +381,8 @@ export default function Game() {
       case "check":
         setTurnCount((prevCount) => prevCount + 1);
 
-        const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
-        const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
+        // const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
+        // const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
 
         // Check that all indices are valid before proceeding
         console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
@@ -349,12 +391,21 @@ export default function Game() {
           return;
         }      
 
-       await submit('playTurn', {
-        handIndexP1: playerActiveCard?.name || "null",
-        powIndexP1: selectedPower,
-        handIndexP2: opponentActiveCard?.name || "null",
-        powIndexP2: opponentSelectedPower,
-      });
+      //  await submit('playTurn', {
+
+      //   handIndexP1: handIndexP1,
+      //   powIndexP1: powIndexP1,
+      //   handIndexP2:handIndexP2,
+      //   powIndexP2: powIndexP2,
+      // });
+
+        await submit('playTurn', {
+          playerActiveCard: JSON.stringify(playerActiveCard),
+          opponentActiveCard: JSON.stringify(opponentActiveCard),
+          selectedPower: JSON.stringify(selectedPower),
+          opponentSelectedPower: JSON.stringify(opponentSelectedPower),
+        });
+      
 
         const updatedGameLog = updateGameLog(
           gameLog!,
@@ -392,15 +443,15 @@ export default function Game() {
   };
 
   const renderDynamicIslandState = () => {
-    if (receivedAction) {
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
-            {`Received action: ${receivedAction.action}`}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    }
+    // if (receivedAction) {
+    //   return (
+    //     <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+    //       <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
+    //         {`Received action: ${receivedAction.action}`}
+    //       </DynamicTitle>
+    //     </DynamicContainer>
+    //   );
+    // }
 
   switch (gamePhase) {
     case "draw":

@@ -5,7 +5,6 @@ import { useMruInfo } from "./useMruInfo";
 import { EthereumRpc } from "@/lib/viemRPC";
 import { Domain, Schema, MRUInfo } from "@/app/api/rollup/types";
 import { submitAction } from "../../app/api/rollup/route";
-
 export const useAction = () => {
   const { rpc, isLoggedIn } = useWeb3Auth();
   const { mruInfo } = useMruInfo();
@@ -18,7 +17,15 @@ export const useAction = () => {
     }
 
     const inputs = { ...payload };
-    
+    console.log("These are the inputs", inputs)
+
+    // Ensure all indices are non-negative integers
+    Object.keys(inputs).forEach(key => {
+      if (typeof inputs[key] === 'number' && inputs[key] < 0) {
+        throw new Error(`Invalid input value for ${key}: ${inputs[key]}. Must be a non-negative integer.`);
+      }
+    });
+
     const { domain, schemas, transitionToSchema } = mruInfo as MRUInfo;
     const accounts = await rpc.getAccounts();
     const msgSender = accounts[0];
@@ -27,7 +34,11 @@ export const useAction = () => {
     console.log("transitionToSchema:", transitionToSchema);
 
     // Convert action name to kebab-case for schema lookup
-    const convertToKebabCase = (str: string) => str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+    const convertToKebabCase = (str: string) => 
+      str.replace(/([a-z])([A-Z])/g, '$1-$2') // Add hyphen between lowercase and uppercase
+         .replace(/\s+/g, '-') // Replace spaces with hyphens
+         .toLowerCase(); // Convert the entire string to lowercase
+
     const schemaName = convertToKebabCase(name);
 
     const schema = schemas[schemaName];
