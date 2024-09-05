@@ -37,7 +37,6 @@ import {
 } from "@v1/ui/dynamic-island";
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
-import { log } from "console";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
 // import { useXMTP } from "@/lib/hooks/useXMTP";
 
@@ -78,7 +77,6 @@ export default function Game() {
 
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
-  const [isGameDrawerOpen, setIsGameDrawerOpen] = useState(false);
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
@@ -98,7 +96,10 @@ export default function Game() {
         setOpponentDeck(Deck2);
         const initialGameState = await initializeGame(playerDeck, opponentDeck);
         setCurrentGameAction('initializeGame');
+<<<<<<< HEAD
         
+=======
+>>>>>>> cf5d31710cb565a0332faf3ecc3702fed2e3456e
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
@@ -161,7 +162,7 @@ export default function Game() {
         turns: [],
         winner: null,
       };
-      console.log("Gamestate deck1: " , initialGameState.deckP1);
+      // console.log("Gamestate deck1: " , initialGameState.deckP1);
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
       setOpponentHand(initialGameState.handP2); // Reset the opponent hand
@@ -385,7 +386,7 @@ export default function Game() {
         // const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
 
         // Check that all indices are valid before proceeding
-        console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
+        // console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
         if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
           console.error("Invalid card or power selection: cannot find indices.");
           return;
