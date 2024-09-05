@@ -96,10 +96,7 @@ export default function Game() {
         setOpponentDeck(Deck2);
         const initialGameState = await initializeGame(playerDeck, opponentDeck);
         setCurrentGameAction('initializeGame');
-<<<<<<< HEAD
         
-=======
->>>>>>> cf5d31710cb565a0332faf3ecc3702fed2e3456e
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,

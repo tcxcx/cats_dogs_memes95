@@ -27,7 +27,7 @@ export function CardGame({
   return (
     <Card2
       className={
-        "h-fit max-h-full aspect-[2/3] w-full ${cardColor} rounded-2xl overflow-ellipsis"
+        "max-h-fit aspect-[2/3] w-full ${cardColor} rounded-2xl overflow-ellipsis"
       }
     >
       <CardContent className="px-1 py-1 h-full flex flex-col">

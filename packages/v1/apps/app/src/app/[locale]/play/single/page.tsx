@@ -34,7 +34,7 @@ const GamePage: FC = () => {
 
   return (
     <DynamicIslandProvider initialSize="compact">
-      <div className="container h-fit relative" ref={canvasRef}>
+      <div className="container flex h-fit max-w-fit justify-center relative" ref={canvasRef}>
         <h1 className="null"></h1>
         {/* Game */}
         <Game />

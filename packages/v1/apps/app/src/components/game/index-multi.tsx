@@ -37,7 +37,7 @@ import {
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
-import { useXMTP } from "@/lib/hooks/useXMTP";
+//import { useXMTP } from "@/lib/hooks/useXMTP";
 import { useMyPresence, useOthers } from "@liveblocks/react";
 
 const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
@@ -95,7 +95,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  const { receivedAction } = useXMTP();
+  //const { receivedAction } = useXMTP();
 
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);
@@ -418,15 +418,15 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
   };
 
   const renderDynamicIslandState = () => {
-    if (receivedAction) {
+    //if (receivedAction) {
       return (
         <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
           <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
-            {`Received action: ${receivedAction.action}`}
+            {`Received action: ${null/*receivedAction.action*/}`}
           </DynamicTitle>
         </DynamicContainer>
       );
-    }
+    //}
 
   switch (gamePhase) {
     case "draw":

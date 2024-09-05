@@ -99,19 +99,6 @@ export async function fetchGameState(
 }
 // ========== INITIALIZE GAME FUNCTIONS ==========
 export function drawInitialHand(deck: Deck): Hand {
-<<<<<<< HEAD
-  console.log("Drawing initial hand from deck:", deck);
-  
-  if (!deck || deck.length < 10) {
-    throw new Error("Deck must contain at least 10 cards.");
-  }
-
-  const newCardName1 = deck[0 % deck.length];
-  const newCardName2 = deck[1 % deck.length];
-  
-  const newCard1 = userCards.find(card => card.name === newCardName1);
-  const newCard2 = userCards.find(card => card.name === newCardName2);
-=======
   console.log("Deck from hand: ", deck);
   try {
     if (!deck || deck.length < 10) {
@@ -130,7 +117,6 @@ export function drawInitialHand(deck: Deck): Hand {
   const newCard1 = userCards.find(card => card.name === newCardName1);
   const newCard2 = userCards.find(card => card.name === newCardName2);
   return [newCard1!, newCard2!];
->>>>>>> cf5d31710cb565a0332faf3ecc3702fed2e3456e
 
   if (!newCard1 || !newCard2) {
     throw new Error("Failed to draw initial hand. Cards not found.");
