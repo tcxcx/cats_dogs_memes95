@@ -266,21 +266,6 @@ export default function Game() {
       );
       setGameLog(updatedGameLog);
       setWinner(winner);
-      /*if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
-        const provWinner =
-          playerScore > opponentScore
-            ? "player"
-            : playerScore < opponentScore
-              ? "opponent"
-              : null;
-        const finalGameLog: GameLog = {
-          ...gameLog!,
-          winner: provWinner,
-        };
-        setGameLog(finalGameLog);
-        setWinner(provWinner);
-      }
-      */
     }
   };
 
@@ -361,6 +346,13 @@ export default function Game() {
           return;
         }      
 
+       await submit('playTurn', {
+        handIndexP1: playerActiveCard?.name || "null",
+        powIndexP1: selectedPower,
+        handIndexP2: opponentActiveCard?.name || "null",
+        powIndexP2: opponentSelectedPower,
+      });
+
         const updatedGameLog = updateGameLog(
           gameLog!,
           turnCount,
@@ -378,12 +370,6 @@ export default function Game() {
         setGamePhase("draw");
   
       // Submit the playTurn action to the rollup server
-        await submit('playTurn', {
-        handIndexP1: playerHand.indexOf(playerActiveCard!),
-        powIndexP1: playerActiveCard!.powers.indexOf(selectedPower!),
-        handIndexP2: opponentHand.indexOf(opponentActiveCard!),
-        powIndexP2: opponentActiveCard!.powers.indexOf(opponentSelectedPower!),
-      });
 
       break;
   }

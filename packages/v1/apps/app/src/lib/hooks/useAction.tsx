@@ -18,14 +18,7 @@ export const useAction = () => {
     }
 
     const inputs = { ...payload };
-
-    // Ensure all indices are non-negative integers
-    Object.keys(inputs).forEach(key => {
-      if (typeof inputs[key] === 'number' && inputs[key] < 0) {
-        throw new Error(`Invalid input value for ${key}: ${inputs[key]}. Must be a non-negative integer.`);
-      }
-    });
-
+    
     const { domain, schemas, transitionToSchema } = mruInfo as MRUInfo;
     const accounts = await rpc.getAccounts();
     const msgSender = accounts[0];
