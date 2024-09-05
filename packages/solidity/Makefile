@@ -41,7 +41,6 @@ SEPOLIA_TEST_ARGS := --fork-url $(SEPOLIA_RPC_URL)
 SEPOLIA_DEPLOY_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 SEPOLIA_LIVE_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast -vvvv
 
-
 sepoliaForkedTest: 
 	@forge test $(SEPOLIA_TEST_ARGS)
 
@@ -56,12 +55,15 @@ sepoliaVerifyAvatarBasedAccount:
 
 
 sepoliaForkedDeployTest:
-	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
 # @forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 500000000 --gas-price 5000000000 -vvvv 
-	
+	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+
 sepoliaForkedDeploy: 
-	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
 #	@forge script script/DeployGames.s.sol $(SEPOLIA_DEPLOY_ARGS) --gas-limit 20000000 --gas-price 12000000000 -vvvv
+	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+
 
 ###############################
 #  Arbitrum Sepolia testnet		#

@@ -40,13 +40,25 @@ export const usePlayerAction = () => {
     // other functions...
   ];
 
+  const graffitiContractABI = [
+    {
+      inputs: [
+        { internalType: "uint256", name: "mark", type: "uint256" },
+      ],
+      name: "leaveYourMark",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    }
+  ];
+
   //step 2: encode function data with viem's encodeFunctionData function.   
   const encodedFunctionCall = encodeFunctionData({
-    abi: cardsContractABI,
-    functionName: 'openCardPack', 
-    args: [5]
+    abi: graffitiContractABI,
+    functionName: 'leaveYourMark', 
+    args: [42]
   })
-  // console.log("encodedFunctionCall: ", encodedFunctionCall) // => 0xe5c291d40000000000000000000000000000000000000000000000000000000000000005
+  console.log("encodedFunctionCall: ", encodedFunctionCall) // => 0xe5c291d40000000000000000000000000000000000000000000000000000000000000005
   //////////////////////////////////////////////
   ///// EXAMPLE OF VIEM encodeFunctionData ///// 
   //////////////////////////////////////////////

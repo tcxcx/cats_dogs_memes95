@@ -568,7 +568,11 @@ export default class EthereumRpc {
   ): Promise<{ reply: string }> {
     try {
       console.log("playerAction waypoint 1")
+      // first fetch account? 
+      const address = await this.getAccounts();
+
       const walletClient = createWalletClient({
+        account: address[0] as `0x${string}`, 
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
