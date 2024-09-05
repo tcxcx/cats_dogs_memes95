@@ -9,17 +9,17 @@ import {
   decodeEventLog,
   type Account,
   IntegerOutOfRangeError,
+  getAddress,
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
 import { TypedDataField } from 'ethers';
 import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
-import { TypedDataDomain } from "viem";
+import { TypedDataDomain, encodeFunctionData } from "viem";
 import { Domain, Schema } from "@/app/api/rollup/types";
+import { TokenboundClient } from '@tokenbound/sdk'
 
 export type EIP712Types = Record<string, TypedDataField[]>;
-
-
 export default class EthereumRpc {
   private provider: IProvider;
 
@@ -560,34 +560,46 @@ export default class EthereumRpc {
       }
   }
 
-
   async playerAction(
-    avatarBasedAccount: string,
+    avatarBasedAddress: `0x${string}`,
     to: string,
-    value: bigint,
+    value: number,
     calldata: string
   ): Promise<{ reply: string }> {
     try {
+      console.log("playerAction waypoint 1")
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
+      console.log("playerAction waypoint 2")
+      const tokenboundClient = new TokenboundClient({
+        walletClient: walletClient,
+        chainId: 11155111, // NB hardcoded chainId!  
+        implementationAddress: '0x27027C7F5B357aE339f25A421A7F159A58394cE0',// NB hardcoded address!  
+      })
+      console.log("playerAction waypoint 2.1, tokenboundClient: ", tokenboundClient)
 
+      console.log("playerAction waypoint 3")
       // Submit the transaction to the blockchain
-      const hash = await walletClient.sendTransaction({
-        account: avatarBasedAccount as `0x${string}` | Account,
+      const hash = await tokenboundClient.execute({
+        account: getAddress(avatarBasedAddress),
         to: to as `0x${string}`,
-        value,
-        data: calldata as `0x${string}`,
-      });
-
+        value: BigInt(value),
+        data: calldata,
+      })
+      console.log("playerAction waypoint 3.1: tokenBound hash:", hash); 
+      
+      console.log("playerAction waypoint 4")
       // Wait for the transaction receipt
       const publicClient = createPublicClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
       });
 
+      console.log("playerAction waypoint 5")
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      console.log("receipt: ", receipt); 
 
       return { reply: `Transaction successful with hash: ${hash}` };
     } catch (error) {

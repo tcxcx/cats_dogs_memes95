@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@v1/ui/alert";
 import { Separator } from "@v1/ui/separator";
 import { Textarea } from "@v1/ui/textarea";
 import { useCreatePlayer } from "@/lib/hooks/useCreatePlayer";
+import { usePlayerAction } from "@/lib/hooks/usePlayerAction";
 import { useMintNFT } from "@/lib/hooks/useMintNFT";
 
 export default function TransactionDrawer() {
@@ -38,6 +39,11 @@ export default function TransactionDrawer() {
   const [avatarURI, setAvatarURI] = useState("");
   const [currentAction, setCurrentAction] = useState<string | null>(null);
 
+  // New states for usePlayerAction
+  const [actionAddress, setActionAddress] = useState("0x5e48B24C922eB20Bbc3C08222165Eeb5D4593b14"); // default value = cards address. 
+  const [actionValue, setActionValue] = useState<number>(1e15); // default value = cards address.
+  const [actionCallData, setActionCallData] = useState("0xe5c291d40000000000000000000000000000000000000000000000000000000000000005"); // should probably be hex. ALSO: the default value should be openCardPack
+
   // New states for useMintNFT
   const [tokenURI, setTokenURI] = useState("");
 
@@ -48,6 +54,14 @@ export default function TransactionDrawer() {
     avatarId,
     avatarAddress,
   } = useCreatePlayer();
+
+  const {
+    playerAction,
+    isPlayerActing,
+    error: playerActionError,
+    reply: playerActionReply
+  } = usePlayerAction();
+
   const { mintNFT, isMinting, mintError, mintReceipt } = useMintNFT();
 
   useEffect(() => {
@@ -116,13 +130,29 @@ export default function TransactionDrawer() {
     }
   };
 
-  const handleMintNFT = async () => {
-    if (recipient && tokenURI) {
-      setCurrentAction("Minting NFT");
-      await mintNFT(recipient, tokenURI);
+  const handlePlayerAction = async () => {
+    if (actionAddress && actionValue && actionCallData) {
+      setCurrentAction("Executing player action");
+      await playerAction(
+        "0x72008B764c1b1a6B46B5Ac0bC04fD889652C8365", // an avatar owned by my address: 0x58Cbc4136C350F1... 
+        actionAddress, 
+        actionValue,
+        actionCallData
+      );
       setCurrentAction(null);
     }
   };
+
+
+  
+
+  // const handleMintNFT = async () => {
+  //   if (recipient && tokenURI) {
+  //     setCurrentAction("Minting NFT");
+  //     await mintNFT(recipient, tokenURI);
+  //     setCurrentAction(null);
+  //   }
+  // };
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -218,6 +248,53 @@ export default function TransactionDrawer() {
               </div>
               <Separator />
               <div className="space-y-2">
+                <Label htmlFor="usePlayerAction">Execute Player Action (default is 'openCardPack' @Cards.sol) </Label>
+                <Input
+                  id="actionAddress"
+                  value={actionAddress}
+                  onChange={(e) => setActionAddress(e.target.value)}
+                  placeholder="Enter address of contract to call."
+                />
+                <Input
+                  id="actionValue"
+                  type="number"
+                  value={actionValue}
+                  onChange={(e) => setActionValue(!Number.isNaN(+e.target.value) ? +e.target.value : 0)}
+                  placeholder="Enter value in wei to send with call."
+                />
+                <Input
+                  id="actionCallData"
+                  value={actionCallData}
+                  onChange={(e) => setActionCallData(e.target.value)}
+                  placeholder="Enter calldata for function call."
+                />
+                <Button
+                  onClick={handlePlayerAction}
+                  disabled={ !actionAddress || !actionCallData} // isPlayerActing ||
+                  className="w-full"
+                >
+                  {isPlayerActing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Execute Player Action
+                </Button>
+                {playerActionError && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{playerActionError}</AlertDescription>
+                  </Alert>
+                )}
+                {playerActionReply && (
+                  <Alert>
+                    <AlertTitle>Player Action Executed</AlertTitle>
+                    <AlertDescription>
+                      Execution reply: {playerActionReply}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <Separator />
+              {/* <div className="space-y-2">
                 <Label htmlFor="recipient">Recipient Address</Label>
                 <Input
                   id="recipient"
@@ -256,7 +333,7 @@ export default function TransactionDrawer() {
                     </AlertDescription>
                   </Alert>
                 )}
-              </div>
+              </div> */}
               {currentAction && (
                 <Alert>
                   <AlertTitle>Current Action</AlertTitle>
