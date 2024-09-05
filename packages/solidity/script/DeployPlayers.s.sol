@@ -19,16 +19,15 @@ contract DeployPlayers is Script {
         (address registry, , , ) = helperConfig.activeNetworkConfig(); 
         uint256 version = 1;
 
-        AvatarBasedAccount account = new AvatarBasedAccount(); 
+        AvatarBasedAccount account = new AvatarBasedAccount(); // £ NB: HERE IS THE BUG! 
         uint256 codelength = address(account).code.length; 
-
 
         vm.startBroadcast();
             // £note: deterministic deployment created problems. So now, with each deployment ALSO new Avatar Based Account deployed.
             if (codelength == 0) {AvatarBasedAccount account = new AvatarBasedAccount();}
             players = new Players(
                 version,
-                address(account), 
+                address(0x27027C7F5B357aE339f25A421A7F159A58394cE0),  // £bug Had to hard code because deterministic deployment in foundry is not determinsitic. 
                 address(registry)
             );
         vm.stopBroadcast();

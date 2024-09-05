@@ -134,7 +134,7 @@ export default function TransactionDrawer() {
     if (actionAddress && actionValue && actionCallData) {
       setCurrentAction("Executing player action");
       await playerAction(
-        "0x72008B764c1b1a6B46B5Ac0bC04fD889652C8365", // an avatar owned by my address: 0x58Cbc4136C350F1... 
+        "0xbEcCb9463A5387Ed04978316Cb1767a4fdDEf206", // an avatar based account owned by my address: 0x58Cbc4136C350F1... 
         actionAddress, 
         actionValue,
         actionCallData

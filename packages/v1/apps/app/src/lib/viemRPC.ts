@@ -499,7 +499,7 @@ export default class EthereumRpc {
       
         const hash = await walletClient.writeContract({
           account: address[0] as `0x${string}` | Account, // does this go wrong? 
-          address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
+          address: "0x07A0606A4DDaE528B0459f9760F6474a92246bAD", // "0xPlayersContractAddressHere",
           abi: this.playersContractABI,
           functionName: "createPlayer",
           args: [avatarURI],
@@ -510,7 +510,7 @@ export default class EthereumRpc {
         const receipt = this.toObject(receiptRaw) as TransactionReceipt;
 
         // const unwatch = await publicClient.watchContractEvent({
-        //   address: '0xA070608Bc65116D860f3aCF3086Bc345DccA484C',
+        //   address: '0x07A0606A4DDaE528B0459f9760F6474a92246bAD',
         //   abi: this.playersContractABI,
         //   eventName: 'CreatedPlayer',
         //   onLogs: logs => console.log("CreatedPlayer logs: ", logs)
@@ -583,6 +583,13 @@ export default class EthereumRpc {
         implementationAddress: '0x27027C7F5B357aE339f25A421A7F159A58394cE0',// NB hardcoded address!  
       })
       console.log("playerAction waypoint 2.1, tokenboundClient: ", tokenboundClient)
+      
+      // testing 
+      const segmentedBytecode = await tokenboundClient.deconstructBytecode({
+        accountAddress: '0xbEcCb9463A5387Ed04978316Cb1767a4fdDEf206' as `0x${string}`,
+      })
+      console.log("segmentedBytecode: ", segmentedBytecode)
+      // testing 
 
       console.log("playerAction waypoint 3:", {
         account: avatarBasedAddress, 
@@ -595,7 +602,7 @@ export default class EthereumRpc {
         account: avatarBasedAddress,
         to: to as `0x${string}`,
         value: BigInt(value),
-        data: calldata,
+        data: calldata
         // operation: 0
       })
       console.log("playerAction waypoint 3.1: tokenBound hash:", hash); 
@@ -637,7 +644,7 @@ export default class EthereumRpc {
       // Call the getAvatarAddress function on the Players contract to get the avatar's address
 
       const result = await publicClient.readContract({
-        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C", // "0xPlayersContractAddressHere",
+        address: "0x07A0606A4DDaE528B0459f9760F6474a92246bAD", // "0xPlayersContractAddressHere",
         abi: this.playersContractABI,
         functionName: "getAvatarAddress",
         args: [avatarId],

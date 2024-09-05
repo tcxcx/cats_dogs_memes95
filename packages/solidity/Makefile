@@ -55,14 +55,14 @@ sepoliaVerifyAvatarBasedAccount:
 
 
 sepoliaForkedDeployTest:
-#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
 # @forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 500000000 --gas-price 5000000000 -vvvv 
-	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+#	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
 
 sepoliaForkedDeploy: 
-#	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
 #	@forge script script/DeployGames.s.sol $(SEPOLIA_DEPLOY_ARGS) --gas-limit 20000000 --gas-price 12000000000 -vvvv
-	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
+#	@forge script script/DeployGraffiti.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
 
 
 ###############################
