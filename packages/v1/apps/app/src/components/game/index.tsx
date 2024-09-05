@@ -6,13 +6,13 @@ import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
 import {
   initializeGame,
-  playTurn,
   shuffleDeck,
   calculateTypeAdvantage,
   calculateCombatAdvantage,
   resolveCombat,
   finalizeGame,
   updateGameLog,
+  drawInitialHand,
 } from "@/lib/actions/game.actions";
 import {
   CardData,
@@ -38,9 +38,12 @@ import {
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
-import { useXMTP } from "@/lib/hooks/useXMTP";
+// import { useXMTP } from "@/lib/hooks/useXMTP";
 
-
+const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
+//console.log("First P1 Shuffle: ",Deck1);
+const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
+//console.log("First P2 Shuffle: ",Deck2);
 //type CardType = "CAT" | "DOG" | "MEME";
 
 export default function Game() {
@@ -53,6 +56,8 @@ export default function Game() {
     powerIndexP2?: number;
   } | null>(null);
 
+  const [playerDeck, setPlayerDeck] = useState<string[]>(Deck1);
+  const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
   const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
@@ -72,33 +77,26 @@ export default function Game() {
 
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
-  const [isGameDrawerOpen, setIsGameDrawerOpen] = useState(false);
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
-  const [handIndexP1, setHandIndexP1] = useState<number | undefined>(undefined);
-  const [powIndexP1, setPowIndexP1] = useState<number | undefined>(undefined);
-  const [handIndexP2, setHandIndexP2] = useState<number | undefined>(undefined);
-  const [powIndexP2, setPowIndexP2] = useState<number | undefined>(undefined);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  const { receivedAction } = useXMTP();
-
-  // Mock decks for demonstration purposes Assuming user has all userCards
-  // Or use card.id if Deck should contain IDs
-  const Deck1: Deck = shuffleDeck([...userCards])
-    .slice(0, 10)
-    .map((card) => card.name);
-  const Deck2: Deck = shuffleDeck([...userCards])
-    .slice(0, 10)
-    .map((card) => card.name);
-
+  // const { receivedAction } = useXMTP();
+  const [localHandP1, setLocalHandP1] = useState<CardData[]>([]);
+  const [localHandP2, setLocalHandP2] = useState<CardData[]>([]);
+  const [handIndexP1, setHandIndexP1] = useState<number>(0);
+  const [handIndexP2, setHandIndexP2] = useState<number>(0);
+  const [powIndexP1, setPowIndexP1] = useState<number>(0);
+  const [powIndexP2, setPowIndexP2] = useState<number>(0);
 
   // Fetch the initial game state when the component mounts
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
-        const initialGameState = await initializeGame(Deck1, Deck2);
+        setPlayerDeck(Deck1);
+        setOpponentDeck(Deck2);
+        const initialGameState = await initializeGame(playerDeck, opponentDeck);
         setCurrentGameAction('initializeGame');
-        setIsGameDrawerOpen(true);
+        
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
@@ -108,17 +106,11 @@ export default function Game() {
           winner: null,
         };
         setGameState(initialGameState);
-        setPlayerHand(initialGameState.handP1);
-        setOpponentHand(initialGameState.handP2);
+        setPlayerHand(drawInitialHand(Deck1));
+        setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
-        setTurnCount(1);
-
-        // Submit the initialize game action to the rollup server
-        await submit('initializeGame', {
-          deckP1: Deck1,
-          deckP2: Deck2,
-        });
+        setTurnCount(1);        
 
       } catch (error) {
         console.error("Failed to initialize game:", error);
@@ -129,14 +121,36 @@ export default function Game() {
 
   useEffect(() => {
     if (gameLog !== null) {
-      console.log(gameLog);
+      try {
+        if (Deck1.length > 0 && Deck2.length > 0) {
+          console.log(gameLog);
+        } else {
+          throw new Error("Card decks are not available.");
+        }
+      } catch (error) {
+        console.error("Error in useEffect:", error);
+      }
+    } else {
+      const deckP1str  = JSON.stringify(Deck1)
+      const deckP2str  = JSON.stringify(Deck2)
+      
+      async function trySubmit() {
+        await submit('initializeGame', {
+          deckP1: deckP1str,
+          deckP2: deckP2str,
+        });
+        console.log("Decks being sent to submit:", { deckP1: Deck1, deckP2: Deck2 });
+      }
+    trySubmit();
     }
   }, [gameLog]);
 
   // New handler for initializing game on button click
   const initializeGameHandler = async () => {
     try {
-      const initialGameState = await initializeGame(Deck1, Deck2);
+      setPlayerDeck(Deck1);
+      setOpponentDeck(Deck2);
+      const initialGameState = await initializeGame(playerDeck, opponentDeck);
       const initialGameLog = {
         initialDecks: {
           deckP1: initialGameState.deckP1,
@@ -145,6 +159,7 @@ export default function Game() {
         turns: [],
         winner: null,
       };
+      // console.log("Gamestate deck1: " , initialGameState.deckP1);
       setGameState(initialGameState); // Reset the game state
       setPlayerHand(initialGameState.handP1); // Reset the player hand
       setOpponentHand(initialGameState.handP2); // Reset the opponent hand
@@ -161,9 +176,11 @@ export default function Game() {
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
    // Submit the initialize game action to the rollup server
       await submit('initializeGame', {
-        deckP1: Deck1,
-        deckP2: Deck2,
+        deckP1: playerDeck ,
+        deckP2: opponentDeck,
       });
+      console.log("This is the deck 1", Deck1)
+      console.log("This is the deck 2", Deck2)
 
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
     } catch (error) {
@@ -171,8 +188,9 @@ export default function Game() {
     }
   };
 
-  const drawCard = (player: Player) => {
-    const newCard = userCards[Math.floor(Math.random() * userCards.length)];
+  const drawCard = (player: Player, deck: string[], turnNumber: number) => {
+    const newCardName = deck[(turnNumber + 1) % deck.length];
+    const newCard = userCards.find(card => card.name === newCardName);
     if (!newCard) {
       console.error("Failed to draw a card: no cards available.");
       return; // Exit the function early if no card was drawn
@@ -196,9 +214,11 @@ export default function Game() {
     };
 
     if (player === "player") {
+      setHandIndexP1(playerHand.indexOf(card));
       setPlayerActiveCard(card);
       setPlayerHand((prev) => removeOneCard(prev));
     } else {
+      setHandIndexP2(opponentHand.indexOf(card));
       setOpponentActiveCard(card);
       setOpponentHand((prev) => removeOneCard(prev));
     }
@@ -210,10 +230,33 @@ export default function Game() {
   const selectPower = (power: Power, player: Player) => {
     if (player === "player") {
       setSelectedPower(power);
+      if (playerActiveCard) {
+        setPowIndexP1(playerActiveCard.powers.indexOf(power));
+      }
     } else {
       setOpponentSelectedPower(power);
+      if (opponentActiveCard) {
+        setPowIndexP2(opponentActiveCard.powers.indexOf(power));
+      }
     }
   };
+
+  const opponentPlay = () => {
+    // Opponent selects a card and a power if not already selected
+    if (!opponentActiveCard) {
+      const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+      if (randomCard) {
+        playCard(randomCard, "opponent");
+        if (!opponentSelectedPower) {
+          const randomPower = randomCard.powers[Math.floor(Math.random() * randomCard.powers.length)];
+          if (randomPower) {
+            selectPower(randomPower, "opponent");
+          }
+        }
+      }
+    }
+  };
+
   const resolveCombatHandler = () => {
     setSize("medium");
     if (
@@ -246,23 +289,9 @@ export default function Game() {
       );
       setGameLog(updatedGameLog);
       setWinner(winner);
-      /*if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
-        const provWinner =
-          playerScore > opponentScore
-            ? "player"
-            : playerScore < opponentScore
-              ? "opponent"
-              : null;
-        const finalGameLog: GameLog = {
-          ...gameLog!,
-          winner: provWinner,
-        };
-        setGameLog(finalGameLog);
-        setWinner(provWinner);
-      }
-      */
     }
   };
+
 
     const nextPhase = async () => {
     const { winner, updatedGameLog } = finalizeGame(
@@ -271,15 +300,35 @@ export default function Game() {
       turnCount,
       gameLog!
     );
+
     setGameLog(updatedGameLog);
     setWinner(winner);
+
+    if (winner ||  turnCount >= 8) {
+      try {
+        await submit("finalizeGame", {
+          playerScore,
+          opponentScore,
+          turnCount,
+          gameLog: JSON.stringify(updatedGameLog),
+        });
+        console.log("Finalized game log and winner submitted successfully.");
+      } catch (error) {
+        console.error("Failed to submit finalized game log and winner:", error);
+      }
+    }
+
+    
     switch (gamePhase) {
       case "draw":
-        drawCard("player");
-        drawCard("opponent");
+        drawCard("player", playerDeck, turnCount);
+        drawCard("opponent", opponentDeck, turnCount);
+   
         setGamePhase("prep");
         break;
       case "prep":
+        setLocalHandP1(playerHand)
+        setLocalHandP2(opponentHand)
         if (!playerActiveCard) {
           const randomCard =
             playerHand[Math.floor(Math.random() * playerHand.length)];
@@ -329,6 +378,33 @@ export default function Game() {
         break;
       case "check":
         setTurnCount((prevCount) => prevCount + 1);
+
+        // const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
+        // const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
+
+        // Check that all indices are valid before proceeding
+        // console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
+        if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
+          console.error("Invalid card or power selection: cannot find indices.");
+          return;
+        }      
+
+      //  await submit('playTurn', {
+
+      //   handIndexP1: handIndexP1,
+      //   powIndexP1: powIndexP1,
+      //   handIndexP2:handIndexP2,
+      //   powIndexP2: powIndexP2,
+      // });
+
+        await submit('playTurn', {
+          playerActiveCard: JSON.stringify(playerActiveCard),
+          opponentActiveCard: JSON.stringify(opponentActiveCard),
+          selectedPower: JSON.stringify(selectedPower),
+          opponentSelectedPower: JSON.stringify(opponentSelectedPower),
+        });
+      
+
         const updatedGameLog = updateGameLog(
           gameLog!,
           turnCount,
@@ -346,12 +422,6 @@ export default function Game() {
         setGamePhase("draw");
   
       // Submit the playTurn action to the rollup server
-        await submit('playTurn', {
-        handIndexP1: playerHand.indexOf(playerActiveCard!),
-        powIndexP1: playerActiveCard!.powers.indexOf(selectedPower!),
-        handIndexP2: opponentHand.indexOf(opponentActiveCard!),
-        powIndexP2: opponentActiveCard!.powers.indexOf(opponentSelectedPower!),
-      });
 
       break;
   }
@@ -371,15 +441,15 @@ export default function Game() {
   };
 
   const renderDynamicIslandState = () => {
-    if (receivedAction) {
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
-            {`Received action: ${receivedAction.action}`}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    }
+    // if (receivedAction) {
+    //   return (
+    //     <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+    //       <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
+    //         {`Received action: ${receivedAction.action}`}
+    //       </DynamicTitle>
+    //     </DynamicContainer>
+    //   );
+    // }
 
   switch (gamePhase) {
     case "draw":
@@ -694,7 +764,7 @@ export default function Game() {
                 </h2>
                 <Button
                   className="bg-green-500 text-white hover:bg-green-600"
-                  onClick={initializeGameHandler}
+                  onClick={initializeGameHandler /*Reset Game or send contract to reset game*/}
                 >
                   Play Again
                 </Button>
