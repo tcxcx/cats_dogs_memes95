@@ -11,7 +11,7 @@ import {
   Section,
   Tailwind,
 } from "@react-email/components";
-import { Logo } from "components/logo";
+// import { Logo } from "components/logo";
 
 const baseUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -32,7 +32,7 @@ export default function OtpEmailTemplate({
       <Tailwind>
         <Body className="my-auto mx-auto font-sans">
           <Container className="border-transparent my-[40px] mx-auto max-w-[600px]">
-            <Logo baseUrl={baseUrl} />
+            {/* <Logo baseUrl={baseUrl} /> */}
             <Heading className="font-normal text-center p-0 my-[30px] mx-0">
               Welcome to Cats, Dogs, Memes, Etc.
             </Heading>

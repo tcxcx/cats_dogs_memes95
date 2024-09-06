@@ -1,4 +1,5 @@
 import { ActionSchema, SolidityType } from "@stackr/sdk";
+import { register } from "module";
 
 export const baseTimeStamp = {
   timestamp: SolidityType.UINT,
@@ -9,22 +10,30 @@ export const StartTournamentSchema = new ActionSchema("start-tournament", {
 });
 
 export const RegisterPlayerSchema = new ActionSchema("register-player", {
-  playerId: SolidityType.UINT,
+  playerId: SolidityType.STRING,
   playerName: SolidityType.STRING,
   deck: SolidityType.STRING,
+  walletAddress: SolidityType.STRING,
+  ...baseTimeStamp,
+});
+
+export const RegisterDeckSchema = new ActionSchema("register-deck", {
+  playerId: SolidityType.STRING,
+  deck: SolidityType.STRING,
+  walletAddress: SolidityType.STRING,
   ...baseTimeStamp,
 });
 
 export const StartMatchSchema = new ActionSchema("start-match", {
-  matchId: SolidityType.UINT,
-  player1Id: SolidityType.UINT,
-  player2Id: SolidityType.UINT,
+  matchId: SolidityType.STRING,
+  player1Id: SolidityType.STRING,
+  player2Id: SolidityType.STRING,
   ...baseTimeStamp,
 });
 
 export const EndMatchSchema = new ActionSchema("end-match", {
-  matchId: SolidityType.UINT,
-  winnerId: SolidityType.UINT,
+  matchId: SolidityType.STRING,
+  winnerId: SolidityType.STRING,
   ...baseTimeStamp,
 });
 
@@ -46,8 +55,18 @@ export const FinalizeGameSchema = new ActionSchema("finalize-game", {
   turnCount: SolidityType.UINT,
   gameLog: SolidityType.STRING,
 });
+// ========================================
 
 export const schemas = {
+  // ========================================
+  // === SUPER IMPORTANT ===
+
+  // PAY ATTENTION!!!
+  // sometimes if the rollup doesnt work you must play around in schemas and transtions naming "wordword" or "word-word"
+  // until it works, it sucks...
+  // leave these as "wordword" with the fkcn "apostrophes on" do not change it with prettier or something or I'll be pissed
+  // ========================================
+
   "starttournament": StartTournamentSchema,
   "registerplayer": RegisterPlayerSchema,
   "startmatch": StartMatchSchema,
@@ -55,4 +74,6 @@ export const schemas = {
   "initializegame": InitializeGameSchema,
   "playturn": PlayTurnSchema,
   "finalizegame": FinalizeGameSchema,
+  "registerdeck": RegisterDeckSchema,
 };
+

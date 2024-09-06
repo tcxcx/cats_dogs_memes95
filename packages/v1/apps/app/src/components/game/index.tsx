@@ -35,12 +35,20 @@ import {
   DynamicTitle,
   useDynamicIslandSize,
 } from "@v1/ui/dynamic-island";
+import { v4 as uuidv4 } from "uuid";
+import { getPlayerIdByWallet, getPlayerDeck } from "@/lib/apiClient";
+import { useUserStore } from "@/lib/context/web3auth/user";
+
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
 
-const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
-const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
+const Deck1: Deck = shuffleDeck([...userCards])
+  .slice(0, 10)
+  .map((card) => card.name);
+const Deck2: Deck = shuffleDeck([...userCards])
+  .slice(0, 10)
+  .map((card) => card.name);
 
 export default function Game() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -56,19 +64,28 @@ export default function Game() {
   const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
-  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(null);
-  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(null);
+  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
+    null
+  );
+  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(
+    null
+  );
   const [turnCount, setTurnCount] = useState<number>(1);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
-  const [opponentSelectedPower, setOpponentSelectedPower] = useState<Power | null>(null);
+  const [opponentSelectedPower, setOpponentSelectedPower] =
+    useState<Power | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
   const [winner, setWinner] = useState<Winner>(null);
 
+  const { addressContext } = useUserStore();
+
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
-  const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
+  const [currentGameAction, setCurrentGameAction] = useState<
+    "initializeGame" | "playTurn" | "checkGameOver" | "determineWinner" | null
+  >(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
   const [localHandP1, setLocalHandP1] = useState<CardData[]>([]);
@@ -79,14 +96,37 @@ export default function Game() {
   const [powIndexP2, setPowIndexP2] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [matchId, setMatchId] = useState<string>(uuidv4());
+
+  useEffect(() => {
+    async function fetchPlayerId() {
+      try {
+        if (addressContext) {
+          const playerId = await getPlayerIdByWallet(addressContext);
+          setPlayerId(playerId);
+        }
+      } catch (error) {
+        console.error("Failed to retrieve player ID:", error);
+      }
+    }
+    fetchPlayerId();
+  }, [addressContext]);
+
+  // === DECK REGISTERED TYPES ===
+
+  // you can use the getPlayerDeck passing the walletAddress in addressContext
+  // context to retrieve the registered deck the user has in the tournament
+  // you can leave the Deck2 as commented
+
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
         setPlayerDeck(Deck1);
         setOpponentDeck(Deck2);
         const initialGameState = await initializeGame(playerDeck, opponentDeck);
-        setCurrentGameAction('initializeGame');
-        
+        setCurrentGameAction("initializeGame");
+
         const initialGameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
@@ -100,8 +140,16 @@ export default function Game() {
         setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
-        setTurnCount(1);        
+        setTurnCount(1);
 
+        if (playerId) {
+          await submit("startMatch", {
+            matchId: matchId,
+            player1Id: playerId ? playerId : "player",
+            player2Id: "42069youaredeadson420",
+            timestamp: Math.floor(Date.now() / 1000),
+          });
+        }
       } catch (error) {
         console.error("Failed to initialize game:", error);
       }
@@ -121,17 +169,23 @@ export default function Game() {
         console.error("Error in useEffect:", error);
       }
     } else {
-      const deckP1str  = JSON.stringify(Deck1)
-      const deckP2str  = JSON.stringify(Deck2)
-      
+      const deckP1str = JSON.stringify(Deck1);
+      const deckP2str = JSON.stringify(Deck2);
+
+      // === MATCH ID ===
+      // you can pass the match id to initializeGame, playTurn, and finalizeGame
+
       async function trySubmit() {
-        await submit('initializeGame', {
+        await submit("initializeGame", {
           deckP1: deckP1str,
           deckP2: deckP2str,
         });
-        console.log("Decks being sent to submit:", { deckP1: Deck1, deckP2: Deck2 });
+        console.log("Decks being sent to submit:", {
+          deckP1: Deck1,
+          deckP2: Deck2,
+        });
       }
-    trySubmit();
+      trySubmit();
     }
   }, [gameLog]);
 
@@ -162,12 +216,12 @@ export default function Game() {
       setGameLog(initialGameLog);
       setGamePhase("draw");
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
-      await submit('initializeGame', {
-        deckP1: playerDeck ,
+      await submit("initializeGame", {
+        deckP1: playerDeck,
         deckP2: opponentDeck,
       });
-      console.log("This is the deck 1", Deck1)
-      console.log("This is the deck 2", Deck2)
+      console.log("This is the deck 1", Deck1);
+      console.log("This is the deck 2", Deck2);
 
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
     } catch (error) {
@@ -177,7 +231,7 @@ export default function Game() {
 
   const drawCard = (player: Player, deck: string[], turnNumber: number) => {
     const newCardName = deck[(turnNumber + 1) % deck.length];
-    const newCard = userCards.find(card => card.name === newCardName);
+    const newCard = userCards.find((card) => card.name === newCardName);
     if (!newCard) {
       console.error("Failed to draw a card: no cards available.");
       return;
@@ -230,11 +284,15 @@ export default function Game() {
 
   const opponentPlay = () => {
     if (!opponentActiveCard) {
-      const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+      const randomCard =
+        opponentHand[Math.floor(Math.random() * opponentHand.length)];
       if (randomCard) {
         playCard(randomCard, "opponent");
         if (!opponentSelectedPower) {
-          const randomPower = randomCard.powers[Math.floor(Math.random() * randomCard.powers.length)];
+          const randomPower =
+            randomCard.powers[
+              Math.floor(Math.random() * randomCard.powers.length)
+            ];
           if (randomPower) {
             selectPower(randomPower, "opponent");
           }
@@ -290,16 +348,22 @@ export default function Game() {
       setGameLog(updatedGameLog);
       setWinner(winner);
 
-      if (winner ||  turnCount >= 8) {
+      if (winner || turnCount >= 8) {
         await submit("finalizeGame", {
           playerScore,
           opponentScore,
           turnCount,
           gameLog: JSON.stringify(updatedGameLog),
         });
+
+        await submit("endMatch", {
+          matchId: matchId,
+          winnerId: winner === "player" ? playerId : "42069IAmTheMachine",
+          timestamp: Math.floor(Date.now() / 1000),
+        });
         console.log("Finalized game log and winner submitted successfully.");
       }
-    
+
       switch (gamePhase) {
         case "draw":
           drawCard("player", playerDeck, turnCount);
@@ -307,8 +371,8 @@ export default function Game() {
           setGamePhase("prep");
           break;
         case "prep":
-          setLocalHandP1(playerHand)
-          setLocalHandP2(opponentHand)
+          setLocalHandP1(playerHand);
+          setLocalHandP2(opponentHand);
           if (!playerActiveCard) {
             const randomCard =
               playerHand[Math.floor(Math.random() * playerHand.length)];
@@ -358,18 +422,25 @@ export default function Game() {
           break;
         case "check":
           setTurnCount((prevCount) => prevCount + 1);
-          if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
-            console.error("Invalid card or power selection: cannot find indices.");
+          if (
+            handIndexP1 === -1 ||
+            powIndexP1 === -1 ||
+            handIndexP2 === -1 ||
+            powIndexP2 === -1
+          ) {
+            console.error(
+              "Invalid card or power selection: cannot find indices."
+            );
             return;
-          }      
+          }
 
-          await submit('playTurn', {
+          await submit("playTurn", {
             playerActiveCard: JSON.stringify(playerActiveCard),
             opponentActiveCard: JSON.stringify(opponentActiveCard),
             selectedPower: JSON.stringify(selectedPower),
             opponentSelectedPower: JSON.stringify(opponentSelectedPower),
           });
-        
+
           const updatedGameLog = updateGameLog(
             gameLog!,
             turnCount,
@@ -407,7 +478,7 @@ export default function Game() {
     }
   };
 
-const renderDynamicIslandState = () => {
+  const renderDynamicIslandState = () => {
     switch (gamePhase) {
       case "draw":
         return (
@@ -440,8 +511,8 @@ const renderDynamicIslandState = () => {
               {playerScore > opponentScore
                 ? "You Win This Round!"
                 : playerScore < opponentScore
-                ? "Opponent Wins This Round!"
-                : "It's a Draw!"}
+                  ? "Opponent Wins This Round!"
+                  : "It's a Draw!"}
             </DynamicTitle>
           </DynamicContainer>
         );
@@ -670,14 +741,14 @@ const renderDynamicIslandState = () => {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Please wait...
                   </>
+                ) : gamePhase === "draw" ? (
+                  "Draw"
+                ) : gamePhase === "prep" ? (
+                  "Prepare"
+                ) : gamePhase === "combat" ? (
+                  "Combat"
                 ) : (
-                  gamePhase === "draw"
-                    ? "Draw"
-                    : gamePhase === "prep"
-                      ? "Prepare"
-                      : gamePhase === "combat"
-                        ? "Combat"
-                        : "Next Turn"
+                  "Next Turn"
                 )}
               </Button>
             </motion.div>

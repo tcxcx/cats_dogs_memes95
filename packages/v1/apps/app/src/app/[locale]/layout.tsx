@@ -58,30 +58,30 @@ export default function RootLayout({
             <React95App>
               {/* NAVBAR */}
                 <LogsProvider>
-                <Navbar />
-                {/* MAIN LAYOUT */}
-                <div className="flex h-screen">
-                  {/* LEFT SIDEBAR */}
-                  <div className="flex pr-3">
-                    <AltContainer>
-                      <DashboardSidebar />
-                    </AltContainer>
-                  </div>
-                  {/* MAIN CONTENT */}
-                  <main className="flex-grow">
-                    <div className="relative flex-shrink h-screen">
-                      <div className="absolute inset-0 z-0 ">
-                        <FlickeringGrid />
-                      </div>
-                      <div className="relative z-1 px-5 py-2 max-h-fit">
-                        {children}
-                        <TransactionDrawer />
-                      </div>
+                  <Navbar />
+                  {/* MAIN LAYOUT */}
+                  <div className="flex h-screen">
+                    {/* LEFT SIDEBAR */}
+                    <div className="flex pr-3">
+                      <AltContainer>
+                        <DashboardSidebar />
+                      </AltContainer>
                     </div>
-                  </main>
-                </div>
-                {/* CLOSING LINE */}
-                <Footer />
+                    {/* MAIN CONTENT */}
+                    <main className="flex-grow">
+                      <div className="relative flex-shrink h-screen">
+                        <div className="absolute inset-0 z-0 ">
+                          <FlickeringGrid />
+                        </div>
+                        <div className="relative z-1 px-5 py-2 max-h-fit">
+                          {children}
+                          {/* <TransactionDrawer /> */}
+                        </div>
+                      </div>
+                    </main>
+                  </div>
+                  {/* CLOSING LINE */}
+                  <Footer />
                 </LogsProvider>
             </React95App>
           </Web3AuthProvider>

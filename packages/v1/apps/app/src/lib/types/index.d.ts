@@ -164,3 +164,35 @@ export type Box = {
   width: number;
   height: number;
 };
+
+// ========================================
+// tournament component
+export type PlayerTournament = {
+  id: string;
+  name: string;
+  deck: string;
+};
+
+export type Match = {
+  id: string;
+  player1Id: string;
+  player2Id: string;
+  winnerId: string;
+  startTime: string;
+};
+
+export type LeaderboardEntry = {
+  id: string;
+  name: string;
+  wins: number;
+};
+
+export type Awards = Record<
+  string,
+  {
+    id: string;
+    name: string;
+    wins: number;
+    gamesPlayed: number;
+  }
+>;

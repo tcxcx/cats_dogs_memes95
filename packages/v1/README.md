@@ -1,4 +1,5 @@
-![hero](image.png) 
+![hero](image.png)
+
 # Live long and build! 🖖🏼🏼
 
 <p align="center">
@@ -29,7 +30,6 @@ The latest on Next.js framework on a monorepo ready for edge, supabase and expo 
 [React Email](https://react.email/) - Email templates<br>
 [Resend](https://resend.com/) - Email delivery<br>
 [i18n](https://next-international.vercel.app/) - Internationalization<br>
-[Sentry](https://sentry.io/) - Error handling/monitoring<br>
 [Dub](https://dub.sh/) - Sharable links<br>
 [Trigger.dev](https://trigger.dev/) - Background jobs<br>
 [OpenPanel](https://openpanel.dev/) - Analytics<br>

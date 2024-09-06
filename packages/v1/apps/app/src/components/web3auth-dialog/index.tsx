@@ -51,6 +51,7 @@ import {
   Counter,
   WindowContent,
 } from "react95";
+import { useUserStore } from "@/lib/context/web3auth/user";
 import { generateOtp, sendOtpToEmail, verifyOtp } from "@/lib/otp-utils";
 import { useHasPlayer } from "@/lib/hooks/useHasPlayer";
 import { useCreatePlayer } from "@/lib/hooks/useCreatePlayer";
@@ -68,7 +69,6 @@ const avatarURIs = {
   4: "https://bafkreibi2kkfcmecgiuzqdcz3xpyr2zga6dkwkw37wu2776drivgjr4d6e.ipfs.web3approved.com/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJiYWZrcmVpYmkya2tmY21lY2dpdXpxZGN6M3hweXIyemdhNmRrd2t3Mzd3dTI3NzZkcml2Z2pyNGQ2ZSIsInByb2plY3RfdXVpZCI6Ijc2YTA4NzgxLTViMDctNGRhMy1iZDNhLTBiNDc2ZjRhY2YyMiIsImlhdCI6MTcyNTQ4NzU2Niwic3ViIjoiSVBGUy10b2tlbiJ9.2TRMNNZxn2OJVHKd9CxropTzfaq04-jfLz3QBLpdC0k",
 };
 
-
 type MfaStep = "initial" | "otpVerification" | "setupComplete";
 
 export default function Web3AuthDialog() {
@@ -83,6 +83,14 @@ export default function Web3AuthDialog() {
     coreKitInstance,
   } = useWeb3Auth();
 
+  const {
+    addressContext,
+    nameContext,
+    setAddressContext,
+    setNameContext,
+    reset: resetUserStore,
+  } = useUserStore();
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -95,7 +103,8 @@ export default function Web3AuthDialog() {
   const [mfaError, setMfaError] = useState<string>("");
   const [currentSlide, setCurrentSlide] = useState<number>(0);
   const { hasPlayer, avatarImage } = useHasPlayer();
-  const { createPlayer, isCreating, error, avatarId, avatarAddress } = useCreatePlayer();
+  const { createPlayer, isCreating, error, avatarId, avatarAddress } =
+    useCreatePlayer();
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -107,11 +116,13 @@ export default function Web3AuthDialog() {
     try {
       const user = await getUserInfo();
       setUserInfo(user);
+      setNameContext(user?.name || null);
 
       if (rpc) {
         const accounts = await rpc.getAccounts();
         if (accounts.length > 0) {
           setAddress(accounts[0] || null);
+          setAddressContext(accounts[0] || null);
           const userBalance = await rpc.getBalance();
           setBalance(userBalance);
         } else {
@@ -146,6 +157,7 @@ export default function Web3AuthDialog() {
       await logout();
       setUserInfo(null);
       setAddress(null);
+      resetUserStore();
       setBalance(null);
       setMfaStep("initial");
       setMfaEnabled(false);
@@ -204,7 +216,9 @@ export default function Web3AuthDialog() {
       case "otpVerification":
         return (
           <div className="space-y-4">
-            <Label htmlFor="otpCode" className="font-departure">Enter OTP Code</Label>
+            <Label htmlFor="otpCode" className="font-departure">
+              Enter OTP Code
+            </Label>
             <InputOTP
               maxLength={6}
               pattern={REGEXP_ONLY_DIGITS as any}
@@ -222,24 +236,33 @@ export default function Web3AuthDialog() {
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
-            <Button onClick={handleOTPVerification} className="w-full font-departure">
+            <Button
+              onClick={handleOTPVerification}
+              className="w-full font-departure"
+            >
               Verify OTP and Enable MFA
             </Button>
-            {mfaError && <p className="text-red-500 font-departure">{mfaError}</p>}
+            {mfaError && (
+              <p className="text-red-500 font-departure">{mfaError}</p>
+            )}
           </div>
         );
       case "setupComplete":
         return (
           <div className="space-y-4">
             <Alert>
-              <AlertTitle className="font-departure">MFA Setup Complete</AlertTitle>
+              <AlertTitle className="font-departure">
+                MFA Setup Complete
+              </AlertTitle>
               <AlertDescription className="font-departure">
                 Your MFA setup is complete. Please save the following factor key
                 securely:
               </AlertDescription>
             </Alert>
             <div className="space-y-2">
-              <Label htmlFor="factorKey" className="font-departure">Factor Key</Label>
+              <Label htmlFor="factorKey" className="font-departure">
+                Factor Key
+              </Label>
               <Input
                 id="factorKey"
                 value={factorKey || ""}
@@ -267,10 +290,13 @@ export default function Web3AuthDialog() {
     setCurrentSlide(index as number);
   };
 
-const handleSelectAvatar = async () => {
+  const handleSelectAvatar = async () => {
     const selectedAvatarIndex = currentSlide + 1;
-    const selectedAvatarURI = avatarURIs[selectedAvatarIndex as keyof typeof avatarURIs];
-    console.log(`Selected avatar ${selectedAvatarIndex} with URI: ${selectedAvatarURI}`);
+    const selectedAvatarURI =
+      avatarURIs[selectedAvatarIndex as keyof typeof avatarURIs];
+    console.log(
+      `Selected avatar ${selectedAvatarIndex} with URI: ${selectedAvatarURI}`
+    );
     await createPlayer(selectedAvatarURI);
   };
 
@@ -283,7 +309,9 @@ const handleSelectAvatar = async () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle className="font-departure">Web3Auth MPC Login</DialogTitle>
+          <DialogTitle className="font-departure">
+            Web3Auth MPC Login
+          </DialogTitle>
           <DialogDescription className="font-departure">
             {isLoggedIn
               ? "Welcome! Manage your wallet and game assets here."
@@ -364,21 +392,27 @@ const handleSelectAvatar = async () => {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="font-departure">
-                              Each pack contains 5 unique cards. Every pack includes a
-                              memecoin allocation you can redeem.
+                              Each pack contains 5 unique cards. Every pack
+                              includes a memecoin allocation you can redeem.
                             </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <Link href={"/open-packs"}>
-                        <Button95  className="w-full">
-                        <ShoppingCart size={16} className="mr-2 font-departure" />
-                        Buy Card Packs
-                      </Button95>
+                        <Button95 className="w-full">
+                          <ShoppingCart
+                            size={16}
+                            className="mr-2 font-departure"
+                          />
+                          Buy Card Packs
+                        </Button95>
                       </Link>
                     </CardContent>
                   </GroupBox>
-                  <GroupBox className="font-departure" label="My Cats, Memes & Dog's Coins ($CMD)">
+                  <GroupBox
+                    className="font-departure"
+                    label="My Cats, Memes & Dog's Coins ($CMD)"
+                  >
                     <CardContent>
                       <Frame variant="field" className="p-2">
                         <div className="flex items-center justify-between mb-2">
@@ -387,25 +421,45 @@ const handleSelectAvatar = async () => {
                       </Frame>
                     </CardContent>
                   </GroupBox>
-                       <GroupBox label="My Tournament Position" className="font-departure">
+                  <GroupBox
+                    label="My Tournament Position"
+                    className="font-departure"
+                  >
                     <CardContent>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <span role="img" aria-label="trophy" className="m-3 text-7xl">🏆</span>
-                            <span className="font-departure text-xl">Position:</span>
-                          </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <span
+                            role="img"
+                            aria-label="trophy"
+                            className="m-3 text-7xl"
+                          >
+                            🏆
+                          </span>
+                          <span className="font-departure text-xl">
+                            Position:
+                          </span>
                         </div>
+                      </div>
                     </CardContent>
                   </GroupBox>
                 </div>
                 <div className="flex-1">
-                  <GroupBox label="GAME AVATAR ERC6551" className="font-departure">
+                  <GroupBox
+                    label="GAME AVATAR ERC6551"
+                    className="font-departure"
+                  >
                     <Window>
                       <WindowContent>
                         {hasPlayer ? (
                           <div className="flex flex-col items-center">
-                            <img src={avatarImage} alt="User Avatar" className="w-full h-auto mb-4" />
-                            <span className="text-lg font-semibold">Your Current Avatar</span>
+                            <img
+                              src={avatarImage}
+                              alt="User Avatar"
+                              className="w-full h-auto mb-4"
+                            />
+                            <span className="text-lg font-semibold">
+                              Your Current Avatar
+                            </span>
                           </div>
                         ) : (
                           <>
@@ -416,7 +470,11 @@ const handleSelectAvatar = async () => {
                                     <div className="p-2">
                                       <Card>
                                         <CardContent className="flex aspect-square items-center justify-center p-2">
-                                          <img src={uri} alt={`Avatar ${id}`} className="w-full h-auto" />
+                                          <img
+                                            src={uri}
+                                            alt={`Avatar ${id}`}
+                                            className="w-full h-auto"
+                                          />
                                         </CardContent>
                                       </Card>
                                     </div>
@@ -429,19 +487,27 @@ const handleSelectAvatar = async () => {
                             <div className="mt-4 flex justify-center">
                               <Button95
                                 onClick={() => {
-                                  handleSelectAvatar().catch(error => {
-                                    console.error('Error selecting avatar:', error);
+                                  handleSelectAvatar().catch((error) => {
+                                    console.error(
+                                      "Error selecting avatar:",
+                                      error
+                                    );
                                   });
                                 }}
                                 className="w-full max-w-xs"
                                 disabled={isCreating}
                               >
-                                {isCreating ? "Creating..." : `Select ${
-                                  currentSlide === 0 ? "Pablo" : 
-                                  currentSlide === 1 ? "Papi Frog" : 
-                                  currentSlide === 2 ? "Doggy Master" : 
-                                  "Kween"
-                                }`}
+                                {isCreating
+                                  ? "Creating..."
+                                  : `Select ${
+                                      currentSlide === 0
+                                        ? "Pablo"
+                                        : currentSlide === 1
+                                          ? "Papi Frog"
+                                          : currentSlide === 2
+                                            ? "Doggy Master"
+                                            : "Kween"
+                                    }`}
                               </Button95>
                             </div>
                           </>

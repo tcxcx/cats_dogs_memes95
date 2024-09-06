@@ -6,6 +6,7 @@ interface DeckState {
   addToDeck: (card: CardData) => void;
   removeFromDeck: (cardId: number) => void;
   saveDeck: () => void;
+  clearDeck: () => void;
 }
 
 export const useDeckStore = create<DeckState>((set, get) => ({
@@ -29,4 +30,8 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       console.log("Deck saved to the database:", deck);
     }, 1000);
   },
+  clearDeck: () =>
+    set(() => ({
+      deck: [],
+    })),
 }));

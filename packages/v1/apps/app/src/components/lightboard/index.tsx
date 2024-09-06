@@ -49,7 +49,7 @@ const textToPattern = (
   font: { [key: string]: Pattern }
 ): Pattern => {
   // First, we make the letters bigger if we have more rows
-  const letterHeight = font["A"].length;
+  const letterHeight = font["A"]?.length ?? 1;
   const scale = Math.max(1, Math.floor(rows / letterHeight));
 
   // We make each letter in the font bigger
@@ -72,14 +72,14 @@ const textToPattern = (
   const letterPatterns = normalizedText
     .split("")
     .map((char) => scaledFont[char] || scaledFont[" "]);
-
   // We combine all the letter patterns into one big pattern
-  let fullPattern: Pattern = Array(scaledFont["A"].length)
+  let fullPattern: Pattern = Array(scaledFont["A"]?.length ?? 0)
     .fill([])
     .map(() => []);
-
   letterPatterns.forEach((letterPattern) => {
-    fullPattern = fullPattern.map((row, i) => [...row, ...letterPattern[i]]);
+    if (letterPattern) {
+      fullPattern = fullPattern.map((row, i) => [...row, ...(letterPattern[i] || [])]);
+    }
   });
 
   // We add empty space above and below the pattern to center it
@@ -87,11 +87,10 @@ const textToPattern = (
   const patternRows = fullPattern.length;
   const topPadding = Math.floor((totalRows - patternRows) / 2);
   const bottomPadding = totalRows - patternRows - topPadding;
-
   const paddedPattern = [
-    ...Array(topPadding).fill(Array(fullPattern[0].length).fill("0")),
+    ...Array(topPadding).fill(Array(fullPattern[0]?.length || 0).fill("0")),
     ...fullPattern,
-    ...Array(bottomPadding).fill(Array(fullPattern[0].length).fill("0")),
+    ...Array(bottomPadding).fill(Array(fullPattern[0]?.length || 0).fill("0")),
   ];
 
   // We make the pattern wider by repeating it
@@ -202,7 +201,9 @@ function LightBoard({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const patternWidth = basePattern[0].length;
+    if (basePattern.length === 0 || basePattern[0]?.length === 0) return;
+
+    const patternWidth = basePattern[0]?.length ?? 0;
 
     basePattern.forEach((row, rowIndex) => {
       for (let colIndex = 0; colIndex < columns; colIndex++) {
@@ -228,19 +229,24 @@ function LightBoard({
     let animationFrameId: number;
 
     const animate = () => {
-      if (!isHovered) {
+      if (!isHovered && basePattern[0]?.length) {
         // If the mouse isn't over the board, we move the text
-        setOffset((prevOffset) => (prevOffset + 1) % basePattern[0].length);
+        setOffset((prevOffset) => (prevOffset + 1) % (basePattern[0]?.length || 1));
       }
       drawToCanvas();
       animationFrameId = requestAnimationFrame(animate);
-    };
 
     animationFrameId = requestAnimationFrame(animate);
 
     // We clean up our animation when we're done
     return () => cancelAnimationFrame(animationFrameId);
-  }, [basePattern, isHovered, drawToCanvas]);
+  };
+
+  animate();
+
+  // We clean up our animation when we're done
+  return () => cancelAnimationFrame(animationFrameId);
+}, [basePattern, isHovered, drawToCanvas]);
 
   // This updates our light pattern when the text changes
   useEffect(() => {
@@ -253,7 +259,7 @@ function LightBoard({
   const animate = useCallback(() => {
     const currentTime = Date.now();
     if (currentTime - lastUpdateTime >= updateInterval && !isHovered) {
-      setOffset((prevOffset) => (prevOffset + 1) % basePattern[0].length);
+      setOffset((prevOffset) => (prevOffset + 1) % (basePattern[0]?.length || 1));
       setLastUpdateTime(currentTime);
     }
     drawToCanvas();
@@ -304,15 +310,19 @@ function LightBoard({
           colIndex < columns
         ) {
           // We figure out which light to change in our pattern
-          const actualColIndex = (colIndex + offset) % basePattern[0].length;
+          const actualColIndex = (colIndex + offset) % (basePattern[0]?.length || 1);
 
           // If this light isn't already the brightness we want...
-          if (basePattern[rowIndex][actualColIndex] !== drawState) {
+          if (basePattern[rowIndex]?.[actualColIndex] !== drawState) {
             // We update our pattern of lights
             setBasePattern((prevPattern) => {
-              const newPattern = [...prevPattern];
-              newPattern[rowIndex] = [...newPattern[rowIndex]];
-              newPattern[rowIndex][actualColIndex] = drawState;
+              if (!prevPattern[rowIndex]) return prevPattern; // Guard against undefined row
+              const newPattern = prevPattern.map((row, index) => 
+                index === rowIndex ? [...row] : row
+              );
+              if (newPattern[rowIndex]) {
+                newPattern[rowIndex][actualColIndex] = drawState;
+              }
               return newPattern;
             });
 
@@ -424,9 +434,11 @@ function LightBoard({
       const touch = event.touches[0];
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      handleInteractionStart(x, y);
+      if (touch) {
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        handleInteractionStart(x, y);
+      }
     },
     [handleInteractionStart]
   );
@@ -437,9 +449,11 @@ function LightBoard({
       const touch = event.touches[0];
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      handleInteractionMove(x, y);
+      if (touch) {
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        handleInteractionMove(x, y);
+      }
     },
     [handleInteractionMove]
   );
