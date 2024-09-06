@@ -79,6 +79,7 @@ contract Players is ERC721URIStorage {
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
         AvatarAddress = _createAvatarAddress(newAvatarId);
+        // add?: AvatarAddress.call{value: 1 ether / 10}("");
 
         // note: avatarIds can be overwritten, in effect resetting Avatar Based Account. 
         s_avatarIds[msg.sender] = newAvatarId; 
