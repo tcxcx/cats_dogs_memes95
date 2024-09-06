@@ -322,10 +322,10 @@ const AnimatedBackground = ({ className = "" }) => {
 
     s.setUniform("uSpeedColor", 20.0);
 
-    s.setUniform("uColor1", hex2rgb(colors[0]));
-    s.setUniform("uColor2", hex2rgb(colors[1]));
-    s.setUniform("uColor3", hex2rgb(colors[2]));
-    s.setUniform("uColor4", hex2rgb(colors[3]));
+    s.setUniform("uColor1", hex2rgb(colors[0] ?? backgroundColor));
+    s.setUniform("uColor2", hex2rgb(colors[1] ?? backgroundColor));
+    s.setUniform("uColor3", hex2rgb(colors[2] ?? backgroundColor));
+    s.setUniform("uColor4", hex2rgb(colors[3] ?? backgroundColor));
 
     p.rect(0, 0, p.windowWidth, p.windowHeight);
   };

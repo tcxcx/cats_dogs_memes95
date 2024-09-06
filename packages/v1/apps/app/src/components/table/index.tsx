@@ -39,7 +39,7 @@ import {
   getMatches,
   getPlayerLeaderboard,
   getAwards,
-} from "@/app/api/rollup/route";
+} from "@/lib/apiClient";
 
 export type PlayerTournament = {
   id: string;

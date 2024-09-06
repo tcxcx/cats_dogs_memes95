@@ -1,5 +1,5 @@
 import { urlJoin } from "@/lib/utils";
-import { MRUInfo } from "./types";
+import { MRUInfo } from "@/app/api/rollup/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_ROLLUP_URL || "http://localhost:3210";
 
@@ -84,7 +84,6 @@ const submitAction = async (
   return json;
 };
 
-// Add the new exports here
 export {
   getInfo,
   getState,
@@ -97,5 +96,5 @@ export {
   getAwards,
   getPlayerStatus,
   getPlayerDeck,
-  getPlayerIdByWallet
+  getPlayerIdByWallet,
 };
