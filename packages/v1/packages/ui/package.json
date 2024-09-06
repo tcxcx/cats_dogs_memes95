@@ -1,0 +1,69 @@
+{
+  "name": "@v1/ui",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": false,
+  "files": [
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "globals.css"
+  ],
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4"
+  },
+  "exports": {
+    "./globals.css": "./src/globals.css",
+    "./cn": "./src/utils/cn.ts",
+    "./button": "./src/components/button.tsx",
+    "./input": "./src/components/input.tsx",
+    "./tooltip": "./src/components/tooltip.tsx",
+    "./dialog": "./src/components/dialog.tsx",
+    "./icons": "./src/components/icons.tsx",
+    "./aspect-ratio": "./src/components/aspect-ratio.tsx",
+    "./alert": "./src/components/alert.tsx",
+    "./card": "./src/components/card.tsx",
+    "./card2": "./src/components/card2.tsx",
+    "./carousel": "./src/components/carousel.tsx",
+    "./dynamic-island": "./src/components/dynamic-island.tsx",
+    "./input-otp": "./src/components/input-otp.tsx",
+    "./label": "./src/components/label.tsx",
+    "./progress": "./src/components/progress.tsx",
+    "./scroll-area": "./src/components/scroll-area.tsx",
+    "./select": "./src/components/select.tsx",
+    "./separator": "./src/components/separator.tsx",
+    "./skeleton": "./src/components/skeleton.tsx",
+    "./sheet": "./src/components/sheet.tsx",
+    "./tabs": "./src/components/tabs.tsx",
+    "./toast": "./src/components/toast.tsx",
+    "./textarea": "./src/components/textarea.tsx",
+    "./drawer": "./src/components/drawer.tsx",
+    "./toaser": "./src/components/toaster.tsx",
+    "./use-toast": "./src/components/use-toast.ts",
+    "./table": "./src/components/table.tsx",
+    "./retro-grid": "./src/components/magicui/retro-grid.tsx",
+    "./tailwind.config": "./tailwind.config.ts",
+    "./postcss": "./postcss.config.js"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tooltip": "^1.1.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.3.31",
+    "lucide-react": "^0.438.0",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}
