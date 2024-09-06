@@ -1,12 +1,14 @@
 import { urlJoin } from "@/lib/utils";
 import { MRUInfo } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
+const BASE_URL = process.env.NEXT_PUBLIC_ROLLUP_URL || "http://localhost:3210";
 
 const get = async <T>(path = ""): Promise<T> => {
   const res = await fetch(urlJoin(BASE_URL, path));
   if (!res.ok) {
-    throw new Error(`Failed to fetch ${path}`);
+    const errorText = await res.text();
+    console.error(`Failed to fetch ${path}:`, errorText);
+    throw new Error(`Failed to fetch ${path}: ${res.status} ${res.statusText}`);
   }
   return res.json();
 };
@@ -17,6 +19,46 @@ const getInfo = async () => {
 
 const getState = async () => {
   return get<{ state: number }>();
+};
+
+const getPlayers = async () => {
+  return get<any[]>("players");
+};
+
+const getMatch = async (id: number) => {
+  return get<any>(`matches/${id}`);
+};
+
+const getMatches = async () => {
+  return get<any[]>("matches");
+};
+
+const getPlayerLeaderboard = async () => {
+  return get<any[]>("player-leaderboard");
+};
+
+const getPlayer = async (id: number) => {
+  return get<any>(`players/${id}`);
+};
+
+const getPlayerIdByWallet = async (walletAddress: string) => {
+  return get<any>(`player-id/${walletAddress}`);
+};
+
+const getAwards = async () => {
+  return get<any>("awards");
+};
+
+/* REGISTER TO TOURNAMENT */
+
+const getPlayerStatus = async (walletAddress: string) => {
+  return get<{ registered: boolean; deckRegistered: boolean }>(
+    `/player-status/${walletAddress}`
+  );
+};
+
+const getPlayerDeck = async (walletAddress: string) => {
+  return get<{ deck: string[] }>(`/player-deck/${walletAddress}`);
 };
 
 /* SUBMIT ACTION */
@@ -42,4 +84,18 @@ const submitAction = async (
   return json;
 };
 
-export { getInfo, getState, submitAction };
+// Add the new exports here
+export {
+  getInfo,
+  getState,
+  submitAction,
+  getPlayers,
+  getMatch,
+  getMatches,
+  getPlayerLeaderboard,
+  getPlayer,
+  getAwards,
+  getPlayerStatus,
+  getPlayerDeck,
+  getPlayerIdByWallet
+};

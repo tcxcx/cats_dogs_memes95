@@ -28,7 +28,7 @@
   "packageManager": "bun@1.1.26",
   "dependencies": {
     "@stackr/sdk": "^0.5.4",
-    "@tokenbound/sdk": "^0.5.4",
+    "@xmtp/xmtp-js": "^12.1.0",
     "swr": "^2.2.5",
     "vaul": "^0.9.1"
   }

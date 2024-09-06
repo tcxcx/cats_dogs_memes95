@@ -17,6 +17,7 @@ export const useAction = () => {
     }
 
     const inputs = { ...payload };
+    console.log("These are the inputs", inputs)
 
     // Ensure all indices are non-negative integers
     Object.keys(inputs).forEach(key => {
@@ -33,7 +34,11 @@ export const useAction = () => {
     console.log("transitionToSchema:", transitionToSchema);
 
     // Convert action name to kebab-case for schema lookup
-    const convertToKebabCase = (str: string) => str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+    const convertToKebabCase = (str: string) => 
+      str.replace(/([a-z])([A-Z])/g, '$1-$2') // Add hyphen between lowercase and uppercase
+         .replace(/\s+/g, '-') // Replace spaces with hyphens
+         .toLowerCase(); // Convert the entire string to lowercase
+
     const schemaName = convertToKebabCase(name);
 
     const schema = schemas[schemaName];

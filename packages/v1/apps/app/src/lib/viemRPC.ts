@@ -9,8 +9,7 @@ import {
   decodeEventLog,
   type Account,
   IntegerOutOfRangeError,
-  getAddress,
-  toHex,
+  toBytes
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
@@ -87,49 +86,46 @@ export default class EthereumRpc {
     // other functions...
   ];
 
-  private playersContractABI = [
-    // ABI for Players.sol
-    {
-      inputs: [{ internalType: "string", name: "avatarURI", type: "string" }],
-      name: "createPlayer",
-      outputs: [
-        { internalType: "uint256", name: "newAvatarId", type: "uint256" },
-        { internalType: "address", name: "AvatarAddress", type: "address" }
-      ],
-      stateMutability: "nonpayable",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "uint256", name: "avatarId", type: "uint256" }],
-      name: "getAvatarAddress",
-      outputs: [{ internalType: "address", name: "AvatarAddress", type: "address" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "address", name: "owner", type: "address" }],
-      name: "balanceOf",
-      outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [{ internalType: "address", name: "", type: "address" }],
-      name: "s_avatarIds",
-      outputs: [{ internalType: "uint256", name: "avatarId", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-    {
-      inputs: [
-        {name: "avatarId", type: "uint256", indexed: true, internalType: "uint256"},
-        {name: "avatarAccountAddress", type: "address", indexed: true, internalType: "address" }],
-      name: "CreatedPlayer",
-      anonymous: "false",
-      type: "event"
-    },
-    // other functions and events...
-  ];
+
+//   private playersContractABI = playersABI.abi.map((item) => {
+//   if (item.type === "function") {
+//     return {
+//       inputs: item.inputs,
+//       name: item.name,
+//       outputs: item.outputs,
+//       stateMutability: item.stateMutability,
+//       type: item.type,
+//     };
+//   }
+//   return item;
+// });
+
+private playersContractABI = [
+  {
+    inputs: [
+      {
+        name: "avatarURI",
+        type: "string",
+        internalType: "string",
+      },
+    ],
+    name: "createPlayer",
+    outputs: [
+      {
+        name: "newAvatarId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "AvatarAddress",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
 
   constructor(provider: IProvider) {
     this.provider = provider;
@@ -337,7 +333,7 @@ export default class EthereumRpc {
       // Submit transaction to the blockchain
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
-        address: "0x9554a5CC8F600F265A89511e5802945f2e8A5F5D",
+        address: "0x9554a5CC8F600F265A89511e5802945f2e8A5F5D" as `0x${string}`,
         abi: this.contractABI,
         functionName: "store",
         args: [randomNumber],
@@ -351,6 +347,42 @@ export default class EthereumRpc {
       throw error;
     }
   }
+
+  async playerAction(
+    avatarBasedAccount: string,
+    to: string,
+    value: bigint,
+    calldata: string
+  ): Promise<{ reply: string }> {
+    try {
+      const walletClient = createWalletClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      // Submit the transaction to the blockchain
+      const hash = await walletClient.sendTransaction({
+        account: avatarBasedAccount as `0x${string}` | Account,
+        to: to as `0x${string}`,
+        value,
+        data: calldata as `0x${string}`,
+      });
+
+      // Wait for the transaction receipt
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      return { reply: `Transaction successful with hash: ${hash}` };
+    } catch (error) {
+      console.error("Error performing player action:", error);
+      throw error;
+    }
+  }
+
 
   // * NFT Minting: *
 
@@ -509,6 +541,14 @@ export default class EthereumRpc {
 
       const address = await this.getAddresses();
 
+
+      console.log("Account:", address[0]);
+      console.log("Contract Address:", "0xA070608Bc65116D860f3aCF3086Bc345DccA484C");
+      console.log("ABI:", this.playersContractABI);
+      console.log("Function Name:", "createPlayer");
+      console.log("Args:", [avatarURI]);
+
+      // Submit the transaction to create the player
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account, // does this go wrong? 
         address: playersContract, // "0xPlayersContractAddressHere",
@@ -660,8 +700,7 @@ export default class EthereumRpc {
     ) as T;
   }
 
-
-async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
+  async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
   const walletClient = createWalletClient({
     chain: this.getViewChain(),
     transport: custom(this.provider),
@@ -669,39 +708,31 @@ async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<stri
 
   const address = await this.getAccounts();
   
-  let salt: string;
-  const domainSalt = domain.salt as string | ArrayBuffer;
+  let salt: `0x${string}`;
 
-  if (domainSalt instanceof ArrayBuffer) {
-    salt = Buffer.from(domainSalt).toString('hex').slice(0, 64).padStart(64, '0');
-  } else if (typeof domainSalt === 'string') {
-    salt = domainSalt.slice(0, 64).padStart(64, '0');
+  if (typeof domain.salt === 'string') {
+    const saltStr = domain.salt.startsWith('0x') ? domain.salt.slice(2) : domain.salt;
+    salt = `0x${saltStr}`;
+  } else if (typeof domain.salt === 'number') {
+    salt = `0x${domain.salt.toString(16).padStart(64, '0')}`;
+  } else if (address[0]) {
+    const owner = BigInt(address[0]);
+    salt = `0x${(owner << 96n).toString(16).padStart(64, '0')}`;
   } else {
-    throw new Error('Invalid salt format. Expected ArrayBuffer or string.');
+    throw new Error("Unable to generate salt: address is undefined");
   }
 
-  // Ensure salt is a valid positive 256-bit number
-  const saltBigInt = BigInt(`0x${salt}`);
-  if (saltBigInt < 0n) {
-    throw new IntegerOutOfRangeError({
-      value: salt,
-      min: '0',
-    });
+  // Ensure salt is not undefined
+  if (!salt) {
+    throw new Error("Salt must be provided or generated.");
   }
-
-  // Validate and sanitize payload
-  Object.keys(payload).forEach(key => {
-    if (typeof payload[key] === 'number' && payload[key] < 0) {
-      throw new Error(`Invalid payload value for ${key}: ${payload[key]}. Must be a non-negative integer.`);
-    }
-  });
 
   const signature = await walletClient.signTypedData({
     account: address[0] as `0x${string}` | Account,
     domain: {
       ...domain,
       chainId: domain.chainId,
-      salt: `0x${salt}`,
+      salt,
     },
     types: schema.types,
     primaryType: schema.primaryType,
@@ -710,6 +741,7 @@ async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<stri
 
   return signature;
 }
+
 
 }
 

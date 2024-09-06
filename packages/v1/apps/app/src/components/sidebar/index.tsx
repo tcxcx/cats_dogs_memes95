@@ -13,7 +13,7 @@ import {
   Spade,
   BookMarked,
   PackageOpen,
-  ShoppingBasket,
+  Trophy,
   Smile,
 } from "lucide-react";
 import {
@@ -73,6 +73,11 @@ const Sidebar = () => {
       icon: <Spade />,
       route: "/play",
       label: "Play",
+    },
+     {
+      icon: <Trophy />,
+      route: "/leaderboard",
+      label: "Leaderboard",
     },
   ];
 

@@ -8,9 +8,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@v1/ui/button"
 import { DynamicIslandProvider } from "@v1/ui/dynamic-island"
+import LoadingCheckWrapper from "@/components/loading-wrap-check";
 
 const gameLandingPage: FC = () => {
   return (
+        <LoadingCheckWrapper>
     <DynamicIslandProvider initialSize="compact">
       <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-4">
         <motion.h1
@@ -72,6 +74,7 @@ const gameLandingPage: FC = () => {
         </motion.div>
       </div>
     </DynamicIslandProvider>
+    </LoadingCheckWrapper>
   )
 }
 

@@ -125,6 +125,7 @@ export default function TransactionDrawer() {
   const handleCreatePlayer = async () => {
     if (avatarURI) {
       setCurrentAction("Creating player");
+      console.log("Avatar URI inside handle create async function", avatarURI)
       await createPlayer(avatarURI);
       setCurrentAction(null);
     }

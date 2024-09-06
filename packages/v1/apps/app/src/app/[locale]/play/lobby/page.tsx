@@ -111,7 +111,7 @@ const MultiplayerLobby: FC = () => {
             <h2 className="text-xl font-semibold mb-4 flex items-center justify-between opacity-90 font-departure">
               Waiting for players...
               <span className="text-lg font-departure">
-                <Users className="inline mr-2" />
+                <Users className = "inline mr-2" />
                 {playerCount}/2
               </span>
             </h2>
