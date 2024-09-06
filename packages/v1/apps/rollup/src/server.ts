@@ -47,7 +47,7 @@ export async function setupServer() {
 
 app.post("/:transition", async (req: Request, res: Response) => {
   
-  const transition = req.params.transition.toLowerCase();
+  const transition = req.params.transition;
 
   console.log('Received transition:', transition);
   console.log('All transitions:', Object.keys(allTransitions));
