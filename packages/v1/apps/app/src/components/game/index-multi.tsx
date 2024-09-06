@@ -1,5 +1,6 @@
 "use client";
-import { FC, useState, useEffect } from "react";
+
+import React, { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
@@ -26,7 +27,7 @@ import {
   GameStateLog,
 } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
-import { Cat, Dog, Smile } from "lucide-react";
+import { Cat, Dog, Smile, Loader2 } from "lucide-react";
 import {
   DynamicContainer,
   DynamicIsland,
@@ -37,77 +38,83 @@ import {
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
-//import { useXMTP } from "@/lib/hooks/useXMTP";
-import { useMyPresence, useOthers } from "@liveblocks/react";
+import {
+  useMyPresence,
+  useOthers,
+  useStorage,
+  RoomProvider,
+  LiveblocksProvider } from "@liveblocks/react";
 
-const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
-const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
+const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
+const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
 
-const initialGameState: GameState = {
-  deckP1: Deck1,
-  deckP2: Deck2,
-  handP1: [],
-  handP2: [],
-  score: [0 , 0],
-  turnCount: 1,
-  cardCollection: {}, // Replace with actual collection data
-  powerList: [], // Replace with actual power list
-  typeList: [], // Replace with actual type list
-};
 interface MultiplayerCardGameProps {
   isPlayer1: boolean;
+  isPlayer2: boolean;
 }
 
-const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
-  const boardStyle = isPlayer1 ? "player1-board" : "player2-board flipped";
-
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const [playerReady, setPlayerReady] = useState<boolean>(false);
-  const [opponentReady, setOpponentReady] = useState<boolean>(false);
-  const [presence, updatePresence] = useMyPresence();
-  const others = useOthers();
-  
-  const [gameLog, setGameLog] = useState<GameLog | null>(null);
-  const [playerMove, setPlayerMove] = useState<{
+const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1, isPlayer2 }) => {
+  const boardStyle = isPlayer1 ? "player-info" : "opponent-info flipped";
+  // Shared state using Liveblocks
+  const [gameState, setGameState] = useStorage<GameState>("gameState", null); // Synchronize shared game state
+  const [gameLog, setGameLog] = useStorage<GameLog>("gameLog", null); // Synchronize shared game log
+  const [playerMove, setPlayerMove] = useStorage<{
     cardIndexP1: number;
     powerIndexP1: number;
     cardIndexP2?: number;
     powerIndexP2?: number;
-  } | null>(null);
+  } | null>("playerMove", null); // Synchronize shared player moves
 
-  const [playerDeck, setPlayerDeck] = useState<string[]>(Deck1);
-  const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
-  const [playerHand, setPlayerHand] = useState<CardData[]>([]);
-  const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
-  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>( null );
-  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>( null );
-  const [turnCount, setTurnCount] = useState<number>(1);
-  const [playerScore, setPlayerScore] = useState(0);
-  const [opponentScore, setOpponentScore] = useState(0);
-  const [selectedPower, setSelectedPower] = useState<Power | null>(null);
-  const [opponentSelectedPower, setOpponentSelectedPower] =
-    useState<Power | null>(null);
-  const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
-  const [winner, setWinner] = useState<Winner>(null);
+  // Private local state
+  const [playerDeck, setPlayerDeck] = useState<string[]>(isPlayer1 ? Deck1 : Deck2); // Each player sees their own deck
+  const [opponentDeck, setOpponentDeck] = useState<string[]>(isPlayer1 ? Deck2 : Deck1); // Opponent deck based on player perspective
+  const [playerHand, setPlayerHand] = useState<CardData[]>([]); // Private hand for each player
+  const [opponentHand, setOpponentHand] = useState<CardData[]>([]); // Opponent hand is private to each player
+  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(null); // Private active card for each player
+  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(null); // Private active card for the opponent
+  const [selectedPower, setSelectedPower] = useState<Power | null>(null); // Private power selection for each player
+ 
+  // Shared state for scores and turn count
+  const [turnCount, setTurnCount] = useStorage<number>("turnCount", 1);
+  const [playerScore, setPlayerScore] = useStorage<number>("playerScore", 0); // Synchronize player score
+  const [opponentScore, setOpponentScore] = useStorage<number>("opponentScore", 0); // Synchronize opponent score
 
+  // Synchronize selected powers between players
+  const [opponentSelectedPower, setOpponentSelectedPower] = useStorage<Power | null>("opponentSelectedPower", null);
+  const [gamePhase, setGamePhase] = useStorage<GamePhase>("gamePhase", "draw");
+  const [winner, setWinner] = useStorage<Winner>("winner", null);
+
+  // Other constants for UI and actions
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  //const { receivedAction } = useXMTP(); //Commented out for now
-
+  // Local state for player actions
+  const [localHandP1, setLocalHandP1] = useState<CardData[]>([]);
+  const [localHandP2, setLocalHandP2] = useState<CardData[]>([]);
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);
+  const [powIndexP1, setPowIndexP1] = useState<number>(0);
+  const [powIndexP2, setPowIndexP2] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  ///////////////////
+  ////////////////////
   useEffect(() => {
+    // Function to initialize game state
     async function fetchInitialGameState() {
       try {
+        // Initialize player and opponent decks
         setPlayerDeck(Deck1);
         setOpponentDeck(Deck2);
-        const initialGameState = await initializeGame(playerDeck, opponentDeck);
-        setCurrentGameAction('initializeGame');
-        const initialGameLog = {
+  
+        // Initialize the game state
+        const initialGameState = await initializeGame(Deck1, Deck2);
+        setCurrentGameAction("initializeGame");
+  
+        // Set the initial game log
+        const initialGameLog: GameLog = {
           initialDecks: {
             deckP1: initialGameState.deckP1,
             deckP2: initialGameState.deckP2,
@@ -115,36 +122,56 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
           turns: [],
           winner: null,
         };
-
+  
+        // Set the game state, hands, and phase
         setGameState(initialGameState);
         setPlayerHand(drawInitialHand(Deck1));
         setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
         setTurnCount(1);
-
-        // Submit the initialize game action to the rollup server
-        await submit('initializeGame', {
-          deckP1: playerDeck,
-          deckP2: opponentDeck,
-        });
-
-        console.log("Game initialized successfully");
-
       } catch (error) {
         console.error("Failed to initialize game:", error);
       }
     }
+  
     fetchInitialGameState();
   }, []);
 
   useEffect(() => {
+    // Synchronize game log and decks
     if (gameLog !== null) {
-      console.log(gameLog);
+      try {
+        // Ensure both decks are available and log the game state
+        if (Deck1.length > 0 && Deck2.length > 0) {
+          console.log(gameLog);
+        } else {
+          throw new Error("Card decks are not available.");
+        }
+      } catch (error) {
+        console.error("Error in useEffect:", error);
+      }
+    } else {
+      // Stringify decks to submit initial game state
+      const deckP1str = JSON.stringify(Deck1);
+      const deckP2str = JSON.stringify(Deck2);
+  
+      async function trySubmit() {
+        try {
+          await submit("initializeGame", {
+            deckP1: deckP1str,
+            deckP2: deckP2str,
+          });
+          console.log("Decks being sent to submit:", { deckP1: Deck1, deckP2: Deck2 });
+        } catch (error) {
+          console.error("Failed to submit initial game state:", error);
+        }
+      }
+  
+      trySubmit();
     }
-  }, [gameLog]);
+  }, [gameLog]); //
 
-  // New handler for initializing game on button click
   const initializeGameHandler = async () => {
     try {
       setPlayerDeck(Deck1);
@@ -158,12 +185,10 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
         turns: [],
         winner: null,
       };
-      setCurrentGameAction('initializeGame');
-      // console.log("Gamestate deck1: " , initialGameState.deckP1);
-      setGameState(initialGameState); // Reset the game state
-      setPlayerHand(initialGameState.handP1); // Reset the player hand
-      setOpponentHand(initialGameState.handP2); // Reset the opponent hand
-      setWinner(null); // Reset the winner to null
+      setGameState(initialGameState);
+      setPlayerHand(initialGameState.handP1);
+      setOpponentHand(initialGameState.handP2);
+      setWinner(null);
       setPlayerActiveCard(null);
       setOpponentActiveCard(null);
       setSelectedPower(null);
@@ -174,11 +199,12 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
       setGameLog(initialGameLog);
       setGamePhase("draw");
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
-   // Submit the initialize game action to the rollup server
       await submit('initializeGame', {
         deckP1: playerDeck ,
         deckP2: opponentDeck,
       });
+      console.log("This is the deck 1", Deck1)
+      console.log("This is the deck 2", Deck2)
 
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
     } catch (error) {
@@ -191,7 +217,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
     const newCard = userCards.find(card => card.name === newCardName);
     if (!newCard) {
       console.error("Failed to draw a card: no cards available.");
-      return; // Exit the function early if no card was drawn
+      return;
     }
     if (player === "player") {
       setPlayerHand((prev) => [...prev, newCard]);
@@ -228,13 +254,18 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
   const selectPower = (power: Power, player: Player) => {
     if (player === "player") {
       setSelectedPower(power);
+      if (playerActiveCard) {
+        setPowIndexP1(playerActiveCard.powers.indexOf(power));
+      }
     } else {
       setOpponentSelectedPower(power);
+      if (opponentActiveCard) {
+        setPowIndexP2(opponentActiveCard.powers.indexOf(power));
+      }
     }
   };
 
   const opponentPlay = () => {
-    // Opponent selects a card and a power if not already selected
     if (!opponentActiveCard) {
       const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
       if (randomCard) {
@@ -272,7 +303,6 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
       setSize(size);
 
       setTimeout(() => setSize("compact"), 2000);
-      //Winner declaration
       const { winner, updatedGameLog } = finalizeGame(
         playerScore,
         opponentScore,
@@ -281,128 +311,125 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
       );
       setGameLog(updatedGameLog);
       setWinner(winner);
-      /*if (playerScore >= 4 || opponentScore >= 4 || turnCount >= 8) {
-        const provWinner =
-          playerScore > opponentScore
-            ? "player"
-            : playerScore < opponentScore
-              ? "opponent"
-              : null;
-        const finalGameLog: GameLog = {
-          ...gameLog!,
-          winner: provWinner,
-        };
-        setGameLog(finalGameLog);
-        setWinner(provWinner);
-      }
-      */
     }
   };
 
-    const nextPhase = async () => {
-    const { winner, updatedGameLog } = finalizeGame(
-      playerScore,
-      opponentScore,
-      turnCount,
-      gameLog!
-    );
+  const nextPhase = async () => {
+    setIsSubmitting(true);
+    try {
+      const { winner, updatedGameLog } = finalizeGame(
+        playerScore,
+        opponentScore,
+        turnCount,
+        gameLog!
+      );
 
-    setGameLog(updatedGameLog);
-    setWinner(winner);
-    switch (gamePhase) {
-      case "draw":
-        drawCard("player", playerDeck, turnCount);
-        drawCard("opponent", opponentDeck, turnCount);
-        setGamePhase("prep");
-        break;
-      case "prep":
-        if (!playerActiveCard) {
-          const randomCard =
-            playerHand[Math.floor(Math.random() * playerHand.length)];
-          if (randomCard) {
-            playCard(randomCard, "player");
-            if (!selectedPower) {
-              const randomPower =
-                randomCard.powers[
-                  Math.floor(Math.random() * randomCard.powers.length)
-                ];
-              if (randomPower) {
-                selectPower(randomPower, "player");
-              }
-            }
-          }
-        }
-        if (!opponentActiveCard) {
-          const randomCard =
-            opponentHand[Math.floor(Math.random() * opponentHand.length)];
-          if (randomCard) {
-            playCard(randomCard, "opponent");
-            if (!opponentSelectedPower) {
-              const randomPower =
-                randomCard.powers[
-                  Math.floor(Math.random() * randomCard.powers.length)
-                ];
-              if (randomPower) {
-                selectPower(randomPower, "opponent");
-              }
-            }
-          }
-        }
-        if (!selectedPower && playerActiveCard) {
-          const randomPower =
-            playerActiveCard.powers[
-              Math.floor(Math.random() * playerActiveCard.powers.length)
-            ];
-          if (randomPower) {
-            selectPower(randomPower, "opponent");
-          }
-        }
-        setGamePhase("combat");
-        break;
-      case "combat":
-        resolveCombatHandler();
-        setGamePhase("check");
-        break;
-      case "check":
-        setTurnCount((prevCount) => prevCount + 1);
+      setGameLog(updatedGameLog);
+      setWinner(winner);
 
-        const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
-        const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
-
-        // Check that all indices are valid before proceeding
-        // console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
-        if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
-          console.error("Invalid card or power selection: cannot find indices.");
-          return;
-        }      
-
-        const updatedGameLog = updateGameLog(
-          gameLog!,
+      if (winner ||  turnCount >= 8) {
+        await submit("finalizeGame", {
+          playerScore,
+          opponentScore,
           turnCount,
-          playerActiveCard!,
-          opponentActiveCard!,
-          selectedPower!,
-          opponentSelectedPower!,
-          [playerScore, opponentScore]
-        );
-        setGameLog(updatedGameLog);
-        setPlayerActiveCard(null);
-        setOpponentActiveCard(null);
-        setSelectedPower(null);
-        setOpponentSelectedPower(null);
-        setGamePhase("draw");
-  
-      // Submit the playTurn action to the rollup server
-        await submit('playTurn', {
-        handIndexP1: playerHand.indexOf(playerActiveCard!),
-        powIndexP1: playerActiveCard!.powers.indexOf(selectedPower!),
-        handIndexP2: opponentHand.indexOf(opponentActiveCard!),
-        powIndexP2: opponentActiveCard!.powers.indexOf(opponentSelectedPower!),
-      });
+          gameLog: JSON.stringify(updatedGameLog),
+        });
+        console.log("Finalized game log and winner submitted successfully.");
+      }
+    
+      switch (gamePhase) {
+        case "draw":
+          drawCard("player", playerDeck, turnCount);
+          drawCard("opponent", opponentDeck, turnCount);
+          setGamePhase("prep");
+          break;
+        case "prep":
+          setLocalHandP1(playerHand)
+          setLocalHandP2(opponentHand)
+          if (!playerActiveCard) {
+            const randomCard =
+              playerHand[Math.floor(Math.random() * playerHand.length)];
+            if (randomCard) {
+              playCard(randomCard, "player");
+              if (!selectedPower) {
+                const randomPower =
+                  randomCard.powers[
+                    Math.floor(Math.random() * randomCard.powers.length)
+                  ];
+                if (randomPower) {
+                  selectPower(randomPower, "player");
+                }
+              }
+            }
+          }
+          if (!opponentActiveCard) {
+            const randomCard =
+              opponentHand[Math.floor(Math.random() * opponentHand.length)];
+            if (randomCard) {
+              playCard(randomCard, "opponent");
+              if (!opponentSelectedPower) {
+                const randomPower =
+                  randomCard.powers[
+                    Math.floor(Math.random() * randomCard.powers.length)
+                  ];
+                if (randomPower) {
+                  selectPower(randomPower, "opponent");
+                }
+              }
+            }
+          }
+          if (!selectedPower && playerActiveCard) {
+            const randomPower =
+              playerActiveCard.powers[
+                Math.floor(Math.random() * playerActiveCard.powers.length)
+              ];
+            if (randomPower) {
+              selectPower(randomPower, "opponent");
+            }
+          }
+          setGamePhase("combat");
+          break;
+        case "combat":
+          resolveCombatHandler();
+          setGamePhase("check");
+          break;
+        case "check":
+          setTurnCount((prevCount) => prevCount + 1);
+          if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
+            console.error("Invalid card or power selection: cannot find indices.");
+            return;
+          }      
 
-      break;
-  }
-};
+          await submit('playTurn', {
+            playerActiveCard: JSON.stringify(playerActiveCard),
+            opponentActiveCard: JSON.stringify(opponentActiveCard),
+            selectedPower: JSON.stringify(selectedPower),
+            opponentSelectedPower: JSON.stringify(opponentSelectedPower),
+          });
+        
+          const updatedGameLog = updateGameLog(
+            gameLog!,
+            turnCount,
+            playerActiveCard!,
+            opponentActiveCard!,
+            selectedPower!,
+            opponentSelectedPower!,
+            [playerScore, opponentScore]
+          );
+          setGameLog(updatedGameLog);
+          setPlayerActiveCard(null);
+          setOpponentActiveCard(null);
+          setSelectedPower(null);
+          setOpponentSelectedPower(null);
+          setGamePhase("draw");
+          break;
+      }
+    } catch (error) {
+      console.error("Error during nextPhase:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const getTypeIcon = (icon_type: Type) => {
     switch (icon_type.type) {
@@ -417,70 +444,60 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
     }
   };
 
-  const renderDynamicIslandState = () => {
-    //if (receivedAction) {
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
-            {`Received action: ${null/*receivedAction.action*/}`}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    //}
-
-  switch (gamePhase) {
-    case "draw":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Drawing Cards...
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "prep":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Preparing for Battle
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "combat":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Combat!
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "check":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            {playerScore > opponentScore
-              ? "You Win This Round!"
-              : playerScore < opponentScore
-              ? "Opponent Wins This Round!"
-              : "It's a Draw!"}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    default:
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            {turnCount >= 8
-              ? winner
-                ? winner === "player"
-                  ? "You Win the Game!"
-                  : "Opponent Wins the Game!"
-                : "Waiting..."
-              : "It's a Draw!"}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-  }
-};
+const renderDynamicIslandState = () => {
+    switch (gamePhase) {
+      case "draw":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Drawing Cards...
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "prep":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Preparing for Battle
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "combat":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Combat!
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "check":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              {playerScore > opponentScore
+                ? "You Win This Round!"
+                : playerScore < opponentScore
+                ? "Opponent Wins This Round!"
+                : "It's a Draw!"}
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      default:
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              {turnCount >= 8
+                ? winner
+                  ? winner === "player"
+                    ? "You Win the Game!"
+                    : "Opponent Wins the Game!"
+                  : "Waiting..."
+                : "It's a Draw!"}
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+    }
+  };
 
   return (
     <DynamicIslandProvider initialSize="medium">
@@ -523,7 +540,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
           >
             {/* Playing Field */}
             <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 bg-opacity-30 rounded-xl p-4 shadow-md">
-              {/*Opponent Active CArd */}
+              {/*Opponent Active Card */}
               <AnimatePresence>
                 {opponentActiveCard && (
                   <motion.div
@@ -538,7 +555,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                     className="transform scale-75 bg-red-100 bg-opacity-50 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
                   >
                     <div className="text-center text-xs font-departure text-red-700 mb-1">
-                      Opponent`s Card
+                      Opponent's Card
                     </div>
                     <CardGame card={opponentActiveCard} />
                     {opponentSelectedPower && (
@@ -584,7 +601,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
             {/* Opponent's Hand */}
             <div className="absolute h-1/5 top-2 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
               <AnimatePresence>
-                {opponentHand.map((opponentCard, index) => (
+                {opponentHand.map((icon_type, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -593,8 +610,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                     transition={{ duration: 0.3 }}
                     className="aspect-[3/4] bg-red-400 rounded-lg shadow-2xl flex items-center justify-center"
                   >
-                    <CardGame card={opponentCard} />
-                    {/*getTypeIcon(icon_type as any)
+                    {getTypeIcon(icon_type as any)}
                     <Image
                       src={"/CardbackS1_2.png"}
                       alt="Banner"
@@ -602,7 +618,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                       priority
                       width={200}
                       height={300}
-                    />*/}
+                    />
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -617,12 +633,14 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                 backgroundPosition: "center",
               }}
               whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className="relative h-1/5 aspect-[3/4] bg-red-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-100%", animationDelay: "1s" }}
               animate={{ x: "50%", y: "-250%" }}
             >
-              Opponent`s Deck
+              Opponent's Deck
             </motion.div>
+
             {/* Player's Deck */}
             <motion.div
               style={{
@@ -632,6 +650,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                 backgroundPosition: "center",
               }}
               whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className="relative h-1/5 aspect-[3/4] bg-blue-400 rounded-lg shadow-md flex items-center justify-center text-center font-departure shadow-stone-900"
               initial={{ x: "350%", y: "-200%", animationDelay: "1s" }}
               animate={{ x: "650%", y: "-50%" }}
@@ -680,15 +699,23 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
             >
               <Button
                 onClick={nextPhase}
-                className="bg-yellow-400 text-black hover:bg-yellow-200 font-departure px-4 rounded-full shadow-md"
+                disabled={isSubmitting}
+                className="bg-yellow-400 text-black hover:bg-yellow-200 font-departure px-4 rounded-full shadow-md flex items-center"
               >
-                {gamePhase === "draw"
-                  ? "Draw"
-                  : gamePhase === "prep"
-                    ? "Prepare"
-                    : gamePhase === "combat"
-                      ? "Combat"
-                      : "Next Turn"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait...
+                  </>
+                ) : (
+                  gamePhase === "draw"
+                    ? "Draw"
+                    : gamePhase === "prep"
+                      ? "Prepare"
+                      : gamePhase === "combat"
+                        ? "Combat"
+                        : "Next Turn"
+                )}
               </Button>
             </motion.div>
           </motion.div>
@@ -739,7 +766,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
                 </h2>
                 <Button
                   className="bg-green-500 text-white hover:bg-green-600"
-                  onClick={initializeGameHandler /*Reset Game or send contract to reset game*/}
+                  onClick={initializeGameHandler}
                 >
                   Play Again
                 </Button>
@@ -750,26 +777,6 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
       </motion.div>
     </DynamicIslandProvider>
   );
-}
+};
 
 export default MultiplayerCardGame;
-
-/* REFERENCE
-<div className={boardStyle}>
-{"Render player's hand"}
-<div className={isPlayer1 ? "player-hand" : "opponent-hand"}>
-  <h2>{isPlayer1 ? "Your Hand" : "Opponent's Hand"}</h2>
-  {" Display cards based on the player's view "}
-  {" Card rendering logic "}
-</div>
-
-{" Render opponent's hand "}
-<div className={isPlayer1 ? "opponent-hand flipped" : "player-hand"}>
-  <h2>{isPlayer1 ? "Opponent's Hand" : "Your Hand"}</h2>
-  {" Display cards based on the opponent's view "}
-  {" Card rendering logic "}
-</div>
-
-{" Any additional game rendering logic "}
-<Button onClick={() => {" Handle player turn logic "}}>End Turn</Button>
-</div> */
