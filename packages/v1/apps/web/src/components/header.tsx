@@ -15,30 +15,32 @@ import { SubscribeForm } from "./subscribe-form";
 export function Header() {
   return (
     <header className="absolute top-0 w-full flex items-center justify-between p-4 z-10">
-      <span className="hidden md:block text-sm font-medium">memestic memes</span>
+      <span className="hidden md:block text-sm font-medium">
+        memestic memes
+      </span>
 
       <Link href="/">
-          <div className="flex flex-col-2 justify-between">
-            <div className="justify-end">
-              <div className="flex">🐱</div>
-              <div className="flex">🐸</div>
-              <div className="flex">🐶</div>
-              <div className="flex">🤖</div>
-            </div>
-            <div className="justify-start font-departure uppercase">
-              <div className="flex">Cats</div>
-              <div className="flex">Dogs</div>
-              <div className="flex">Memes</div>
-              <div className="flex">etc</div>
-            </div>
+        <div className="flex flex-col-2 justify-between">
+          <div className="justify-end">
+            <div className="flex">🐱</div>
+            <div className="flex">🐸</div>
+            <div className="flex">🐶</div>
+            <div className="flex">🤖</div>
           </div>
-        </Link>
+          <div className="justify-start font-departure uppercase">
+            <div className="flex">Cats</div>
+            <div className="flex">Dogs</div>
+            <div className="flex">Memes</div>
+            <div className="flex">etc</div>
+          </div>
+        </div>
+      </Link>
 
       <nav className="md:mt-2">
         <ul className="flex gap-4">
           <li>
             <a
-              href="http://localhost:3000"
+              href="https://www.demo.cats-dogs-memes-etc.wtf/"
               className="text-sm px-4 py-2 bg-primary text-secondary rounded-full font-medium"
             >
               App
