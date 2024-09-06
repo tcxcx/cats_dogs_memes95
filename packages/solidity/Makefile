@@ -18,6 +18,7 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 install :; forge install foundry-rs/forge-std@v1.9.1 --no-git --no-commit && \
 	forge install https://github.com/erc6551/reference --no-git --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts@v4.9.6 --no-git --no-commit && \
+	forge install smartcontractkit/foundry-chainlink-toolkit --no-git --no-commit && \
 	forge install OpenZeppelin/openzeppelin-contracts-upgradeable@v4.9.6 --no-git --no-commit
 
 # install chainlink seperately, otherwise it triggers an update. 
