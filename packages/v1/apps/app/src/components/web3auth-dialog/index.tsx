@@ -29,7 +29,6 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@v1/ui/input-otp";
-import REGEXP_ONLY_DIGITS from "input-otp";
 import {
   Tooltip,
   TooltipContent,
@@ -219,11 +218,7 @@ export default function Web3AuthDialog() {
             <Label htmlFor="otpCode" className="font-departure">
               Enter OTP Code
             </Label>
-            <InputOTP
-              maxLength={6}
-              pattern={REGEXP_ONLY_DIGITS as any}
-              onChange={handleOTPChange}
-            >
+            <InputOTP maxLength={6} onChange={handleOTPChange}>
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
