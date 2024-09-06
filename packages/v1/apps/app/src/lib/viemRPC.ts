@@ -9,19 +9,17 @@ import {
   decodeEventLog,
   type Account,
   IntegerOutOfRangeError,
-  toBytes
+  toBytes,
 } from "viem";
 import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
-import { TypedDataField } from 'ethers';
+import { TypedDataField } from "ethers";
 import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
 import { TypedDataDomain } from "viem";
 import { Domain, Schema } from "@/app/api/rollup/types";
-import playersABI from '../../../../../solidity/out/Players.sol/Players.json'
-
+import playersABI from "./abis/Players.json";
 
 export type EIP712Types = Record<string, TypedDataField[]>;
-
 
 export default class EthereumRpc {
   private provider: IProvider;
@@ -88,46 +86,45 @@ export default class EthereumRpc {
     // other functions...
   ];
 
+  //   private playersContractABI = playersABI.abi.map((item) => {
+  //   if (item.type === "function") {
+  //     return {
+  //       inputs: item.inputs,
+  //       name: item.name,
+  //       outputs: item.outputs,
+  //       stateMutability: item.stateMutability,
+  //       type: item.type,
+  //     };
+  //   }
+  //   return item;
+  // });
 
-//   private playersContractABI = playersABI.abi.map((item) => {
-//   if (item.type === "function") {
-//     return {
-//       inputs: item.inputs,
-//       name: item.name,
-//       outputs: item.outputs,
-//       stateMutability: item.stateMutability,
-//       type: item.type,
-//     };
-//   }
-//   return item;
-// });
-
-private playersContractABI = [
-  {
-    inputs: [
-      {
-        name: "avatarURI",
-        type: "string",
-        internalType: "string",
-      },
-    ],
-    name: "createPlayer",
-    outputs: [
-      {
-        name: "newAvatarId",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "AvatarAddress",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-];
+  private playersContractABI = [
+    {
+      inputs: [
+        {
+          name: "avatarURI",
+          type: "string",
+          internalType: "string",
+        },
+      ],
+      name: "createPlayer",
+      outputs: [
+        {
+          name: "newAvatarId",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "AvatarAddress",
+          type: "address",
+          internalType: "address",
+        },
+      ],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ];
 
   constructor(provider: IProvider) {
     this.provider = provider;
@@ -385,7 +382,6 @@ private playersContractABI = [
     }
   }
 
-
   // * NFT Minting: *
 
   // * The mintNFT function enables the minting of NFTs to a specified recipient. This is crucial for your game's mechanics, where players acquire NFTs representing in-game assets. *
@@ -546,9 +542,11 @@ private playersContractABI = [
 
       const address = await this.getAddresses();
 
-
       console.log("Account:", address[0]);
-      console.log("Contract Address:", "0xA070608Bc65116D860f3aCF3086Bc345DccA484C");
+      console.log(
+        "Contract Address:",
+        "0xA070608Bc65116D860f3aCF3086Bc345DccA484C"
+      );
       console.log("ABI:", this.playersContractABI);
       console.log("Function Name:", "createPlayer");
       console.log("Args:", [avatarURI]);
@@ -632,49 +630,53 @@ private playersContractABI = [
     ) as T;
   }
 
-  async sign712Message(schema: Schema, domain: Domain, payload: any): Promise<string> {
-  const walletClient = createWalletClient({
-    chain: this.getViewChain(),
-    transport: custom(this.provider),
-  });
+  async sign712Message(
+    schema: Schema,
+    domain: Domain,
+    payload: any
+  ): Promise<string> {
+    const walletClient = createWalletClient({
+      chain: this.getViewChain(),
+      transport: custom(this.provider),
+    });
 
-  const address = await this.getAccounts();
-  
-  let salt: `0x${string}`;
+    const address = await this.getAccounts();
 
-  if (typeof domain.salt === 'string') {
-    const saltStr = domain.salt.startsWith('0x') ? domain.salt.slice(2) : domain.salt;
-    salt = `0x${saltStr}`;
-  } else if (typeof domain.salt === 'number') {
-    salt = `0x${domain.salt.toString(16).padStart(64, '0')}`;
-  } else if (address[0]) {
-    const owner = BigInt(address[0]);
-    salt = `0x${(owner << 96n).toString(16).padStart(64, '0')}`;
-  } else {
-    throw new Error("Unable to generate salt: address is undefined");
+    let salt: `0x${string}`;
+
+    if (typeof domain.salt === "string") {
+      const saltStr = domain.salt.startsWith("0x")
+        ? domain.salt.slice(2)
+        : domain.salt;
+      salt = `0x${saltStr}`;
+    } else if (typeof domain.salt === "number") {
+      salt = `0x${domain.salt.toString(16).padStart(64, "0")}`;
+    } else if (address[0]) {
+      const owner = BigInt(address[0]);
+      salt = `0x${(owner << 96n).toString(16).padStart(64, "0")}`;
+    } else {
+      throw new Error("Unable to generate salt: address is undefined");
+    }
+
+    // Ensure salt is not undefined
+    if (!salt) {
+      throw new Error("Salt must be provided or generated.");
+    }
+
+    const signature = await walletClient.signTypedData({
+      account: address[0] as `0x${string}` | Account,
+      domain: {
+        ...domain,
+        chainId: domain.chainId,
+        salt,
+      },
+      types: schema.types,
+      primaryType: schema.primaryType,
+      message: payload,
+    });
+
+    return signature;
   }
-
-  // Ensure salt is not undefined
-  if (!salt) {
-    throw new Error("Salt must be provided or generated.");
-  }
-
-  const signature = await walletClient.signTypedData({
-    account: address[0] as `0x${string}` | Account,
-    domain: {
-      ...domain,
-      chainId: domain.chainId,
-      salt,
-    },
-    types: schema.types,
-    primaryType: schema.primaryType,
-    message: payload,
-  });
-
-  return signature;
-}
-
-
 }
 
 export { EthereumRpc };
