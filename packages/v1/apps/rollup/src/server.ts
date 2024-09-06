@@ -43,16 +43,24 @@ export async function setupServer() {
 
   const getPlayerInfo = (playerId: number) => {
     const player = tournamentMachineInstance.state.players.find(
-      (p) => p.id === playerId
+      (p) => p.id === playerId.toString()
     );
     if (!player) throw new Error("PLAYER_NOT_FOUND");
     return player;
   };
 
+  const getPlayerIdByWallet = (walletAddress: string): string | undefined => {
+  const player = tournamentMachineInstance.state.players.find(
+    (p) => p.walletAddress === walletAddress
+  );
+  return player ? player.id : undefined;
+};
+
+
   // Helper function to get match info
   const getMatchInfo = (matchId: number) => {
     const match = tournamentMachineInstance.state.matches.find(
-      (m) => m.id === matchId
+      (m) => m.id === matchId.toString()
     );
     if (!match) throw new Error("MATCH_NOT_FOUND");
     return match;
@@ -79,8 +87,10 @@ export async function setupServer() {
     });
   });
 
+  const formatTransition = (str: string) => str.replace(/-/g, "").toLowerCase();
+
   app.post("/:transition", async (req: Request, res: Response) => {
-    const transition = req.params.transition;
+  const transition = formatTransition(req.params.transition);
 
     console.log("Received transition:", transition);
     console.log("All transitions:", Object.keys(allTransitions));
@@ -186,7 +196,9 @@ export async function setupServer() {
     try {
       const player = getPlayerInfo(playerId);
       const matches = tournamentMachineInstance.state.matches;
-      const wins = matches.filter((m) => m.winnerId === playerId).length;
+      const wins = matches.filter(
+        (m) => m.winnerId === playerId.toString()
+      ).length;
       res.send({ ...player, wins });
     } catch (error) {
       res.status(404).send({ message: (error as Error).message });
@@ -230,6 +242,66 @@ export async function setupServer() {
       highestWinRate,
       mostGamesPlayed,
     });
+  });
+
+  app.get("/player-status/:walletAddress", (req: Request, res: Response) => {
+    const { walletAddress } = req.params;
+
+    try {
+      const player = tournamentMachineInstance.state.players.find(
+        (p) => p.walletAddress === walletAddress
+      );
+
+      if (!player) {
+        return res
+          .status(404)
+          .json({ registered: false, deckRegistered: false });
+      }
+
+      const deckRegistered = player.deck.length === 10;
+      return res.json({ registered: true, deckRegistered });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get("/player-id/:walletAddress", (req: Request, res: Response) => {
+  const { walletAddress } = req.params;
+
+  try {
+    const playerId = getPlayerIdByWallet(walletAddress);
+
+    if (!playerId) {
+      return res.status(404).json({ error: "PLAYER_NOT_FOUND" });
+    }
+
+    return res.json({ playerId });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+
+  app.get("/player-deck/:walletAddress", (req: Request, res: Response) => {
+    const { walletAddress } = req.params;
+
+    try {
+      const player = tournamentMachineInstance.state.players.find(
+        (p) => p.walletAddress === walletAddress
+      );
+
+      if (!player) {
+        return res.status(404).json({ error: "PLAYER_NOT_FOUND" });
+      }
+
+      if (player.deck.length === 0) {
+        return res.status(404).json({ error: "NO_DECK_REGISTERED" });
+      }
+
+      return res.json({ deck: player.deck });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
   });
 
   app.listen(PORT, () => {

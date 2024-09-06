@@ -8,7 +8,8 @@ import {
   StartTournamentSchema,
   RegisterPlayerSchema,
   StartMatchSchema,
-  EndMatchSchema
+  EndMatchSchema,
+  RegisterDeckSchema,
 } from "./schemas";
 
 type GameMachineEngine = typeof gameMachine;
@@ -22,7 +23,8 @@ const mru = await MicroRollup({
     StartTournamentSchema,
     RegisterPlayerSchema,
     StartMatchSchema,
-    EndMatchSchema
+    EndMatchSchema,
+    RegisterDeckSchema
   ],
 
   

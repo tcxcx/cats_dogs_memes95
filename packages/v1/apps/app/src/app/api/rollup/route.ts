@@ -41,8 +41,24 @@ const getPlayer = async (id: number) => {
   return get<any>(`players/${id}`);
 };
 
+const getPlayerIdByWallet = async (walletAddress: string) => {
+  return get<any>(`player-id/${walletAddress}`);
+};
+
 const getAwards = async () => {
   return get<any>("awards");
+};
+
+/* REGISTER TO TOURNAMENT */
+
+const getPlayerStatus = async (walletAddress: string) => {
+  return get<{ registered: boolean; deckRegistered: boolean }>(
+    `/player-status/${walletAddress}`
+  );
+};
+
+const getPlayerDeck = async (walletAddress: string) => {
+  return get<{ deck: string[] }>(`/player-deck/${walletAddress}`);
 };
 
 /* SUBMIT ACTION */
@@ -79,4 +95,7 @@ export {
   getPlayerLeaderboard,
   getPlayer,
   getAwards,
+  getPlayerStatus,
+  getPlayerDeck,
+  getPlayerIdByWallet
 };

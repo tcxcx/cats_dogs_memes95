@@ -1,4 +1,3 @@
-
 // === TOURNAMENT TYPES ===
 export enum LogAction {
   WIN = "WIN",
@@ -6,19 +5,19 @@ export enum LogAction {
 }
 
 export type MatchRequest = {
-  matchId: number;
+  matchId: string;
 };
 
 export type LogRequest = {
-  matchId: number;
-  playerId: number;
+  matchId: string;
+  playerId: string;
 };
 
 export type LeaderboardEntry = {
   won: number;
   lost: number;
   points: number;
-  id: number;
+  id: string;
   name: string;
 };
 
@@ -26,29 +25,30 @@ export type TournamentMeta = {
   season: number;
   startTime: number;
   endTime: number;
-  winner: number;
-  byes: { playerId: number; season: number }[];
+  winner: string;
+  byes: { playerId: string; season: string }[];
 };
 
 export type Match = {
-  id: number;
-  player1Id: number;
-  player2Id: number;
+  id: string;
+  player1Id: string;
+  player2Id: string;
   scores: Record<string, number>;
   startTime: number;
   endTime: number;
-  winnerId: number;
+  winnerId: string;
 };
 
 export type Player = {
-  id: number;
+  id: string;
   name: string;
   deck: string[];
+  walletAddress: string;
 };
 
 export type Logs = {
-  playerId: number;
-  matchId?: number;
+  playerId: string;
+  matchId?: string;
   timestamp: number;
   action: string;
 };
@@ -80,7 +80,6 @@ export declare type CardData = {
   asset1?: string;
 };
 
-
 export type PlayTurnInput = {
   playerActiveCard: CardData;
   opponentActiveCard: CardData;
@@ -97,7 +96,6 @@ export type Score = [number, number]; // player1Points, player2Points
 
 export type CardCollection = Record<string, CardData>;
 
-
 export declare type Power = {
   type: "attack" | "defense" | "speed";
   value: number;
@@ -105,7 +103,6 @@ export declare type Power = {
 
 export type PowerList = Power["type"][];
 export type TypeList = Type["type"][];
-
 
 export type GameState = {
   deckP1: Deck;

@@ -35,6 +35,13 @@ import {
   DynamicTitle,
   useDynamicIslandSize,
 } from "@v1/ui/dynamic-island";
+import { v4 as uuidv4 } from "uuid";
+import {
+  getPlayerIdByWallet,
+  getPlayerDeck,
+} from "@/app/api/rollup/route";
+import { useUserStore } from "@/lib/context/web3auth/user";
+
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
@@ -66,6 +73,8 @@ export default function Game() {
   const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
   const [winner, setWinner] = useState<Winner>(null);
 
+    const { addressContext } = useUserStore();
+
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
@@ -78,6 +87,29 @@ export default function Game() {
   const [powIndexP1, setPowIndexP1] = useState<number>(0);
   const [powIndexP2, setPowIndexP2] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [matchId, setMatchId] = useState<string>(uuidv4());
+
+  useEffect(() => {
+    async function fetchPlayerId() {
+      try {
+        if (addressContext) {
+          const playerId = await getPlayerIdByWallet(addressContext);
+          setPlayerId(playerId);
+        }
+      } catch (error) {
+        console.error("Failed to retrieve player ID:", error);
+      }
+    }
+    fetchPlayerId();
+  }, [addressContext]);  
+
+  // === DECK REGISTERED TYPES ===
+
+// you can use the getPlayerDeck passing the walletAddress in addressContext
+// context to retrieve the registered deck the user has in the tournament
+// you can leave the Deck2 as commented
 
   useEffect(() => {
     async function fetchInitialGameState() {
@@ -100,8 +132,16 @@ export default function Game() {
         setOpponentHand(drawInitialHand(Deck2));
         setGameLog(initialGameLog);
         setGamePhase("draw");
-        setTurnCount(1);        
+        setTurnCount(1);    
 
+        if (playerId) {
+          await submit('startMatch', {
+            matchId: matchId,
+            player1Id: playerId ? playerId : 'player',
+            player2Id: '42069youaredeadson420',
+            timestamp: Math.floor(Date.now() / 1000),
+          });
+        }
       } catch (error) {
         console.error("Failed to initialize game:", error);
       }
@@ -124,6 +164,9 @@ export default function Game() {
       const deckP1str  = JSON.stringify(Deck1)
       const deckP2str  = JSON.stringify(Deck2)
       
+  // === MATCH ID ===
+// you can pass the match id to initializeGame, playTurn, and finalizeGame
+
       async function trySubmit() {
         await submit('initializeGame', {
           deckP1: deckP1str,
@@ -291,12 +334,19 @@ export default function Game() {
       setWinner(winner);
 
       if (winner ||  turnCount >= 8) {
+
         await submit("finalizeGame", {
           playerScore,
           opponentScore,
           turnCount,
           gameLog: JSON.stringify(updatedGameLog),
         });
+
+        await submit('endMatch', {
+          matchId: matchId,
+          winnerId: winner === 'player' ? playerId : '42069IAmTheMachine',
+          timestamp: Math.floor(Date.now() / 1000),
+      });
         console.log("Finalized game log and winner submitted successfully.");
       }
     
