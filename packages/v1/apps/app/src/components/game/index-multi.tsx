@@ -95,7 +95,7 @@ const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  //const { receivedAction } = useXMTP();
+  //const { receivedAction } = useXMTP(); //Commented out for now
 
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);

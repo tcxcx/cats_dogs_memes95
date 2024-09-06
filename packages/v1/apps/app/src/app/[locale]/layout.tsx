@@ -57,7 +57,6 @@ export default function RootLayout({
           <Web3AuthProvider>
             <React95App>
               {/* NAVBAR */}
-              <Room>
                 <LogsProvider>
                 <Navbar />
                 {/* MAIN LAYOUT */}
@@ -84,7 +83,6 @@ export default function RootLayout({
                 {/* CLOSING LINE */}
                 <Footer />
                 </LogsProvider>
-              </Room>
             </React95App>
           </Web3AuthProvider>
         </ThemeProvider>
