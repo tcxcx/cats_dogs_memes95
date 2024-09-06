@@ -449,6 +449,7 @@ export function finalizeGame(
             ...gameLog,
             winner: provWinner,
         };
+        /// £INTEGRATION: END GAME - and WINNER. (just one call, not two. simpler than is.) -- this will cost some funds. 
         return {winner: provWinner, updatedGameLog};
 }
 

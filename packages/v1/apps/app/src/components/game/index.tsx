@@ -73,7 +73,7 @@ export default function Game() {
   const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
   const [winner, setWinner] = useState<Winner>(null);
 
-    const { addressContext } = useUserStore();
+  const { addressContext } = useUserStore();
 
   const { state: blobState, setSize } = useDynamicIslandSize();
   const { submit } = useAction();
@@ -333,7 +333,7 @@ export default function Game() {
       setGameLog(updatedGameLog);
       setWinner(winner);
 
-      if (winner ||  turnCount >= 8) {
+      if (winner ||  turnCount >= 2) { // changed turn counter to 2 from 8 -- did not seem to change anything. 
 
         await submit("finalizeGame", {
           playerScore,

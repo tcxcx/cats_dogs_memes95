@@ -137,10 +137,6 @@ contract GamesFuzzTest is Test {
 
         (address[] memory avatars, uint256[] memory scores, uint256[] memory rankings) = games.getRankings();
 
-        // and stop tournament.
-        vm.prank(ownerCards);
-        games.stopTournament();
-
         // do asserts later.
     }
 

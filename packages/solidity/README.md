@@ -1,9 +1,3 @@
-<!--
-*** NB: This template was taken from: https://github.com/othneildrew/Best-README-Template/blob/master/README.md?plain=1 
-*** For shields, see: https://shields.io/
-*** It was rafactored along examples in the Cyfrin updraft course to follow some standard practices in solidity projects. 
--->
-
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]

@@ -20,6 +20,7 @@ contract DeployGames is Script {
     (, address wrapperAddress, uint32 callbackGasLimit, uint16 requestConfirmations) = helperConfig.activeNetworkConfig(); 
     // make sure the correct nonce is set: 
     uint64 nonce = vm.getNonce(msg.sender);
+    uint256 tournamentDuration = 1800; // 604800; // = 1 week  in seconds. Now at half an hour. 
     console2.log("nonce:", nonce);
     
     vm.startBroadcast(); 
@@ -30,10 +31,11 @@ contract DeployGames is Script {
         requestConfirmations, 
         wrapperAddress
         );
-      createCards(); // saves cards to blockchain. NB: VERY EXPENSIVE (deployment costs around 0.8 eth.)
+      // createCards(); // saves cards to blockchain. NB: VERY EXPENSIVE (deployment costs around 0.8 eth.)
 
       gamesContract = new Games(
-        address(cardsContract)  
+        address(cardsContract), 
+        tournamentDuration
       ); 
     vm.stopBroadcast();
 
