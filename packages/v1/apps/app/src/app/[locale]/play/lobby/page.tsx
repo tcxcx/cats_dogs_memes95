@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,25 +10,76 @@ import { DynamicIslandProvider } from "@v1/ui/dynamic-island";
 import { Users, Link as LinkIcon, Copy, CheckCircle } from "lucide-react";
 import { useToast } from "@v1/ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@v1/ui/tooltip";
-import { useRouter, usePathname } from "next/navigation";
-import { LiveProvider } from "@/lib/liveblocks";
-import { useRoom } from "@liveblocks/react";
+import { useRouter } from "next/navigation";
+import { useRoom, useOthers, LiveblocksProvider, RoomProvider } from "@liveblocks/react";
 
-// generate a random room ID
+// Generate a random room ID
 const generateRoomID = () => Math.random().toString(36).substring(2, 9);
 
 const MultiplayerLobby: FC = () => {
   const router = useRouter();
-  const pathname = usePathname();
   const [inviteLink, setInviteLink] = useState('');
   const [playerCount, setPlayerCount] = useState(1);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
-  const [roomId, setRoomId] = useState(generateRoomID()); // Generate a random room ID
-  const room = useRoom(); // Access the room state
+  const [roomId] = useState(generateRoomID());
+  
+  const liveblocksPublicKey = process.env.NEXT_PUBLIC_LIVEBLOCKS_KEY!
 
-  useEffect(() => {
+  const generateInviteLink = () => {
+    const link = `${window.location.origin}/play/multiplayer/${roomId}`;
+    setInviteLink(link);
+    setIsLinkCopied(false);
+  };
+
+  const copyInviteLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setIsLinkCopied(true);
+    toast({
+      title: "Link Copied!",
+      description: "The invite link has been copied to your clipboard.",
+      onTimeUpdate: () => {
+        setTimeout(() => {
+          setIsLinkCopied(false);
+        }, 500);
+      },
+    });
+  };
+
+  return (
+    <LiveblocksProvider publicApiKey={liveblocksPublicKey}>
+      <RoomProvider id={`room-${roomId}`}>
+        <LobbyContent roomId={roomId} router={router} inviteLink={inviteLink} generateInviteLink={generateInviteLink} copyInviteLink={copyInviteLink} isLinkCopied={isLinkCopied} />
+      </RoomProvider>
+    </LiveblocksProvider>
+  );
+};
+
+interface LobbyContentProps {
+  roomId: string;
+  router: ReturnType<typeof useRouter>;
+  inviteLink: string;
+  generateInviteLink: () => void;
+  copyInviteLink: () => void;
+  isLinkCopied: boolean;
+}
+const LobbyContent: FC<LobbyContentProps> = ({
+  roomId,
+  router,
+  inviteLink,
+  generateInviteLink,
+  copyInviteLink,
+  isLinkCopied,
+}) => {
+  const [playerCount, setPlayerCount] = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [isRoomReady, setIsRoomReady] = useState(false);
+  const { toast } = useToast();
+  const room = useRoom(); // Access the room state
+  const others = useOthers(); // Get the number of other players in the room
+
+    useEffect(() => {
     const timer = setInterval(() => {
       setProgress((oldProgress) => {
         const diff = Math.random();
@@ -40,55 +91,23 @@ const MultiplayerLobby: FC = () => {
       clearInterval(timer);
     }
   }, []);
-
+  
   useEffect(() => {
-    // Check for player count changes in the room
-    if (room) {
-      const unsubscribe = room.subscribe("others", (others) => {
-        setPlayerCount(others.length + 1); // Update player count (others + self)
+    if (!room) return; // Ensure the room context is available
 
-        // Redirect to multiplayer game page when 2 players are present
-        if (others.length === 1) {
-          const newPath = `/play/multiplayer/${roomId}`;
-          router.push(newPath);
-        }
-      });
-      return () => unsubscribe();
-  }
-  }, [room, router, roomId, pathname]);
+    const unsubscribe = room.subscribe("others", (others) => {
+      setPlayerCount(others.length + 1); // Update player count (others + self)
+      console.log("Player count updated:", others.length + 1);
 
-  const generateInviteLink = () => {
-    const link = `${window.location.origin}/play/multiplayer/${roomId}`;
-    setInviteLink(link)
-    setIsLinkCopied(false)
-  }
-
-  const copyInviteLink = () => {
-    navigator.clipboard.writeText(inviteLink)
-    setIsLinkCopied(true)
-    toast({
-      title: "Link Copied!",
-      description: "The invite link has been copied to your clipboard.",
-      onTimeUpdate: () => {
-        setTimeout(() => {
-          setIsLinkCopied(false);
-        }, 500);
-      },
-    })
-  }
-
-  const playerJoined = () => {
-    if (playerCount < 2) {
-      setPlayerCount((prevCount) => Math.min(prevCount + 1, 2));
-      toast({
-        title: "New Player Joined!",
-        description: `Player ${playerCount + 1} has entered the lobby.`,
-      })
-    }
-    if (playerCount >= 2) {
-      router.push(`/play/multiplayer/${roomId}`);
-    }
-  }
+      // Redirect to multiplayer game page when 2 players are present
+      if (others.length === 1) {
+        console.log("Redirecting to game...");
+        const newPath = `/play/multiplayer/${roomId}`;
+        router.push(newPath);
+      }
+    });
+    return () => unsubscribe();
+  }, [room, router, roomId]);
 
   return (
     <DynamicIslandProvider initialSize="compact">
@@ -111,7 +130,7 @@ const MultiplayerLobby: FC = () => {
             <h2 className="text-xl font-semibold mb-4 flex items-center justify-between opacity-90 font-departure">
               Waiting for players...
               <span className="text-lg font-departure">
-                <Users className = "inline mr-2" />
+                <Users className="inline mr-2" />
                 {playerCount}/2
               </span>
             </h2>
@@ -163,9 +182,6 @@ const MultiplayerLobby: FC = () => {
                   </Tooltip>
                 </motion.div>
               )}
-              <Button onClick={playerJoined} className="w-full bg-green-500 hover:bg-green-600 font-departure">
-                Simulate Player Joining
-              </Button>
             </div>
           </motion.div>
           <motion.div
@@ -179,7 +195,7 @@ const MultiplayerLobby: FC = () => {
         </div>
       </TooltipProvider>
     </DynamicIslandProvider>
-  )
-}
+  );
+};
 
-export default MultiplayerLobby
+export default MultiplayerLobby;
