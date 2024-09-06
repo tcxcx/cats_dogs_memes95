@@ -1,0 +1,40 @@
+{
+  "name": "@v1/rollup",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "test": "mocha --require ts-node/register src/**/*.test.ts",
+    "dev": "bun run src/index.ts --port 3210"
+  },
+  "dependencies": {
+    "@stackr/sdk": "latest",
+    "@xmtp/xmtp-js": "^12.1.0",
+    "ethers": "^6.7.1",
+    "express": "^4.18.2",
+    "merkletreejs": "^0.3.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.13",
+    "@types/express": "^4.17.19",
+    "@types/mocha": "^10.0.6",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "bun-types": "latest",
+    "chai": "^5.1.0"
+  },
+  "exports": {
+    "./schemas": "./src/stackr/schemas.ts",
+    "./state": "./src/stackr/state.ts",
+    "./transitions": "./src/stackr/transitions.ts",
+    "./machine": "./src/stackr/machine.ts",
+    "./mru": "./src/stackr/mru.ts",
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

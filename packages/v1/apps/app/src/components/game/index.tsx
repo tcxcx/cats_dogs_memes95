@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardGame } from "@/components/cards/card-game";
 import { Button } from "@v1/ui/button";
@@ -27,7 +27,7 @@ import {
   GameStateLog,
 } from "@/lib/types";
 import { userCards } from "@/lib/mock-cards";
-import { Cat, Dog, Smile } from "lucide-react";
+import { Cat, Dog, Smile, Loader2 } from "lucide-react";
 import {
   DynamicContainer,
   DynamicIsland,
@@ -38,13 +38,9 @@ import {
 import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
-// import { useXMTP } from "@/lib/hooks/useXMTP";
 
-const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
-//console.log("First P1 Shuffle: ",Deck1);
-const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
-//console.log("First P2 Shuffle: ",Deck2);
-//type CardType = "CAT" | "DOG" | "MEME";
+const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
+const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name);
 
 export default function Game() {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -60,18 +56,13 @@ export default function Game() {
   const [opponentDeck, setOpponentDeck] = useState<string[]>(Deck2);
   const [playerHand, setPlayerHand] = useState<CardData[]>([]);
   const [opponentHand, setOpponentHand] = useState<CardData[]>([]);
-  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(
-    null
-  );
-  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(
-    null
-  );
+  const [playerActiveCard, setPlayerActiveCard] = useState<CardData | null>(null);
+  const [opponentActiveCard, setOpponentActiveCard] = useState<CardData | null>(null);
   const [turnCount, setTurnCount] = useState<number>(1);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
-  const [opponentSelectedPower, setOpponentSelectedPower] =
-    useState<Power | null>(null);
+  const [opponentSelectedPower, setOpponentSelectedPower] = useState<Power | null>(null);
   const [gamePhase, setGamePhase] = useState<GamePhase>("draw");
   const [winner, setWinner] = useState<Winner>(null);
 
@@ -80,15 +71,14 @@ export default function Game() {
   const [currentGameAction, setCurrentGameAction] = useState<'initializeGame' | 'playTurn' | 'checkGameOver' | 'determineWinner' | null>(null);
   const { message, isVisible, showMessage } = useDynamicIsland();
 
-  // const { receivedAction } = useXMTP();
   const [localHandP1, setLocalHandP1] = useState<CardData[]>([]);
   const [localHandP2, setLocalHandP2] = useState<CardData[]>([]);
   const [handIndexP1, setHandIndexP1] = useState<number>(0);
   const [handIndexP2, setHandIndexP2] = useState<number>(0);
   const [powIndexP1, setPowIndexP1] = useState<number>(0);
   const [powIndexP2, setPowIndexP2] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch the initial game state when the component mounts
   useEffect(() => {
     async function fetchInitialGameState() {
       try {
@@ -145,7 +135,6 @@ export default function Game() {
     }
   }, [gameLog]);
 
-  // New handler for initializing game on button click
   const initializeGameHandler = async () => {
     try {
       setPlayerDeck(Deck1);
@@ -159,11 +148,10 @@ export default function Game() {
         turns: [],
         winner: null,
       };
-      // console.log("Gamestate deck1: " , initialGameState.deckP1);
-      setGameState(initialGameState); // Reset the game state
-      setPlayerHand(initialGameState.handP1); // Reset the player hand
-      setOpponentHand(initialGameState.handP2); // Reset the opponent hand
-      setWinner(null); // Reset the winner to null
+      setGameState(initialGameState);
+      setPlayerHand(initialGameState.handP1);
+      setOpponentHand(initialGameState.handP2);
+      setWinner(null);
       setPlayerActiveCard(null);
       setOpponentActiveCard(null);
       setSelectedPower(null);
@@ -174,7 +162,6 @@ export default function Game() {
       setGameLog(initialGameLog);
       setGamePhase("draw");
       console.log("Game reset: ", gameLog, "Turn: ", turnCount);
-   // Submit the initialize game action to the rollup server
       await submit('initializeGame', {
         deckP1: playerDeck ,
         deckP2: opponentDeck,
@@ -193,7 +180,7 @@ export default function Game() {
     const newCard = userCards.find(card => card.name === newCardName);
     if (!newCard) {
       console.error("Failed to draw a card: no cards available.");
-      return; // Exit the function early if no card was drawn
+      return;
     }
     if (player === "player") {
       setPlayerHand((prev) => [...prev, newCard]);
@@ -242,7 +229,6 @@ export default function Game() {
   };
 
   const opponentPlay = () => {
-    // Opponent selects a card and a power if not already selected
     if (!opponentActiveCard) {
       const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
       if (randomCard) {
@@ -280,7 +266,6 @@ export default function Game() {
       setSize(size);
 
       setTimeout(() => setSize("compact"), 2000);
-      //Winner declaration
       const { winner, updatedGameLog } = finalizeGame(
         playerScore,
         opponentScore,
@@ -292,20 +277,20 @@ export default function Game() {
     }
   };
 
+  const nextPhase = async () => {
+    setIsSubmitting(true);
+    try {
+      const { winner, updatedGameLog } = finalizeGame(
+        playerScore,
+        opponentScore,
+        turnCount,
+        gameLog!
+      );
 
-    const nextPhase = async () => {
-    const { winner, updatedGameLog } = finalizeGame(
-      playerScore,
-      opponentScore,
-      turnCount,
-      gameLog!
-    );
+      setGameLog(updatedGameLog);
+      setWinner(winner);
 
-    setGameLog(updatedGameLog);
-    setWinner(winner);
-
-    if (winner ||  turnCount >= 8) {
-      try {
+      if (winner ||  turnCount >= 8) {
         await submit("finalizeGame", {
           playerScore,
           opponentScore,
@@ -313,119 +298,101 @@ export default function Game() {
           gameLog: JSON.stringify(updatedGameLog),
         });
         console.log("Finalized game log and winner submitted successfully.");
-      } catch (error) {
-        console.error("Failed to submit finalized game log and winner:", error);
       }
-    }
-
     
-    switch (gamePhase) {
-      case "draw":
-        drawCard("player", playerDeck, turnCount);
-        drawCard("opponent", opponentDeck, turnCount);
-   
-        setGamePhase("prep");
-        break;
-      case "prep":
-        setLocalHandP1(playerHand)
-        setLocalHandP2(opponentHand)
-        if (!playerActiveCard) {
-          const randomCard =
-            playerHand[Math.floor(Math.random() * playerHand.length)];
-          if (randomCard) {
-            playCard(randomCard, "player");
-            if (!selectedPower) {
-              const randomPower =
-                randomCard.powers[
-                  Math.floor(Math.random() * randomCard.powers.length)
-                ];
-              if (randomPower) {
-                selectPower(randomPower, "player");
+      switch (gamePhase) {
+        case "draw":
+          drawCard("player", playerDeck, turnCount);
+          drawCard("opponent", opponentDeck, turnCount);
+          setGamePhase("prep");
+          break;
+        case "prep":
+          setLocalHandP1(playerHand)
+          setLocalHandP2(opponentHand)
+          if (!playerActiveCard) {
+            const randomCard =
+              playerHand[Math.floor(Math.random() * playerHand.length)];
+            if (randomCard) {
+              playCard(randomCard, "player");
+              if (!selectedPower) {
+                const randomPower =
+                  randomCard.powers[
+                    Math.floor(Math.random() * randomCard.powers.length)
+                  ];
+                if (randomPower) {
+                  selectPower(randomPower, "player");
+                }
               }
             }
           }
-        }
-        if (!opponentActiveCard) {
-          const randomCard =
-            opponentHand[Math.floor(Math.random() * opponentHand.length)];
-          if (randomCard) {
-            playCard(randomCard, "opponent");
-            if (!opponentSelectedPower) {
-              const randomPower =
-                randomCard.powers[
-                  Math.floor(Math.random() * randomCard.powers.length)
-                ];
-              if (randomPower) {
-                selectPower(randomPower, "opponent");
+          if (!opponentActiveCard) {
+            const randomCard =
+              opponentHand[Math.floor(Math.random() * opponentHand.length)];
+            if (randomCard) {
+              playCard(randomCard, "opponent");
+              if (!opponentSelectedPower) {
+                const randomPower =
+                  randomCard.powers[
+                    Math.floor(Math.random() * randomCard.powers.length)
+                  ];
+                if (randomPower) {
+                  selectPower(randomPower, "opponent");
+                }
               }
             }
           }
-        }
-        if (!selectedPower && playerActiveCard) {
-          const randomPower =
-            playerActiveCard.powers[
-              Math.floor(Math.random() * playerActiveCard.powers.length)
-            ];
-          if (randomPower) {
-            selectPower(randomPower, "opponent");
+          if (!selectedPower && playerActiveCard) {
+            const randomPower =
+              playerActiveCard.powers[
+                Math.floor(Math.random() * playerActiveCard.powers.length)
+              ];
+            if (randomPower) {
+              selectPower(randomPower, "opponent");
+            }
           }
-        }
-        setGamePhase("combat");
-        break;
-      case "combat":
-        resolveCombatHandler();
-        setGamePhase("check");
-        break;
-      case "check":
-        setTurnCount((prevCount) => prevCount + 1);
+          setGamePhase("combat");
+          break;
+        case "combat":
+          resolveCombatHandler();
+          setGamePhase("check");
+          break;
+        case "check":
+          setTurnCount((prevCount) => prevCount + 1);
+          if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
+            console.error("Invalid card or power selection: cannot find indices.");
+            return;
+          }      
 
-        // const powIndexP1 = playerActiveCard!.powers.indexOf(selectedPower!);
-        // const powIndexP2 = opponentActiveCard!.powers.indexOf(opponentSelectedPower!);
-
-        // Check that all indices are valid before proceeding
-        // console.log(handIndexP1, powIndexP1, handIndexP2, powIndexP2);
-        if (handIndexP1 === -1 || powIndexP1 === -1 || handIndexP2 === -1 || powIndexP2 === -1) {
-          console.error("Invalid card or power selection: cannot find indices.");
-          return;
-        }      
-
-      //  await submit('playTurn', {
-
-      //   handIndexP1: handIndexP1,
-      //   powIndexP1: powIndexP1,
-      //   handIndexP2:handIndexP2,
-      //   powIndexP2: powIndexP2,
-      // });
-
-        await submit('playTurn', {
-          playerActiveCard: JSON.stringify(playerActiveCard),
-          opponentActiveCard: JSON.stringify(opponentActiveCard),
-          selectedPower: JSON.stringify(selectedPower),
-          opponentSelectedPower: JSON.stringify(opponentSelectedPower),
-        });
-      
-
-        const updatedGameLog = updateGameLog(
-          gameLog!,
-          turnCount,
-          playerActiveCard!,
-          opponentActiveCard!,
-          selectedPower!,
-          opponentSelectedPower!,
-          [playerScore, opponentScore]
-        );
-        setGameLog(updatedGameLog);
-        setPlayerActiveCard(null);
-        setOpponentActiveCard(null);
-        setSelectedPower(null);
-        setOpponentSelectedPower(null);
-        setGamePhase("draw");
-  
-      // Submit the playTurn action to the rollup server
-
-      break;
-  }
-};
+          await submit('playTurn', {
+            playerActiveCard: JSON.stringify(playerActiveCard),
+            opponentActiveCard: JSON.stringify(opponentActiveCard),
+            selectedPower: JSON.stringify(selectedPower),
+            opponentSelectedPower: JSON.stringify(opponentSelectedPower),
+          });
+        
+          const updatedGameLog = updateGameLog(
+            gameLog!,
+            turnCount,
+            playerActiveCard!,
+            opponentActiveCard!,
+            selectedPower!,
+            opponentSelectedPower!,
+            [playerScore, opponentScore]
+          );
+          setGameLog(updatedGameLog);
+          setPlayerActiveCard(null);
+          setOpponentActiveCard(null);
+          setSelectedPower(null);
+          setOpponentSelectedPower(null);
+          setGamePhase("draw");
+          break;
+      }
+    } catch (error) {
+      console.error("Error during nextPhase:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const getTypeIcon = (icon_type: Type) => {
     switch (icon_type.type) {
@@ -440,70 +407,60 @@ export default function Game() {
     }
   };
 
-  const renderDynamicIslandState = () => {
-    // if (receivedAction) {
-    //   return (
-    //     <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-    //       <DynamicTitle className="text-2xl font-departure tracking-tighter text-white">
-    //         {`Received action: ${receivedAction.action}`}
-    //       </DynamicTitle>
-    //     </DynamicContainer>
-    //   );
-    // }
-
-  switch (gamePhase) {
-    case "draw":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Drawing Cards...
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "prep":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Preparing for Battle
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "combat":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            Combat!
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    case "check":
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            {playerScore > opponentScore
-              ? "You Win This Round!"
-              : playerScore < opponentScore
-              ? "Opponent Wins This Round!"
-              : "It's a Draw!"}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-    default:
-      return (
-        <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
-          <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
-            {turnCount >= 8
-              ? winner
-                ? winner === "player"
-                  ? "You Win the Game!"
-                  : "Opponent Wins the Game!"
-                : "Waiting..."
-              : "It's a Draw!"}
-          </DynamicTitle>
-        </DynamicContainer>
-      );
-  }
-};
+const renderDynamicIslandState = () => {
+    switch (gamePhase) {
+      case "draw":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Drawing Cards...
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "prep":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Preparing for Battle
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "combat":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              Combat!
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      case "check":
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              {playerScore > opponentScore
+                ? "You Win This Round!"
+                : playerScore < opponentScore
+                ? "Opponent Wins This Round!"
+                : "It's a Draw!"}
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+      default:
+        return (
+          <DynamicContainer className="flex-shrink items-center justify-center h-2 w-full">
+            <DynamicTitle className="text-4xl font-departure tracking-tighter text-white">
+              {turnCount >= 8
+                ? winner
+                  ? winner === "player"
+                    ? "You Win the Game!"
+                    : "Opponent Wins the Game!"
+                  : "Waiting..."
+                : "It's a Draw!"}
+            </DynamicTitle>
+          </DynamicContainer>
+        );
+    }
+  };
 
   return (
     <DynamicIslandProvider initialSize="medium">
@@ -546,7 +503,7 @@ export default function Game() {
           >
             {/* Playing Field */}
             <div className="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-around w-1/2 h-3/5 bg-orange-400 bg-opacity-30 rounded-xl p-4 shadow-md">
-              {/*Opponent Active CArd */}
+              {/*Opponent Active Card */}
               <AnimatePresence>
                 {opponentActiveCard && (
                   <motion.div
@@ -561,7 +518,7 @@ export default function Game() {
                     className="transform scale-75 bg-red-100 bg-opacity-50 rounded-lg p-2 shadow-md center w-1/2 h-4/5"
                   >
                     <div className="text-center text-xs font-departure text-red-700 mb-1">
-                      Opponent`s Card
+                      Opponent's Card
                     </div>
                     <CardGame card={opponentActiveCard} />
                     {opponentSelectedPower && (
@@ -644,7 +601,7 @@ export default function Game() {
               initial={{ x: "350%", y: "-100%", animationDelay: "1s" }}
               animate={{ x: "50%", y: "-250%" }}
             >
-              Opponent`s Deck
+              Opponent's Deck
             </motion.div>
 
             {/* Player's Deck */}
@@ -705,15 +662,23 @@ export default function Game() {
             >
               <Button
                 onClick={nextPhase}
-                className="bg-yellow-400 text-black hover:bg-yellow-200 font-departure px-4 rounded-full shadow-md"
+                disabled={isSubmitting}
+                className="bg-yellow-400 text-black hover:bg-yellow-200 font-departure px-4 rounded-full shadow-md flex items-center"
               >
-                {gamePhase === "draw"
-                  ? "Draw"
-                  : gamePhase === "prep"
-                    ? "Prepare"
-                    : gamePhase === "combat"
-                      ? "Combat"
-                      : "Next Turn"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait...
+                  </>
+                ) : (
+                  gamePhase === "draw"
+                    ? "Draw"
+                    : gamePhase === "prep"
+                      ? "Prepare"
+                      : gamePhase === "combat"
+                        ? "Combat"
+                        : "Next Turn"
+                )}
               </Button>
             </motion.div>
           </motion.div>
@@ -764,7 +729,7 @@ export default function Game() {
                 </h2>
                 <Button
                   className="bg-green-500 text-white hover:bg-green-600"
-                  onClick={initializeGameHandler /*Reset Game or send contract to reset game*/}
+                  onClick={initializeGameHandler}
                 >
                   Play Again
                 </Button>
@@ -776,5 +741,3 @@ export default function Game() {
     </DynamicIslandProvider>
   );
 }
-
-//// DUMP

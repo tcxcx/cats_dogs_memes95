@@ -95,6 +95,7 @@ export type GameStateLog = {
   powerList: Power["type"][];
   typeList: Type["type"][];
   gameLog: GameLog;
+  winner: any;
 };
 
 export type GameStateLog = GameState & {
