@@ -17,11 +17,6 @@ import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/cc
 import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
 import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
-/// NB ONLY FOR DEV // 
-import {Test, console, console2} from "@forge-std/Test.sol";
-/// NB ONLY FOR DEV // 
-
-
 contract Players is ERC721URIStorage {
     /* errors */
     error Players__AvatarDoesNotExist();
@@ -36,7 +31,7 @@ contract Players is ERC721URIStorage {
     event MessageReceived(address indexed latestSender, uint256 avatarUri); 
 
     /* state vars */
-    uint256 private _avatarCounter;
+    uint256 public avatarCounter;
     address public immutable OWNER;
     bytes32 private constant SALT = bytes32(hex"7ceda5");
     address private immutable ERC6551_REGISTRY;
@@ -54,7 +49,7 @@ contract Players is ERC721URIStorage {
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
-        if (_avatarId > _avatarCounter) {
+        if (_avatarId > avatarCounter) {
             revert Players__AvatarDoesNotExist();
         }
         _;
@@ -121,29 +116,25 @@ contract Players is ERC721URIStorage {
      */
     function createPlayer(uint256 avatarId) public returns (uint256 newAvatarId, address AvatarAddress) {
         // checks and setting counters. 
-        console.log("waypoint 0 @chainid:", block.chainid);  
         newAvatarId = avatarId; 
         if (block.chainid == DESTINATION_CHAIN_ID) {
-            newAvatarId = _avatarCounter;
-            _avatarCounter++;
+            newAvatarId = avatarCounter;
+            avatarCounter++;
         } else {
-            uint256 newAvatarCounter = _avatarCounter; 
+            uint256 newAvatarCounter = avatarCounter; 
             if (newAvatarCounter != avatarId) {
                 revert Players__L2andL1AvatarIdsDoNotAlign(newAvatarCounter, avatarId); 
             }
-            _avatarCounter++;
+            avatarCounter++;
         }
-        console.log("waypoint 1 @chainid:", block.chainid); 
         // minting Avatar NFT 
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
         
-        console.log("waypoint 2 @chainid:", block.chainid); 
         // calculating ERC-6551 account.  
         AvatarAddress = _createAvatarAddress(newAvatarId);
         s_avatarIds[msg.sender] = newAvatarId;
 
-        console.log("waypoint 3 @chainid:", block.chainid); 
         // if this contract is not deployed on Mainnet, rerun createPlayer on mainnet. 
         if (block.chainid != DESTINATION_CHAIN_ID) {
             bytes memory avatarIdData = abi.encode(avatarId);
@@ -176,20 +167,13 @@ contract Players is ERC721URIStorage {
         uint64 latestSourceChainSelector;
         address latestSender;
         string memory latestMessage;
-
-        console.log("waypoint 4 @chainid:", block.chainid); 
         
         if (msg.sender != address(RECEIVER_ROUTER)) revert InvalidRouter(msg.sender);
-
-        console.log("waypoint 5 @chainid:", block.chainid); 
         
         latestMessageId = message.messageId;
         latestSourceChainSelector = message.sourceChainSelector;
         latestSender = abi.decode(message.sender, (address));
-        console.log("waypoint 6 @chainid:", block.chainid); 
         uint256 avatarId = abi.decode(message.data, (uint256));
-
-        console.log("waypoint 7 @chainid:", block.chainid); 
 
         emit MessageReceived(latestSender, avatarId); 
 
@@ -206,7 +190,7 @@ contract Players is ERC721URIStorage {
      */
     function _createAvatarAddress(uint256 avatarId) internal returns (address AvatarAddress) {
         AvatarAddress = ERC6551Registry(ERC6551_REGISTRY).createAccount(
-            erc6551_account, SALT, block.chainid, address(this), avatarId
+            erc6551_account, SALT, 0, address(this), avatarId // Note: chain id is set to 0, this ensures created addresses are the same accross chains. 
         );
 
         return AvatarAddress;
@@ -229,7 +213,7 @@ contract Players is ERC721URIStorage {
         returns (address AvatarAddress)
     {
         AvatarAddress =
-            ERC6551Registry(ERC6551_REGISTRY).account(erc6551_account, SALT, block.chainid, address(this), avatarId);
+            ERC6551Registry(ERC6551_REGISTRY).account(erc6551_account, SALT, 0, address(this), avatarId); // Note: chain id is set to 0, this ensures created addresses are the same accross chains. 
 
         return AvatarAddress;
     }

@@ -11,7 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 */ 
 contract DeployGames is Script {
   // NB: for the game to be sustainable, a pack of cards needs to cost more that around .6 ether in these tests. I hope this is not for real! 
-  uint256 cardPackPrice = 1 ether / 1000;
+  uint256 cardPackPrice = 0; // 1 ether / 1000;
   Cards cardsContract; 
   Games gamesContract;
 

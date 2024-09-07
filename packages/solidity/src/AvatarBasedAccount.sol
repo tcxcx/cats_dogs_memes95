@@ -17,6 +17,11 @@ import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/cc
 import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
 import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
+/// NB ONLY FOR DEV // 
+import {Test, console, console2} from "@forge-std/Test.sol";
+/// NB ONLY FOR DEV // 
+
+
 interface IAvatarAccount {
     receive() external payable;
 
@@ -85,12 +90,12 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     {
         require(_isValidSigner(msg.sender), "Invalid signer");
         require(DESTINATION_CHAIN_ID != block.chainid, "invalid call at this chain"); 
-
-        (address to, bytes memory executeCalldata) = abi.decode(callData, (address, bytes)); 
+        
+        bytes memory executeData = abi.encode(to, callData);
     
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(to),
-            data: executeCalldata,
+            receiver: abi.encode(address(this)),
+            data: executeData,
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: address(0) // transaction is always paid in native fee token. 
@@ -190,8 +195,8 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
 
     function owner() public view virtual returns (address) {
         (uint256 chainId, address tokenContract, uint256 tokenId) = token();
-        if (chainId != block.chainid) return address(0);
-
+        // because chainId is set to 0 - it is an omnichain TBA - the following would not pass.
+        // if (chainId != block.chainid) return address(0);  
         return IERC721(tokenContract).ownerOf(tokenId);
     }
 
