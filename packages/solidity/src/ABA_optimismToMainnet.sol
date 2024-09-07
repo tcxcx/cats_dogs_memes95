@@ -5,17 +5,16 @@ pragma solidity ^0.8.0;
  * Three changes:
  * 1 - changed names of contracts. This ensure that the interfaceId of AvatarBasedAccounts is unique.
  * 2 - added onERC1155Received and onERC1155BatchReceived. This allows receiving of ERC-1155 tokens.
- * 3 - it integrates Chainlinks CCIP to allow it to be deployed on optimism sepolia and interact with contracts on mainnet sepolia. 
+ * 3 - it integrates (a very basic implementation of) Chainlink's CCIP to allow it to be deployed on optimism sepolia and interact with contracts on mainnet sepolia. 
  *
  * It acts as a tokenised gateway between blockchains. Allowing users to seemlessly interact with the Cats, Dogs, Memes, etc game on mainnet.  
  */
 
 // see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
+// https://github.com/smartcontractkit/ccip-starter-kit-foundry
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
-import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Withdraw} from "./utils/Withdraw.sol";
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -40,35 +39,21 @@ interface IAbaExecutable {
 }
 
 contract ABA is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
-    error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance.
-    error NothingToWithdraw(); // Used when trying to withdraw Ether but there's nothing to withdraw.
-    error FailedToWithdrawEth(address owner, address target, uint256 value); // Used when the withdrawal of Ether fails.
-    error DestinationChainNotAllowlisted(uint64 destinationChainSelector); // Used when the destination chain has not been allowlisted by the contract owner.
-    error SourceChainNotAllowlisted(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
-    error SenderNotAllowlisted(address sender); // Used when the sender has not been allowlisted by the contract owner.
-    error InvalidReceiverAddress(); // Used when the receiver address is 0.
 
     // Event emitted when a message is sent to another chain.
-    event MessageSent(
-        bytes32 indexed messageId, // The unique ID of the CCIP message.
-        uint64 indexed destinationChainSelector, // The chain selector of the destination chain.
-        address receiver, // The address of the receiver on the destination chain.
-        string text, // The text being sent.
-        address feeToken, // the token address used to pay CCIP fees.
-        uint256 fees // The fees paid for sending the CCIP message.
-    );
+    event MessageSent(bytes32 messageId);
 
     uint256 public state;
+    address constant ROUTER = 0xC8b93b46BF682c39B3F65Aa1c135bC8A95A5E43a; // because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     // Mapping to keep track of allowlisted destination chains.
-    mapping(uint64 => bool) public allowlistedDestinationChains;
 
     receive() external payable {}
 
-    constructor() {
-      CCIPReceiver(_router) 
-    }
-
-    function execute(address to, uint256 value, bytes calldata data, uint8 operation)
+    // NOTE no value can be send. 
+    // NOTE the destination chain is hard coded. This ERC-6551 acts as a tokenised gateway to one single external chain.  
+    // NOTE no value can be transferred as such. This param is unused. 
+    function execute(address to, uint256 /* value */, bytes calldata data, uint8 operation) 
         external
         payable
         virtual
@@ -76,17 +61,28 @@ contract ABA is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
     {
         require(_isValidSigner(msg.sender), "Invalid signer");
         require(operation == 0, "Only call operations are supported");
+        
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(to),
+            data: data,
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: "",
+            feeToken: address(0) // transaction is always paid in native fee token. 
+        });
+
+        uint256 fee = IRouterClient(ROUTER).getFee(
+            DESTINATION_CHAIN_SELECTOR,
+            message
+        );
 
         ++state;
 
-        bool success;
-        (success, result) = to.call{value: value}(data);
+        messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
+            DESTINATION_CHAIN_SELECTOR,
+            message
+        );
 
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        emit MessageSent(messageId); 
     }
 
     function isValidSigner(address signer, bytes calldata) external view virtual returns (bytes4) {
