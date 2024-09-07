@@ -76,7 +76,6 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
     event RequestSent(uint256 requestId, uint32 NUMBER_CARDS_IN_PACK);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords, uint256 payment);
     
-
     /* modifiers */
     modifier onlyAvatarBasedAccount(address playerAccount) {
         if (

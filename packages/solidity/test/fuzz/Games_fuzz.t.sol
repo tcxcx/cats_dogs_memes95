@@ -34,10 +34,10 @@ contract GamesFuzzTest is Test {
     address[2] winnerAddress;
     uint256 nonce = 1;
     uint256 numberOfCardsPerPlayer = 25;
-    uint256 numberOfCardPacks = 5; 
+    uint256 numberOfCardPacks = 6; 
 
     address[] users;
-    string[] userNames = ["alice", "bob", "claire", "doug", "7cedars", "test"];
+    string[] userNames = ["alice", "bob", "claire"];
     mapping(address => address) avatarBasedAccounts;
     string avatarUri =
         "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
@@ -88,15 +88,15 @@ contract GamesFuzzTest is Test {
             (, address avatarAccountAddress) = players.createPlayer(avatarUri);
 
             // 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
-             avatarBasedAccounts[users[i]] = avatarAccountAddress;
+            avatarBasedAccounts[users[i]] = avatarAccountAddress;
             vm.deal(avatarBasedAccounts[users[i]], 1 ether);
 
             // 3: get price pack
             uint256 priceCardPack = cards.PRICE_CARD_PACK();
             
             // 4: open packs of cards, providing player with cards.
-            for (uint256 i; i < numberOfCardPacks; i++) {
-                bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, i);
+            for (uint256 j; j < numberOfCardPacks; j++) {
+                bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, j);
                 vm.prank(users[i]);
                 bytes memory result =
                     AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
@@ -116,21 +116,17 @@ contract GamesFuzzTest is Test {
     ///////////////////////////////////////////////
     function testFuzz_GamesResultInCorrectRewardPayouts(uint256 randomNumber, uint256 numberOfGames) public {
         numberOfGames = bound(numberOfGames, 5, 15);
+        randomNumber = bound(randomNumber, 5, (type(uint256).max / 2));
         uint256 numberOfPlayers = users.length;
+
 
         for (uint256 i; i < numberOfGames; i++) {
             uint256 index = uint256((randomNumber + i) % numberOfPlayers); // note that >> this sign moves the byte along a position, and hence change the resulting number.
-            // uint256 index2 = unchecked
-            console2.log("index:", index);
             address playerA = users[index];
             address playerB = index == (numberOfPlayers - 1) ? users[index - 1] : users[index + 1];
-            console2.log("playerA: ", playerA);
-            console2.log("playerB: ", playerB);
 
             uint256 winnerA = uint256(randomNumber >> (i + 3)) % 2; // 0 or 1
             uint256 winnerB = winnerA; // always agree on winner.
-            console2.log("winnerA: ", winnerA);
-            console2.log("winnerB: ", winnerB);
 
             _runGame(playerA, playerB, winnerA, winnerB);
         }
@@ -165,7 +161,7 @@ contract GamesFuzzTest is Test {
 
     function _pseudoRandomiser(uint256 salt, uint256 max) internal returns (uint256 pseudoRandomNumber) {
         pseudoRandomNumber =
-            uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, blockhash(block.number), salt))) % max;
+            (uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, blockhash(block.number), salt))) % max);
 
         return pseudoRandomNumber;
     }
@@ -201,7 +197,7 @@ contract GamesFuzzTest is Test {
         uint256[] memory incrementedBalances = _incrementArray(balances);
 
         for (uint256 i; i < numberOfCards; i++) {
-            uint256 pseudoRandomNumber = _pseudoRandomiser(i, incrementedBalances[numberOfCards]);
+            uint256 pseudoRandomNumber = _pseudoRandomiser(i, incrementedBalances[numberOfCards]); // i = salt;  incrementedBalances[numberOfCards] = max number cards. 
             uint256 cardId;
             while (incrementedBalances[cardId] < pseudoRandomNumber) {
                 cardId++;
@@ -219,8 +215,6 @@ contract GamesFuzzTest is Test {
         // prep
         avatarBasedAddressA = avatarBasedAccounts[playerA];
         avatarBasedAddressB = avatarBasedAccounts[playerB];
-        console2.log("avatarBasedAddressA: ", avatarBasedAddressA);
-        console2.log("avatarBasedAddressB: ", avatarBasedAddressB);
         winnerAddress[0] = avatarBasedAddressA;
         winnerAddress[1] = avatarBasedAddressB;
 

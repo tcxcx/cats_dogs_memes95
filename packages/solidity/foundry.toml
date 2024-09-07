@@ -19,8 +19,8 @@ remappings = [
 
 
 [fuzz]
-runs = 4
-depth = 4
+runs = 16
+depth = 16
 fail_on_revert = true 
 
 [invariant] 

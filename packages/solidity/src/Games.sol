@@ -30,7 +30,7 @@ import {Cards} from "./Cards.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 
-import {AutomationCompatibleInterface} from "../../lib/chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";  
+import {AutomationCompatibleInterface} from "../lib/chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";  
 
 contract Games is AutomationCompatibleInterface {
     /* errors */

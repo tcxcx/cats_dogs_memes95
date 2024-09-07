@@ -1,12 +1,36 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
-import {Test, console, console2} from "@forge-std/Test.sol";
-import {PlayersL2} from "../../src/PlayersL2.sol";
-import {AvatarBasedAccount} from "../../src/AbaOptimismToMainnet.sol";
-import {DeployPlayersL2} from "../../script/DeployPlayersL2.s.sol";
+// import {CCIPLocalSimulatorFork} from "@chainlink/local/src/ccip/CCIPLocalSimulatorFork.sol";
 
-contract PlayersL2Test is Test {
+// contract Demo is Test {
+    // CCIPLocalSimulatorFork public ccipLocalSimulatorFork;
+
+    // uint256 sepoliaFork;
+    // uint256 arbSepoliaFork;
+
+    // function setUp() public {
+    //     string memory ETHEREUM_SEPOLIA_RPC_URL = vm.envString("ETHEREUM_SEPOLIA_RPC_URL");
+    //     string memory ARBITRUM_SEPOLIA_RPC_URL = vm.envString("ARBITRUM_SEPOLIA_RPC_URL");
+    //     sepoliaFork = vm.createSelectFork(ETHEREUM_SEPOLIA_RPC_URL);
+    //     arbSepoliaFork = vm.createFork(ARBITRUM_SEPOLIA_RPC_URL);
+
+    //     ccipLocalSimulatorFork = new CCIPLocalSimulatorFork();
+    //     vm.makePersistent(address(ccipLocalSimulatorFork));
+    // }
+
+    // function testDemo() public {
+    //     sender.transferTokensPayLINK(arbSepoliaChainSelector, alice, address(ccipBnM), amountToSend);
+    //     ccipLocalSimulatorFork.switchChainAndRouteMessage(arbSepoliaFork);
+    // }
+// }
+
+// import {Test, console, console2} from "@forge-std/Test.sol";
+// import {PlayersL2} from "../../src/PlayersL2.sol";
+// import {AvatarBasedAccount} from "../../src/AbaOptimismToMainnet.sol";
+// import {DeployPlayersL2} from "../../script/DeployPlayersL2.s.sol";
+
+// contract PlayersL2Test is Test {
     // PlayersL2 playersL2;
     // AvatarBasedAccount avatarBasedAccount;
 
@@ -58,4 +82,4 @@ contract PlayersL2Test is Test {
     //     vm.expectRevert(); // £todo define revert.
     //     address avatarAccountAddressChecked = playersL2.getAvatarAddress(nonExistentAvatarId);
     // }
-}
+// }
