@@ -26,7 +26,7 @@ contract LiveInteractions is Script {
     // function run() external {
 
     //     vm.startBroadcast();
-    //     players.createPlayer(avatarUri);
+    //     players.createPlayer(avatarUri, 0);
     //     vm.stopBroadcast();
 
     // }

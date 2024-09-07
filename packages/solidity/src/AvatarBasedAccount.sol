@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 // https://github.com/smartcontractkit/ccip-starter-kit-foundry
 import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
 import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
+import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
 interface IAvatarAccount {
     receive() external payable;
@@ -39,18 +40,15 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     error Aba_InvalidRouter(address sender); 
     error Aba_NotMirrorAccount(address sender); 
     error Aba_ExecuteCallFailed(bytes result); 
+    error Aba_FailedToWithdrawEth(address sender, address beneficiary, uint256 amount);
     address constant optimismRouter = address(0); // insert address here
     
     uint256 public state;
-    address public constant ROUTER = address(0); 
+    address constant ROUTER = 0xC8b93b46BF682c39B3F65Aa1c135bC8A95A5E43a; // because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
+    uint64 constant DESTINATION_CHAIN_ID = 11155111; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
 
-    event ExecutedL2Action(
-        bytes32 latestMessageId,
-        uint64 latestSourceChainSelector,
-        address latestSender,
-        string latestMessage
-    );
-
+    event ExecuteMessageSent(bytes32 indexed messageId);  
 
     receive() external payable {}
 
@@ -73,6 +71,44 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
                 revert(add(result, 32), mload(result))
             }
         }
+    }
+
+    // NOTE no value can be send. 
+    // NOTE the destination chain is hard coded. This ERC-6551 acts as a tokenised gateway to one single external chain.  
+    // NOTE no value can be transferred as such. This param is unused.
+    function ccipExecute(address to, uint256 /* value */, bytes calldata callData, uint8 operation) 
+        external
+        payable
+        virtual
+        returns (bytes memory result)
+    {
+        require(_isValidSigner(msg.sender), "Invalid signer");
+        require(DESTINATION_CHAIN_ID != block.chainid, "invalid call at this chain"); 
+
+        (address to, bytes memory executeCalldata) = abi.decode(callData, (address, bytes)); 
+    
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(to),
+            data: executeCalldata,
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: "",
+            feeToken: address(0) // transaction is always paid in native fee token. 
+        });
+
+        uint256 fee = IRouterClient(ROUTER).getFee(
+            DESTINATION_CHAIN_SELECTOR,
+            message
+        );
+
+        ++state;
+
+        bytes32 messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
+            DESTINATION_CHAIN_SELECTOR,
+            message
+        );
+
+        emit ExecuteMessageSent(messageId); 
+        bytes memory result = abi.encodePacked(messageId); 
     }
     
     // Ensures that actions from Avatar Based Account on L2 are executed on L1. 
@@ -106,6 +142,14 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         if (!success) {
             revert Aba_ExecuteCallFailed(result); 
         }
+    }
+
+    function withdraw(address beneficiary) public {
+        require(_isValidSigner(msg.sender), "Invalid signer");
+
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert Aba_FailedToWithdrawEth(msg.sender, beneficiary, amount);
     }
 
 

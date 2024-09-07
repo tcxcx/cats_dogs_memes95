@@ -34,7 +34,7 @@ contract PlayersTest is Test {
     function testPlayersCanDeployNewPlayer() public {
         // action
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
 
         console2.log("avatarId:", avatarId);
         console2.log("avatarAccountAddress:", avatarAccountAddress);
@@ -46,7 +46,7 @@ contract PlayersTest is Test {
 
     function testPlayersGivesAddressOfExistingAvatar() public {
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
 
         address avatarAccountAddressChecked = players.getAvatarAddress(avatarId);
 

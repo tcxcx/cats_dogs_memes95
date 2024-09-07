@@ -28,7 +28,8 @@ contract DeployPlayers is Script {
             players = new Players(
                 version,
                 address(0x27027C7F5B357aE339f25A421A7F159A58394cE0),  // £bug Had to hard code because deterministic deployment in foundry is not determinsitic. 
-                address(registry)
+                address(registry), 
+                address(0)
             );
         vm.stopBroadcast();
 
