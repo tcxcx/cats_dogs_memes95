@@ -79,7 +79,9 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
 
     /* modifiers */
     modifier onlyAvatarBasedAccount(address playerAccount) {
-        if (!ERC165Checker.supportsInterface(playerAccount, type(IAvatarExecutable).interfaceId)) {
+        if (
+            !ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId) 
+            ) {
             revert Cards__OnlyAvatarBasedAccount(playerAccount);
         }
         _;

@@ -11,6 +11,11 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
+// see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
+// https://github.com/smartcontractkit/ccip-starter-kit-foundry
+import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
+import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
+
 interface IAvatarAccount {
     receive() external payable;
 
@@ -28,8 +33,24 @@ interface IAvatarExecutable {
         returns (bytes memory);
 }
 
+// for now, only call from optimism chain are allowed. So router is a constant variable. 
 contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
+    
+    error Aba_InvalidRouter(address sender); 
+    error Aba_NotMirrorAccount(address sender); 
+    error Aba_ExecuteCallFailed(bytes result); 
+    address constant optimismRouter = address(0); // insert address here
+    
     uint256 public state;
+    address public constant ROUTER = address(0); 
+
+    event ExecutedL2Action(
+        bytes32 latestMessageId,
+        uint64 latestSourceChainSelector,
+        address latestSender,
+        string latestMessage
+    );
+
 
     receive() external payable {}
 
@@ -53,6 +74,40 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
             }
         }
     }
+    
+    // Ensures that actions from Avatar Based Account on L2 are executed on L1. 
+    function ccipReceive(Client.Any2EVMMessage calldata message) external {
+        bytes32 latestMessageId;
+        uint64 latestSourceChainSelector;
+        address latestSender;
+        string memory latestMessage;
+        
+        if (msg.sender != address(ROUTER)) {
+            revert Aba_InvalidRouter(msg.sender); 
+            }
+
+        latestMessageId = message.messageId;
+        latestSourceChainSelector = message.sourceChainSelector;
+        latestSender = abi.decode(message.sender, (address));
+        (address to, bytes memory callData) = abi.decode(message.data, (address, bytes));
+
+        if (latestSender != address(this)) {
+            revert Aba_NotMirrorAccount(latestSender); 
+        }
+
+        // execute call  
+        ++state;
+        
+        bool success;
+        bytes memory result; 
+        uint256 value = 0; 
+        (success, result) = to.call{value: value}(callData);
+
+        if (!success) {
+            revert Aba_ExecuteCallFailed(result); 
+        }
+    }
+
 
     function isValidSigner(address signer, bytes calldata) external view virtual returns (bytes4) {
         if (_isValidSigner(signer)) {
@@ -74,7 +129,8 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
 
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAvatarAccount).interfaceId
-            || interfaceId == type(IAvatarExecutable).interfaceId;
+            || interfaceId == type(IAvatarExecutable).interfaceId
+            || interfaceId == type(IAny2EVMMessageReceiver).interfaceId;
     }
 
     function token() public view virtual returns (uint256, address, uint256) {

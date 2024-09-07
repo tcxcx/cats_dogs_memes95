@@ -29,7 +29,8 @@ pragma solidity ^0.8.0;
 import {Cards} from "./Cards.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
-import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+
+import {AutomationCompatibleInterface} from "../../lib/chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";  
 
 contract Games is AutomationCompatibleInterface {
     /* errors */
@@ -119,7 +120,9 @@ contract Games is AutomationCompatibleInterface {
     }
 
     modifier onlyAvatarBasedAccount() {
-        if (!ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)) {
+        if (
+            !ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)
+            ) {
             revert Games__OnlyAvatarBasedAccount();
         }
         _;

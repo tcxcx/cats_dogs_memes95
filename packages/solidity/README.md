@@ -32,6 +32,7 @@
 
 - [About](#about)
   - [Contracts](#contracts)
+- [To note](#to-note)
   - [Diagram](#diagram)
   - [Built With](#built-with)
 - [Getting Started](#getting-started)
@@ -61,6 +62,13 @@ The contracts that make up the Loyalty protocol:
  - `ILoyaltyGift.sol` and `LoyaltyGift.sol`: The interface and base implementation of an, ERC-1155 based, gift contract. Loyalty Gifts are external contracts, examples can be found in the dedicated repository for [gift contracts](https://github.com/7Cedars/loyalty-gifts-contracts). These contracts exchange loyalty points to  
    - either a boolean `true` result. This signals that requirements for the gift have been met and the vendor can give a gift to the customer. 
    - or a loyalty voucher. A semi-fungible token minted at an external gift contract that allows the exchange for a gift at a later stage. 
+
+## To note 
+https://eips.ethereum.org/EIPS/eip-6551
+ Cross-chain Compatibility
+A singleton registry with a known address enables each token bound account to exist on multiple chains. The inclusion of chainId as a parameter to createAccount allows the contract for a token bound account to be deployed at the same address on any supported chain. Account implementations are therefore able to support cross-chain account execution, **where an NFT on one chain can control its token bound account on another chain.** 
+
+
 
 ### Diagram
 See the following schema for more detail: 

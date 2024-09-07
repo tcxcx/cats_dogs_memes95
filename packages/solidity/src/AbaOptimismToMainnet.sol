@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-interface IAbaAccount {
+interface IAvatarAccount {
     receive() external payable;
 
     function token() external view returns (uint256 chainId, address tokenContract, uint256 tokenId);
@@ -30,14 +30,14 @@ interface IAbaAccount {
     function isValidSigner(address signer, bytes calldata context) external view returns (bytes4 magicValue);
 }
 
-interface IAbaExecutable {
+interface IAvatarExecutable {
     function execute(address to, uint256 value, bytes calldata data, uint8 operation)
         external
         payable
         returns (bytes memory);
 }
 
-contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable {
+contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
 
     // Event emitted when a message is sent to another chain.
     event MessageSent(bytes32 messageId);
@@ -53,8 +53,8 @@ contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable 
 
     // NOTE no value can be send. 
     // NOTE the destination chain is hard coded. This ERC-6551 acts as a tokenised gateway to one single external chain.  
-    // NOTE no value can be transferred as such. This param is unused. 
-    function execute(address to, uint256 /* value */, bytes calldata data, uint8 operation) 
+    // NOTE no value can be transferred as such. This param is unused.
+    function execute(address to, uint256 /* value */, bytes calldata callData, uint8 operation) 
         external
         payable
         virtual
@@ -62,10 +62,12 @@ contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable 
     {
         require(_isValidSigner(msg.sender), "Invalid signer");
         require(operation == 0, "Only call operations are supported");
-        
+
+        (address to, bytes memory executeCalldata) = abi.decode(callData, (address, bytes)); 
+    
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(to),
-            data: data,
+            data: executeCalldata,
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: address(0) // transaction is always paid in native fee token. 
@@ -99,7 +101,7 @@ contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable 
     // 
     function isValidSigner(address signer, bytes calldata) external view virtual returns (bytes4) {
         if (_isValidSigner(signer)) {
-            return IAbaAccount.isValidSigner.selector;
+            return IAvatarAccount.isValidSigner.selector;
         }
 
         return bytes4(0);
@@ -116,8 +118,8 @@ contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable 
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAbaAccount).interfaceId
-            || interfaceId == type(IAbaExecutable).interfaceId;
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAvatarAccount).interfaceId
+            || interfaceId == type(IAvatarExecutable).interfaceId;
     }
 
     function token() public view virtual returns (uint256, address, uint256) {

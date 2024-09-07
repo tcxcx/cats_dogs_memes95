@@ -10,6 +10,11 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {ERC6551Registry} from "@reference/src/ERC6551Registry.sol";
 
+// see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
+// https://github.com/smartcontractkit/ccip-starter-kit-foundry
+import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
+import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
+
 contract Players is ERC721URIStorage {
     /* errors */
     error Players__AvatarDoesNotExist();
@@ -24,7 +29,11 @@ contract Players is ERC721URIStorage {
     bytes32 private constant SALT = bytes32(hex"7ceda5");
     address private immutable ERC6551_REGISTRY;
     address private immutable ERC6551_ACCOUNT;
+    address public constant ROUTER = address(0); // add router address here! 
     mapping(address => uint256 avatarId) public s_avatarIds; 
+
+    error InvalidRouter(address sender); 
+    address constant optimismRouter = address(0); // insert address here
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
@@ -87,6 +96,23 @@ contract Players is ERC721URIStorage {
         emit CreatedPlayer(newAvatarId, AvatarAddress);
 
         return (newAvatarId, AvatarAddress);
+    }
+
+    function ccipReceive(Client.Any2EVMMessage calldata message) external {
+        bytes32 latestMessageId;
+        uint64 latestSourceChainSelector;
+        address latestSender;
+        string memory latestMessage;
+        
+        if (msg.sender != address(ROUTER)) revert InvalidRouter(msg.sender);
+
+        latestMessageId = message.messageId;
+        latestSourceChainSelector = message.sourceChainSelector;
+        latestSender = abi.decode(message.sender, (address));
+        string memory avatarUri = abi.decode(message.data, (string));
+
+        createPlayer(avatarUri); // creates a mirror player for the one on L2 & emits an event. 
+
     }
 
     /* internal */
