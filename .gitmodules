@@ -25,3 +25,6 @@
 [submodule "packages/solidity/lib/chainlink-local"]
 	path = packages/solidity/lib/chainlink-local
 	url = https://github.com/smartcontractkit/chainlink-local
+[submodule "packages/solidity/lib/ccip-starter-kit-foundry"]
+	path = packages/solidity/lib/ccip-starter-kit-foundry
+	url = https://github.com/smartcontractkit/ccip-starter-kit-foundry
