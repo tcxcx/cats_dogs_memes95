@@ -12,9 +12,8 @@ pragma solidity ^0.8.0;
 
 // see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
 // https://github.com/smartcontractkit/ccip-starter-kit-foundry
-import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
-import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
-import {Withdraw} from "./utils/Withdraw.sol";
+import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
+import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -38,15 +37,17 @@ interface IAbaExecutable {
         returns (bytes memory);
 }
 
-contract ABA is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
+contract AbaOptimismToMainnet is IERC165, IERC1271, IAbaAccount, IAbaExecutable {
 
     // Event emitted when a message is sent to another chain.
     event MessageSent(bytes32 messageId);
 
     uint256 public state;
     address constant ROUTER = 0xC8b93b46BF682c39B3F65Aa1c135bC8A95A5E43a; // because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
-    address constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
+    uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     // Mapping to keep track of allowlisted destination chains.
+
+    error FailedToWithdrawEth(address owner, address target, uint256 value);
 
     receive() external payable {}
 
@@ -77,17 +78,28 @@ contract ABA is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
 
         ++state;
 
-        messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
+        bytes32 messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
             DESTINATION_CHAIN_SELECTOR,
             message
         );
 
         emit MessageSent(messageId); 
+        bytes memory result = abi.encodePacked(messageId); 
     }
 
+    // needed because no value can be transferred through the transaction itself. Othwerwise funds might get stuck in the contract. 
+    function withdraw(address beneficiary) public {
+        require(_isValidSigner(msg.sender), "Invalid signer");
+
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert FailedToWithdrawEth(msg.sender, beneficiary, amount);
+    }
+
+    // 
     function isValidSigner(address signer, bytes calldata) external view virtual returns (bytes4) {
         if (_isValidSigner(signer)) {
-            return IAvatarAccount.isValidSigner.selector;
+            return IAbaAccount.isValidSigner.selector;
         }
 
         return bytes4(0);
@@ -104,8 +116,8 @@ contract ABA is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAvatarAccount).interfaceId
-            || interfaceId == type(IAvatarExecutable).interfaceId;
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IAbaAccount).interfaceId
+            || interfaceId == type(IAbaExecutable).interfaceId;
     }
 
     function token() public view virtual returns (uint256, address, uint256) {

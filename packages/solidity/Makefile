@@ -38,11 +38,15 @@ format :; forge fmt
 anvil :; anvil --steps-tracing --block-time 1
 
 ###############################
-# 		  Sepolia testnet				#
+# 		  FORKED TESTS  				#
 ###############################
+# Sepolia mainnet args # 
 SEPOLIA_TEST_ARGS := --fork-url $(SEPOLIA_RPC_URL) 
 SEPOLIA_DEPLOY_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 SEPOLIA_LIVE_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast -vvvv
+# Optimism sepolia args # 
+OPT_SEPOLIA_TEST_ARGS := --fork-url $(OPT_SEPOLIA_RPC_URL) 
+OPT_SEPOLIA_DEPLOY_ARGS := --rpc-url $(OPT_SEPOLIA_RPC_URL) --account dev_2 --sender ${DEV2_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 
 sepoliaForkedTest: 
 	@forge test $(SEPOLIA_TEST_ARGS)

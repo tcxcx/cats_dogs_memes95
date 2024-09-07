@@ -10,26 +10,35 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {ERC6551Registry} from "@reference/src/ERC6551Registry.sol";
 
-contract Players is ERC721URIStorage {
+contract PlayersL2 is ERC721URIStorage {
     /* errors */
-    error Players__AvatarDoesNotExist();
+    error PlayersL2__AvatarDoesNotExist();
+    error PlayersL2__OnlyOwner();
 
     /* events */
     event DeployedPlayersL2Contract(address indexed owner, uint256 indexed version, address indexed erc6551_account);
     event CreatedPlayer(uint256 indexed avatarId, address indexed avatarAccountAddress);
+    event ChangedErc6551Account(address indexed oldAccount, address indexed newAccount); 
 
     /* state vars */
     uint256 private _avatarCounter;
     address public immutable OWNER;
     bytes32 private constant SALT = bytes32(hex"7ceda5");
     address private immutable ERC6551_REGISTRY;
-    address private immutable ERC6551_ACCOUNT;
+    address public erc6551_account;
     mapping(address => uint256 avatarId) public s_avatarIds; 
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
         if (_avatarId > _avatarCounter) {
-            revert Players__AvatarDoesNotExist();
+            revert PlayersL2__AvatarDoesNotExist();
+        }
+        _;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != OWNER) {
+            revert PlayersL2__OnlyOwner();
         }
         _;
     }
@@ -39,24 +48,32 @@ contract Players is ERC721URIStorage {
     /////////////////////////////////////////////////////
     /* constructor */
     /**
-     * @notice Sets up the players contract on an L2. It is builds on an ERC-721 NFT template. It creates an AvatarBasedAccount linked to NFTs it mints.
+     * @notice Sets up the playersL2 contract on an L2. It is builds on an ERC-721 NFT template. It creates an AvatarBasedAccount linked to NFTs it mints.
      *
      * @param version the version of this contract. It helps find the correct address on-chain.
-     * @param erc6551_account the address where our token based account implementation (in our case AvatarBasedAccount) is deployed.
+     * @param _erc6551_account the address where our token based account implementation (in our case AvatarBasedAccount) is deployed.
      * @param erc6551_registry the entrypoint of the singleton ERC-6551 contract.
      *
      * emits a DeployedPlayersL2Contract event.
      *
      */
-    constructor(uint256 version, address erc6551_account, address erc6551_registry)
+    constructor(uint256 version, address _erc6551_account, address erc6551_registry)
         ERC721("Cats, Dogs and Memes Avatar", "CDM")
     {
         OWNER = msg.sender;
-        ERC6551_ACCOUNT = erc6551_account;
+        erc6551_account = _erc6551_account;
         ERC6551_REGISTRY = erc6551_registry;
 
-        emit DeployedPlayersL2Contract(msg.sender, version, ERC6551_ACCOUNT);
+        emit DeployedPlayersL2Contract(msg.sender, version, erc6551_account);
     }
+
+    /* external */
+    function setErc6551Account(address _erc6551_account) external onlyOwner {
+        address oldAccount = erc6551_account;  
+        erc6551_account = _erc6551_account; 
+        emit ChangedErc6551Account(oldAccount, erc6551_account); 
+     }
+
 
     /* public */
     /**
@@ -99,7 +116,7 @@ contract Players is ERC721URIStorage {
      */
     function _createAvatarAddress(uint256 avatarId) internal returns (address AvatarAddress) {
         AvatarAddress = ERC6551Registry(ERC6551_REGISTRY).createAccount(
-            ERC6551_ACCOUNT, SALT, block.chainid, address(this), avatarId
+            erc6551_account, SALT, block.chainid, address(this), avatarId
         );
 
         return AvatarAddress;
@@ -122,7 +139,7 @@ contract Players is ERC721URIStorage {
         returns (address AvatarAddress)
     {
         AvatarAddress =
-            ERC6551Registry(ERC6551_REGISTRY).account(ERC6551_ACCOUNT, SALT, block.chainid, address(this), avatarId);
+            ERC6551Registry(ERC6551_REGISTRY).account(erc6551_account, SALT, block.chainid, address(this), avatarId);
 
         return AvatarAddress;
     }
