@@ -42,7 +42,7 @@ contract AvatarBasedAccountTest is Test {
     function testAvatarBasedAccountCanExecuteFunction() public {
         // setup:
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         bytes memory callData = abi.encodeWithSelector(Cards.getCollection.selector, userOne);
 
@@ -55,7 +55,7 @@ contract AvatarBasedAccountTest is Test {
     function testAvatarBasedAccountRevertsIfNotOwned() public {
         // setup:
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         bytes memory callData = abi.encodeWithSelector(Cards.getCollection.selector, userOne);
 

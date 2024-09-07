@@ -61,7 +61,7 @@ contract ChainLinkVRFTest is Test {
         uint256 cardPackNumber = 1;
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (, address avatarAccountAddress) = players.createPlayer(0);
         vm.deal(avatarAccountAddress, 1 ether);
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();

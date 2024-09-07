@@ -40,7 +40,7 @@ contract CoinsTest is Test {
         uint256 cardPackNumber = 1;
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (, avatarAccountAddress) = players.createPlayer(0);
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();
         // 3: give userOne funds.
@@ -89,7 +89,7 @@ contract CoinsTest is Test {
         uint256 startAllowance = cards.s_coinAllowance(avatarAccountAddress);
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (, address avatarAccountAddress) = players.createPlayer(0);
         bytes memory callData = abi.encodeWithSelector(Cards.openCardPack.selector, cardPackNumber);
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();

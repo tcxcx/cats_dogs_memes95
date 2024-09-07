@@ -11,6 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 contract DeployPlayers is Script {
     Players players;
     AvatarBasedAccount avatarBasedAccount; 
+    bytes32 SALT = 0x7ceda52111000000000000000000000000000000000000000000000000000000; 
 
     // £note1: see for a convenient overview of addresses: https://tokenbound-v3-deployer.vercel.app/ 
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 
@@ -19,15 +20,17 @@ contract DeployPlayers is Script {
         (address registry, , , ) = helperConfig.activeNetworkConfig(); 
         uint256 version = 1;
 
-        AvatarBasedAccount account = new AvatarBasedAccount(); // £ NB: HERE IS THE BUG! 
-        uint256 codelength = address(account).code.length; 
+        // AvatarBasedAccount account = new AvatarBasedAccount(); // £ NB: HERE IS THE BUG! 
+        // uint256 codelength = address(account).code.length; 
 
         vm.startBroadcast();
             // £note: deterministic deployment created problems. So now, with each deployment ALSO new Avatar Based Account deployed.
-            if (codelength == 0) {AvatarBasedAccount account = new AvatarBasedAccount();}
-            players = new Players(
+            AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}();
+        vm.stopBroadcast();
+        vm.startBroadcast();
+        players = new Players{salt: SALT}(
                 version,
-                address(0x27027C7F5B357aE339f25A421A7F159A58394cE0),  // £bug Had to hard code because deterministic deployment in foundry is not determinsitic. 
+                address(erc6551account),  // on ethSepolia deployed @ 0x27027C7F5B357aE339f25A421A7F159A58394cE0 -- use config? £bug Had to hard code because deterministic deployment in foundry is not determinsitic. 
                 address(registry), 
                 address(0)
             );

@@ -70,7 +70,7 @@ contract GamesTest is Test {
 
             // 1: create an address and AvatarBasedAccount
             vm.prank(users[i]);
-            (, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+            (, address avatarAccountAddress) = players.createPlayer(0);
 
             // 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
             avatarBasedAccounts[users[i]] = avatarAccountAddress;

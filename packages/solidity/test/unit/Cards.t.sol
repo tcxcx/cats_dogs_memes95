@@ -82,7 +82,7 @@ contract CardsTest is Test {
 
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (, address avatarAccountAddress) = players.createPlayer(0);
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();
         // 3: give userOne funds.
@@ -186,7 +186,7 @@ contract CardsTest is Test {
 
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri, 0);
+        (, address avatarAccountAddress) = players.createPlayer(0);
 
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();

@@ -62,8 +62,8 @@ sepoliaVerifyAvatarBasedAccount:
 
 
 sepoliaForkedDeployTest:
-# @forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 500000000 --gas-price 5000000000 -vvvv 
+	@forge script script/DeployPlayers.s.sol $(SEPOLIA_TEST_ARGS) -vvvv 
+# @forge script script/DeployGames.s.sol:DeployGames $(SEPOLIA_TEST_ARGS) --gas-limit 500000000 --gas-price 5000000000 -vvvv 
 
 sepoliaForkedDeploy: 
 #	@forge script script/DeployPlayers.s.sol $(SEPOLIA_DEPLOY_ARGS) -vvvv 
@@ -102,7 +102,7 @@ optSepoliaForkedTest:
 
 optSepoliaForkedDeployTest:
 	@forge script script/DeployPlayers.s.sol:DeployPlayers $(OPT_SEPOLIA_TEST_ARGS) -vvvv 
-	@forge script script/DeployGames.s.sol:DeployGames $(OPT_SEPOLIA_TEST_ARGS) -vvvv 
+# @forge script script/DeployGames.s.sol:DeployGames $(OPT_SEPOLIA_TEST_ARGS) -vvvv 
 	
 optSepoliaForkedDeploy: 
 	@forge script script/DeployPlayers.s.sol:DeployPlayers $(OPT_SEPOLIA_DEPLOY_ARGS) -vvvv 

@@ -17,15 +17,23 @@ import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/cc
 import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
 import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
+/// NB ONLY FOR DEV // 
+import {Test, console, console2} from "@forge-std/Test.sol";
+/// NB ONLY FOR DEV // 
+
+
 contract Players is ERC721URIStorage {
     /* errors */
     error Players__AvatarDoesNotExist();
     error Players__OnlyOwner(); 
+    error Players__L2andL1AvatarIdsDoNotAlign(uint256 expectedId, uint256 actualId);  
 
     /* events */
     event DeployedPlayersContract(address indexed owner, uint256 indexed version, address indexed erc6551_account);
     event CreatedPlayer(uint256 indexed avatarId, address indexed avatarAccountAddress);
     event ChangedErc6551Account(address indexed oldAccount, address indexed newAccount);  
+    event ChangedL1PlayersAddress(address indexed oldAccount, address indexed newAccount);
+    event MessageReceived(address indexed latestSender, uint256 avatarUri); 
 
     /* state vars */
     uint256 private _avatarCounter;
@@ -34,13 +42,15 @@ contract Players is ERC721URIStorage {
     address private immutable ERC6551_REGISTRY;
     address public erc6551_account;
     address public l1_players; 
-    address constant ROUTER = 0xC8b93b46BF682c39B3F65Aa1c135bC8A95A5E43a; // because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint256 public constant DESTINATION_CHAIN_ID = 11155111; 
+    string public avatarURI = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ"; 
     mapping(address => uint256 avatarId) public s_avatarIds; 
 
     error InvalidRouter(address sender); 
-    address constant optimismRouter = address(0); // insert address here
+
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
@@ -89,11 +99,17 @@ contract Players is ERC721URIStorage {
         emit ChangedErc6551Account(oldAccount, erc6551_account); 
     }
 
+    function setL1_playersAddress(address _l1_players) external onlyOwner {
+        address oldAccount = l1_players;  
+        l1_players = _l1_players; 
+        emit ChangedL1PlayersAddress(oldAccount, l1_players); 
+    }
+
     /* public */
     /**
      * @notice mints an avatar for a user and uses this to call the ERC-6551 registry to create a ERC-6551 account.
      *
-     * @param avatarURI: the uri that holds the metadata (with the uri to the image) of the Avatar NFT.
+     * @param avatarId: text tbi. 
      *
      * @return newAvatarId - the avatar Id assigned to the user.  
      * @return AvatarAddress - the address of the Avatar Based Account assigned to the user. 
@@ -103,39 +119,49 @@ contract Players is ERC721URIStorage {
      * dev: The CreatedPlayer event should make it possible to search for the user account that called createPlayer
      *      and then retrieve which avatarId and AvatarAddress they received.
      */
-    function createPlayer(string memory avatarURI, uint256 avatarId) public returns (uint256 newAvatarId, address AvatarAddress) {
-        // minting Avatar NFT 
+    function createPlayer(uint256 avatarId) public returns (uint256 newAvatarId, address AvatarAddress) {
+        // checks and setting counters. 
+        console.log("waypoint 0 @chainid:", block.chainid);  
         newAvatarId = avatarId; 
         if (block.chainid == DESTINATION_CHAIN_ID) {
             newAvatarId = _avatarCounter;
             _avatarCounter++;
+        } else {
+            uint256 newAvatarCounter = _avatarCounter; 
+            if (newAvatarCounter != avatarId) {
+                revert Players__L2andL1AvatarIdsDoNotAlign(newAvatarCounter, avatarId); 
+            }
+            _avatarCounter++;
         }
+        console.log("waypoint 1 @chainid:", block.chainid); 
+        // minting Avatar NFT 
         _mint(msg.sender, newAvatarId);
         _setTokenURI(newAvatarId, avatarURI);
         
+        console.log("waypoint 2 @chainid:", block.chainid); 
         // calculating ERC-6551 account.  
         AvatarAddress = _createAvatarAddress(newAvatarId);
         s_avatarIds[msg.sender] = newAvatarId;
 
+        console.log("waypoint 3 @chainid:", block.chainid); 
         // if this contract is not deployed on Mainnet, rerun createPlayer on mainnet. 
         if (block.chainid != DESTINATION_CHAIN_ID) {
-            bytes memory functionData = abi.encodeWithSelector(Players(l1_players).createPlayer.selector, avatarURI);
-            bytes memory executeCallData = abi.encode(l1_players, functionData);
+            bytes memory avatarIdData = abi.encode(avatarId);
             
             Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
                 receiver: abi.encode(l1_players),
-                data: executeCallData,
+                data: avatarIdData,
                 tokenAmounts: new Client.EVMTokenAmount[](0),
                 extraArgs: "",
                 feeToken: address(0) // transaction is always paid in native fee token. 
             });
 
-            uint256 fee = IRouterClient(ROUTER).getFee(
+            uint256 fee = IRouterClient(SENDER_ROUTER).getFee(
                 DESTINATION_CHAIN_SELECTOR,
                 message
             );
 
-            bytes32 messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
+            bytes32 messageId = IRouterClient(SENDER_ROUTER).ccipSend{value: fee}(
                 DESTINATION_CHAIN_SELECTOR,
                 message
             );
@@ -150,15 +176,24 @@ contract Players is ERC721URIStorage {
         uint64 latestSourceChainSelector;
         address latestSender;
         string memory latestMessage;
-        
-        if (msg.sender != address(ROUTER)) revert InvalidRouter(msg.sender);
 
+        console.log("waypoint 4 @chainid:", block.chainid); 
+        
+        if (msg.sender != address(RECEIVER_ROUTER)) revert InvalidRouter(msg.sender);
+
+        console.log("waypoint 5 @chainid:", block.chainid); 
+        
         latestMessageId = message.messageId;
         latestSourceChainSelector = message.sourceChainSelector;
         latestSender = abi.decode(message.sender, (address));
-        string memory avatarUri = abi.decode(message.data, (string));
+        console.log("waypoint 6 @chainid:", block.chainid); 
+        uint256 avatarId = abi.decode(message.data, (uint256));
 
-        createPlayer(avatarUri, 0); // creates a mirror player for the one on L2 & emits an event. 
+        console.log("waypoint 7 @chainid:", block.chainid); 
+
+        emit MessageReceived(latestSender, avatarId); 
+
+        createPlayer(avatarId); // creates a mirror player for the one on L2 & emits an event. 
     }
 
     /* internal */

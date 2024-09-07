@@ -8,7 +8,8 @@
 @layerzerolabs/lz-evm-v1-0.7/=lib/LayerZero/
 solidity-bytes-utils/=lib/solidity-bytes-utils/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-chainlink/=lib/chainlink/
+@chainlink/contracts-ccip/=lib/chainlink/contracts/
+@chainlink/=lib/chainlink/
 ds-test/=lib/openzeppelin-contracts/lib/forge-std/lib/ds-test/src/
 erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
 forge-std/=lib/forge-std/src/

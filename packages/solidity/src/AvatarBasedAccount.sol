@@ -44,7 +44,8 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     address constant optimismRouter = address(0); // insert address here
     
     uint256 public state;
-    address constant ROUTER = 0xC8b93b46BF682c39B3F65Aa1c135bC8A95A5E43a; // because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint64 constant DESTINATION_CHAIN_ID = 11155111; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
 
@@ -95,14 +96,14 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
             feeToken: address(0) // transaction is always paid in native fee token. 
         });
 
-        uint256 fee = IRouterClient(ROUTER).getFee(
+        uint256 fee = IRouterClient(SENDER_ROUTER).getFee(
             DESTINATION_CHAIN_SELECTOR,
             message
         );
 
         ++state;
 
-        bytes32 messageId = IRouterClient(ROUTER).ccipSend{value: fee}(
+        bytes32 messageId = IRouterClient(SENDER_ROUTER).ccipSend{value: fee}(
             DESTINATION_CHAIN_SELECTOR,
             message
         );
@@ -118,7 +119,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         address latestSender;
         string memory latestMessage;
         
-        if (msg.sender != address(ROUTER)) {
+        if (msg.sender != address(RECEIVER_ROUTER)) {
             revert Aba_InvalidRouter(msg.sender); 
             }
 
