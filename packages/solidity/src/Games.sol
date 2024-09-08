@@ -150,6 +150,12 @@ contract Games is AutomationCompatibleInterface {
     }
 
     /* external */ 
+    /*
+    *
+    *
+    *
+    *
+    */ 
     // from:  https://docs.chain.link/chainlink-automation/guides/compatible-contracts
     function checkUpkeep(
         bytes calldata /* checkData */
@@ -165,6 +171,12 @@ contract Games is AutomationCompatibleInterface {
         );
     }
 
+    /*
+    *
+    *
+    *
+    *
+    */ 
     function performUpkeep(bytes calldata /* performData */) external override {
         if (msg.sender != forwarder) {
             revert Games__onlyChainlinkForwarder(); 

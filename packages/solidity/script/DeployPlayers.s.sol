@@ -11,7 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 contract DeployPlayers is Script {
     Players players;
     AvatarBasedAccount avatarBasedAccount; 
-    bytes32 SALT = 0x7ceda52111000000000000000000000000000000000000000000000000000000; 
+    bytes32 SALT = 0x7ceda52a00000000000000000000000000000000000000000000000000000002; 
 
     // £note1: see for a convenient overview of addresses: https://tokenbound-v3-deployer.vercel.app/ 
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 
@@ -27,6 +27,9 @@ contract DeployPlayers is Script {
             // £note: deterministic deployment created problems. So now, with each deployment ALSO new Avatar Based Account deployed.
             AvatarBasedAccount erc6551account = new AvatarBasedAccount{salt: SALT}();
         vm.stopBroadcast();
+        
+        require(address(erc6551account) != address(0), "error with deployment Avatar Based Account"); 
+
         vm.startBroadcast();
         players = new Players{salt: SALT}(
                 version,
@@ -36,6 +39,6 @@ contract DeployPlayers is Script {
             );
         vm.stopBroadcast();
 
-        return (players, avatarBasedAccount, helperConfig); 
+        return (players, erc6551account, helperConfig); 
     }
 }

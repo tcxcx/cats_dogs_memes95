@@ -23,6 +23,8 @@ contract CoinsTest is Test {
     Players players;
     HelperConfig helperConfig;
     AvatarBasedAccount avatarBasedAccount;
+    uint256 ethSepoliaFork;
+
     address avatarAccountAddress;
     address vrfWrapper;
     uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
@@ -62,6 +64,9 @@ contract CoinsTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+        
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
@@ -171,9 +176,11 @@ contract CoinsTest is Test {
             uint256 allowanceBefore = cards.s_coinAllowance(avatarAccountAddress);
 
             vm.prank(userOne);
+            console.log("avatarAccountAddress: ", avatarAccountAddress); 
             bytes memory result =
                 AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
             uint256 requestId = uint256(bytes32(result));
+            console.log("requestId: ", requestId); 
             // 5: mock callback from Chainlink VRF:
             vm.prank(vrfWrapper);
             cards.rawFulfillRandomWords(requestId, mockRandomWords);

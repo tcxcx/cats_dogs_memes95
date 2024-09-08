@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 /**
  * Basic ERC-721 contract, but with ERC-6551 integration.
  *
+ *
+ *
+ *
  * authors: Argos, CriptoPoeta, 7cedars
  */
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -13,9 +16,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 // see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
 // https://github.com/smartcontractkit/ccip-starter-kit-foundry
-import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
-import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
-import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
+import {IAny2EVMMessageReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
+import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
+import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
 contract Players is ERC721URIStorage {
     /* errors */
@@ -37,7 +40,7 @@ contract Players is ERC721URIStorage {
     address private immutable ERC6551_REGISTRY;
     address public erc6551_account;
     address public l1_players; 
-    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
     address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint256 public constant DESTINATION_CHAIN_ID = 11155111; 
@@ -45,7 +48,6 @@ contract Players is ERC721URIStorage {
     mapping(address => uint256 avatarId) public s_avatarIds; 
 
     error InvalidRouter(address sender); 
-
 
     /* modifiers */
     modifier onlyExistingAvatars(uint256 _avatarId) {
@@ -137,6 +139,7 @@ contract Players is ERC721URIStorage {
 
         // if this contract is not deployed on Mainnet, rerun createPlayer on mainnet. 
         if (block.chainid != DESTINATION_CHAIN_ID) {
+            console.log("chainid:",  block.chainid); 
             bytes memory avatarIdData = abi.encode(avatarId);
             
             Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({

@@ -35,6 +35,7 @@ contract GamesFuzzTest is Test {
     uint256 nonce = 1;
     uint256 numberOfCardsPerPlayer = 25;
     uint256 numberOfCardPacks = 6; 
+    uint256 ethSepoliaFork; 
 
     address[] users;
     string[] userNames = ["alice", "bob", "claire"];
@@ -61,6 +62,9 @@ contract GamesFuzzTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+
         // deploying other necessary contracts
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players,,) = deployerPlayers.run();

@@ -47,7 +47,6 @@ contract ChainlinkCCIPTest is Test {
     function setUp() public noGasMetering {
       vm.pauseGasMetering(); 
 
-      console.log("gasleft 1", gasleft()); 
       string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
       string memory OPT_SEPOLIA_RPC_URL = vm.envString("OPT_SEPOLIA_RPC_URL");
       ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
@@ -58,7 +57,7 @@ contract ChainlinkCCIPTest is Test {
       // Register.NetworkDetails 
       //   memory destinationNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(11155420); // optimism sepolia id = 11155420
 
-      vm.selectFork(ethSepoliaFork); // deploy players on sepolia mainnet
+      vm.selectFork(ethSepoliaFork); // deploy contracts on sepolia mainnet
       assert(block.chainid == 11155111); // check if correct chain is selected
       
       DeployGames deployerGames = new DeployGames();
@@ -70,7 +69,7 @@ contract ChainlinkCCIPTest is Test {
       vm.deal(address(ethPlayers), 10 ether); 
       vm.deal(address(ethABA), 10 ether);
 
-      vm.selectFork(optSepoliaFork); // deploy players on optimism sepolia 
+      vm.selectFork(optSepoliaFork); // deploy contracts on optimism sepolia 
       assert(block.chainid == 11155420); // check if correct chain is selected
 
       DeployPlayers deployerOpt = new DeployPlayers();

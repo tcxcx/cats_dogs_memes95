@@ -225,7 +225,7 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
      */
     function fulfillRandomWords(uint256 _requestId, uint256[] memory _randomWords) internal override {
         // step 1: check if the requestId exists. Set to fulfilled. 
-        require(s_requests[_requestId].paid > 0, "request not found");
+        require(s_requests[_requestId].requester != address(0), "request not found");
         s_requests[_requestId].fulfilled = true;
         
         // step 2: retrieving balance of cards in this contract. 
@@ -342,22 +342,6 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         return incrementArray;
     }
 
-    // £NB: Have to test if I can leave this out... 
-    // /**
-    //  * @dev Calculates and returns the price required for a VRF request based on the configured gas limit and number of words requested.
-    //  * @return price The cost in LINK tokens for the VRF request, derived from the current configuration settings of the contract.
-    //  */
-    // function calculateRequestPrice() internal view returns (uint256) {
-    //     return i_vrfV2PlusWrapper.calculateRequestPrice(requestConfig.callbackGasLimit, requestConfig.numWords);
-    // }
-
-    // /**
-    //  * @notice function required for the contract to be able to received ERC-1155 tokens. 
-    //  */
-    // function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
-    //     return this.onERC1155Received.selector;
-    // }
-
     /* getter functions */
     /**
      * @notice retrieves the collection of Cards of an Avatar Based Account.
@@ -392,6 +376,13 @@ contract Cards is ERC1155, VRFV2PlusWrapperConsumerBase, ConfirmedOwner {
         require(s_requests[_requestId].paid > 0, "request not found");
         VRFRequestStatus memory request = s_requests[_requestId];
         return (request.paid, request.fulfilled, request.randomWords);
+    }
+
+    /**
+     * @notice function required for the contract to be able to received ERC-1155 tokens. 
+     */
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
     }
 
     /**

@@ -25,7 +25,8 @@ contract GamesTest is Test {
     Coins coins;
     HelperConfig helperConfig;
     Players players;
-
+    
+    uint256 ethSepoliaFork;
     address ownerGames;
     address ownerCards;
     address vrfWrapper;
@@ -105,6 +106,9 @@ contract GamesTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+        
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players,,) = deployerPlayers.run();
 

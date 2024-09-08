@@ -5,6 +5,10 @@ pragma solidity ^0.8.0;
  * Two small changes:
  * 1 - changed names of contracts. This ensure that the interfaceId of AvatarBasedAccounts is unique.
  * 2 - added onERC1155Received and onERC1155BatchReceived. This allows receiving of ERC-1155 tokens.
+ *
+ * ccipExecute
+ * ccipReceive
+ *
  */
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -13,14 +17,9 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 // see https://docs.chain.link/ccip/tutorials/send-arbitrary-data for the docs. 
 // https://github.com/smartcontractkit/ccip-starter-kit-foundry
-import {IAny2EVMMessageReceiver} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
-import {Client} from        "../../lib/chainlink/contracts/src/v0.8/ccip/libraries/Client.sol";
-import {IRouterClient} from "../../lib/chainlink/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
-
-/// NB ONLY FOR DEV // 
-import {Test, console, console2} from "@forge-std/Test.sol";
-/// NB ONLY FOR DEV // 
-
+import {IAny2EVMMessageReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IAny2EVMMessageReceiver.sol";
+import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
+import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
 interface IAvatarAccount {
     receive() external payable;
@@ -39,7 +38,6 @@ interface IAvatarExecutable {
         returns (bytes memory);
 }
 
-// for now, only call from optimism chain are allowed. So router is a constant variable. 
 contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecutable {
     
     error Aba_InvalidRouter(address sender); 
@@ -49,7 +47,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     address constant optimismRouter = address(0); // insert address here
     
     uint256 public state;
-    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
     address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint64 constant DESTINATION_CHAIN_ID = 11155111; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
@@ -58,6 +56,12 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
 
     receive() external payable {}
 
+    /* 
+    *
+    *
+    * 
+    *
+    */
     function execute(address to, uint256 value, bytes calldata data, uint8 operation)
         external
         payable
@@ -79,10 +83,15 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         }
     }
 
+    /*
+    *
+    *
+    *
     // NOTE no value can be send. 
     // NOTE the destination chain is hard coded. This ERC-6551 acts as a tokenised gateway to one single external chain.  
     // NOTE no value can be transferred as such. This param is unused.
-    function ccipExecute(address to, uint256 /* value */, bytes calldata callData, uint8 operation) 
+    */ 
+    function ccipExecute(address to, uint256 /* value */ , bytes calldata callData, uint8 operation) 
         external
         payable
         virtual
@@ -91,7 +100,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         require(_isValidSigner(msg.sender), "Invalid signer");
         require(DESTINATION_CHAIN_ID != block.chainid, "invalid call at this chain"); 
         
-        bytes memory executeData = abi.encode(to, callData);
+        bytes memory executeData = abi.encode(to, callData); // in the future value can be added here. 
     
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(address(this)),
@@ -117,6 +126,12 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         bytes memory result = abi.encodePacked(messageId); 
     }
     
+    /* 
+    *
+    *
+    * 
+    *
+    */
     // Ensures that actions from Avatar Based Account on L2 are executed on L1. 
     function ccipReceive(Client.Any2EVMMessage calldata message) external {
         bytes32 latestMessageId;
@@ -150,6 +165,12 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
         }
     }
 
+   /* 
+    *
+    *
+    * 
+    *
+    */
     function withdraw(address beneficiary) public {
         require(_isValidSigner(msg.sender), "Invalid signer");
 

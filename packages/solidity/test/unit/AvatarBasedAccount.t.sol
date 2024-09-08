@@ -16,7 +16,8 @@ contract AvatarBasedAccountTest is Test {
     Games games;
     Players players;
     AvatarBasedAccount avatarBasedAccount;
-
+    uint256 ethSepoliaFork;
+    
     address userOne = makeAddr("UserOne");
     address userTwo = makeAddr("UserTwo");
     string avatarUri =
@@ -26,6 +27,9 @@ contract AvatarBasedAccountTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
