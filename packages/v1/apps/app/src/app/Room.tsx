@@ -25,8 +25,7 @@ export default function Room({ children, roomId }: RoomProps) {
   return (
     <LiveblocksProvider
       publicApiKey={
-        process.env.LIVEBLOCKS_KEY ||
-        "pk_prod_iTlsn6kbhJasd2GVNK6saDrm2EwFh6gnefWzYwIZZ43m42KAQIMGAOwHQCe8TkiD"
+        process.env.NEXT_PUBLIC_LIVEBLOCKS_KEY as string
       }
     >
       <RoomProvider id={`room-${roomId}`}>

@@ -11,11 +11,11 @@ export const LiveProvider: FC<PropsWithChildren<{ roomId: string; onAuthFailure?
 	const [state, setState] = useState<Status>('initial')
 
 	useEffect(() => {
-		if (!roomId) return
+		if (!roomId) return;
 
-		useCamera.persist.setOptions({ name: `camera-${roomId}` })
-		useCamera.persist.rehydrate()
-	}, [roomId])
+		useCamera.persist.setOptions({ name: `camera-${roomId}` });
+		useCamera.persist.rehydrate();
+	}, [roomId, useCamera]);
 
 	useEffect(() => {
 		if (state != 'disconnected') return
@@ -50,13 +50,17 @@ export const RoomStateWatcher = ({ setState }: { setState: (status: Status) => v
 }
 
 export const getRoomsUserCount = async (roomId: string, jwtToken: string): Promise<number> => {
-	// API not documented on liveblocks.io
-	const result = await fetch(`https://liveblocks.net/api/v1/room/${roomId}/users`, {
+	try {
+	  const result = await fetch(`https://liveblocks.net/api/v1/room/${roomId}/users`, {
 		headers: {
-			Authorization: `Bearer ${jwtToken}`,
-			'Content-Type': 'application/json',
+		  Authorization: `Bearer ${jwtToken}`,
+		  'Content-Type': 'application/json',
 		},
-	}).then(res => res.json())
-
-	return result.data.length
-}
+	  }).then(res => res.json());
+  
+	  return result.data.length;
+	} catch (error) {
+	  console.error('Failed to fetch room user count:', error);
+	  return 0; // or handle the error appropriately
+	}
+  };

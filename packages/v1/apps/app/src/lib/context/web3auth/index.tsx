@@ -111,7 +111,7 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    init();
+    setTimeout(init, 0);
   }, []);
 
   const signInWithGoogle = async (): Promise<UserCredential> => {
@@ -169,12 +169,18 @@ export const Web3AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getAccounts = async (): Promise<string[]> => {
-    if (!rpc) return [];
+    if (!rpc) {
+      console.error("Web3Auth RPC instance is not available");
+      return [];
+    }
     return await rpc.getAccounts();
   };
-
+  
   const getBalance = async (): Promise<string> => {
-    if (!rpc) return "0";
+    if (!rpc) {
+      console.error("Web3Auth RPC instance is not available");
+      return "0";
+    }
     return await rpc.getBalance();
   };
 

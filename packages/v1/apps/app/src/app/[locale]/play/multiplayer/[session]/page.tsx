@@ -6,6 +6,7 @@ import { DynamicIslandProvider } from "@v1/ui/dynamic-island";
 import MultiplayerCursors from "@/components/multiplayer/multiplayer-cursors";
 import { useParams } from "next/navigation";
 import { useMyPresence, useOthers, LiveblocksProvider, RoomProvider } from "@liveblocks/react";
+import DummyGame from "@/components/game/dummy-multi";
 
 const GamePage: FC = () => {
     const { session } = useParams(); // Correct way to get the dynamic segment from the URL
@@ -73,7 +74,8 @@ const GameContent: FC<{ roomId: string; canvasRef: React.RefObject<HTMLDivElemen
 
                 <div className="container h-fit relative mt-16" ref={canvasRef}> {/* Added margin to push content down */}
                 {/* Multiplayer Game Content */}
-                    <MultiplayerCardGame isPlayer1 = {role === "Player 1"} isPlayer2={role === "Player 2"} />
+                    {/* <MultiplayerCardGame isPlayer1 = {role === "Player 1"} isPlayer2={role === "Player 2"} /> */}
+                    <DummyGame />
                     <MultiplayerCursors canvas={canvasRef} />
                 </div>
             </div>

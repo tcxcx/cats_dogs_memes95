@@ -13,8 +13,6 @@ import DashboardSidebar from "@/components/sidebar/index";
 import React95App from "@/lib/context/react95";
 import { Web3AuthProvider } from "@/lib/context/web3auth";
 import { Toaster } from "@v1/ui/toaser";
-import Room from "../Room";
-import TransactionDrawer from "@/components/transaction-drawer";
 import { LogsProvider } from "@/lib/context/logs.context";
 
 export const metadata: Metadata = {
