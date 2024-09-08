@@ -70,12 +70,9 @@ const GameContent: FC<{ roomId: string; canvasRef: React.RefObject<HTMLDivElemen
                 <div className="player-info absolute top-2 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-3 py-2 rounded-md shadow-md text-center">
                     <h2 className="text-sm font-medium">Logged In As: {role}</h2>
                 </div>
-
-                <div className="container h-fit relative mt-16" ref={canvasRef}> {/* Added margin to push content down */}
-                {/* Multiplayer Game Content */}
+                     {/* Multiplayer Game Content */}
                     <MultiplayerCardGame isPlayer1 = {role === "Player 1"} isPlayer2={role === "Player 2"} />
                     <MultiplayerCursors canvas={canvasRef} />
-                </div>
             </div>
         </DynamicIslandProvider>
     );

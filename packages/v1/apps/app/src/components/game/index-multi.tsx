@@ -38,7 +38,7 @@ import Image from "next/image";
 import { useAction } from "@/lib/hooks/useAction";
 import { useDynamicIsland } from "@/lib/hooks/useDynamicIsland";
 //import { useXMTP } from "@/lib/hooks/useXMTP";
-import { useMyPresence, useOthers } from "@liveblocks/react";
+import { useMyPresence, useOthers, RoomProvider, LiveblocksProvider } from "@liveblocks/react";
 
 const Deck1: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
 const Deck2: Deck = shuffleDeck([...userCards]).slice(0, 10).map((card) => card.name); //Change ...userCards to avatar cards
@@ -56,9 +56,10 @@ const initialGameState: GameState = {
 };
 interface MultiplayerCardGameProps {
   isPlayer1: boolean;
+  isPlayer2: boolean;
 }
 
-const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1 }) => {
+const MultiplayerCardGame: FC<MultiplayerCardGameProps> = ({ isPlayer1, isPlayer2 }) => {
   const boardStyle = isPlayer1 ? "player1-board" : "player2-board flipped";
 
   const [gameState, setGameState] = useState<GameState>(initialGameState);
