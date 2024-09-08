@@ -27,8 +27,8 @@ const MultiplayerCursors: FC<{ canvas: RefObject<HTMLDivElement> }> = ({ canvas 
 						key={connectionId}
 						pos={cursorPos}
 						avatar={info?.avatar}
-						emoji={CURSOR_NAMES[connectionId % CURSOR_NAMES.length]}
-						color={CURSOR_COLORS[connectionId % CURSOR_COLORS.length]}
+						emoji={CURSOR_NAMES[connectionId % CURSOR_NAMES.length] || ''}
+						color={CURSOR_COLORS[connectionId % CURSOR_COLORS.length] || ''}
 					/>
 				)
 			})}

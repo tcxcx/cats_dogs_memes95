@@ -12,7 +12,7 @@ import { CardData } from "@/lib/types";
 function shuffleArray(array: CardData[]): CardData[] {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    [array[i], array[j]] = [array[j], array[i]] as [CardData, CardData];
   }
   return array;
 }
@@ -74,10 +74,12 @@ export default function CardPackViewer() {
     );
     const randomPack =
       remainingPacks[Math.floor(Math.random() * remainingPacks.length)];
-    setSelectedPack(shuffledCards.indexOf(randomPack));
-    setPurchasedPack(null);
-    setRevealedFirst(false);
-    setRevealedAll(false);
+    if (randomPack) {
+      setSelectedPack(shuffledCards.indexOf(randomPack));
+      setPurchasedPack(null);
+      setRevealedFirst(false);
+      setRevealedAll(false);
+    }
   };
 
   const handleRevealAll = () => {

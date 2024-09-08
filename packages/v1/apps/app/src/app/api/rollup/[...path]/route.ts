@@ -1,4 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getInfo,
+  getPlayers,
+  getMatches,
+  getPlayerStatus,
+  getPlayerDeck,
+  getPlayer,
+  getAwards,
+  submitAction,
+  getMatch,
+  getPlayerLeaderboard,
+} from "@/lib/apiClient";
 
 const ROLLUP_URL =
   process.env.NEXT_PUBLIC_ROLLUP_URL || "http://localhost:3210";
@@ -8,36 +20,65 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   const path = params.path.join("/");
-  const url = new URL(path, ROLLUP_URL);
 
   try {
-    const response = await fetch(url.toString(), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    switch (path) {
+      case "info":
+        const info = await getInfo();
+        return NextResponse.json(info);
 
-    const contentType = response.headers.get("content-type");
-    let data;
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      data = await response.text();
+      case "players":
+        const players = await getPlayers();
+        return NextResponse.json(players);
+
+      case "matches":
+        const matches = await getMatches();
+        return NextResponse.json(matches);
+
+      case "player-leaderboard":
+        const leaderboard = await getPlayerLeaderboard();
+        return NextResponse.json(leaderboard);
+
+      case "awards":
+        const awards = await getAwards();
+        return NextResponse.json(awards);
+
+      default:
+        if (path.startsWith("player-status")) {
+          const walletAddress = path.split("/").pop();
+          if (walletAddress) {
+            const status = await getPlayerStatus(walletAddress);
+            return NextResponse.json(status);
+          }
+        } else if (path.startsWith("player-deck")) {
+          const walletAddress = path.split("/").pop();
+          if (walletAddress) {
+            const deck = await getPlayerDeck(walletAddress);
+            return NextResponse.json(deck);
+          }
+        } else if (path.startsWith("players/")) {
+          const id = path.split("/").pop();
+          if (id) {
+            const player = await getPlayer(parseInt(id, 10));
+            return NextResponse.json(player);
+          }
+        } else if (path.startsWith("matches/")) {
+          const id = path.split("/").pop();
+          if (id) {
+            const match = await getMatch(parseInt(id, 10));
+            return NextResponse.json(match);
+          }
+        }
+
+        return NextResponse.json(
+          { error: "Invalid path or missing parameters" },
+          { status: 400 }
+        );
     }
-
-    if (!response.ok) {
-      console.error(`Error from rollup server: ${JSON.stringify(data)}`);
-      return NextResponse.json(
-        { error: data || "Rollup server error" },
-        { status: response.status }
-      );
-    }
-
-    return NextResponse.json(data);
   } catch (error) {
     console.error("Error in API route:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: (error as Error).message || "Internal server error" },
       { status: 500 }
     );
   }
@@ -50,16 +91,15 @@ export async function POST(
   const path = params.path.join("/");
   const url = new URL(path, ROLLUP_URL);
 
-  const body = await request.json();
-
-  const response = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await response.json();
-  return NextResponse.json(data);
+  try {
+    const body = await request.json();
+    const response = await submitAction(url.toString(), body);
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("Error in API route:", error);
+    return NextResponse.json(
+      { error: (error as Error).message || "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

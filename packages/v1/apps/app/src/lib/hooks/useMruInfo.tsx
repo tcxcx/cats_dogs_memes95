@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { getInfo } from "../../app/api/rollup/route";
+import { getInfo } from "@/lib/apiClient";
 
 export const useMruInfo = () => {
   const { data: mruInfo, isLoading } = useSWR("/mru-info", getInfo, {

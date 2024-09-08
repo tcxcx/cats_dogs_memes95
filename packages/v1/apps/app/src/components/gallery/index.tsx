@@ -17,7 +17,7 @@ import { CardGalleryComponent } from "@/components/cards/card-gallery";
 import { useToast } from "@/components/use-toast";
 import CardImageSkeleton from "@/components/skeletons/card-image-skeleton";
 import { useUserStore } from "@/lib/context/web3auth/user";
-import { getPlayerStatus, getPlayerDeck } from "@/app/api/rollup/route";
+import { getPlayerStatus, getPlayerDeck } from "@/lib/apiClient";
 import { useAction } from "@/lib/hooks/useAction";
 import { v4 as uuidv4 } from "uuid";
 import { Alert, AlertTitle, AlertDescription } from "@v1/ui/alert";

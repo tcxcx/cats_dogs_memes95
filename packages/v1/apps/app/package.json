@@ -70,7 +70,6 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "@sentry/nextjs": "^8",
     "@supabase/sentry-js-integration": "^0.2.0",
     "@toruslabs/eslint-config-typescript": "^3.0.3",
     "@types/node": "^22",
