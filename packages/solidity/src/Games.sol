@@ -47,6 +47,7 @@ contract Games is AutomationCompatibleInterface {
     error Games__NoPendingPlayerAllowed();
     error Games__CardNotInPlayerCollection();
     error Games__SenderNotPlayerInGame();
+    error Games_FailedToWithdrawEth(address sender, address beneficiary, uint256 amount);
 
     error Games__GameNotRecognised();
     error Games__GameAgainstSelfNotAllowed(); 
@@ -149,6 +150,9 @@ contract Games is AutomationCompatibleInterface {
         emit DeployedGamesContract(msg.sender);
     }
 
+    // fallback and receive functions
+    receive() external payable {}
+
     /* external */ 
     /*
     *
@@ -165,25 +169,22 @@ contract Games is AutomationCompatibleInterface {
         override
         returns (bool upkeepNeeded, bytes memory /* performData */)
     {
-        upkeepNeeded = (
-            (block.timestamp - startTournamentTimeStamp) > tournamentDuration && 
-            statusTournament == Status.Active
-        );
+        upkeepNeeded = true; 
     }
 
-    /*
+    /**
+    * @notice Stops the tournament automatically, using Chainlink automation.
+    * 
+    * @dev can only be called by chainlink automation forwarder. (If properly set through the funtion 'setForwarder'.)
     *
-    *
-    *
-    *
+    * emits an EndedTournament event. 
     */ 
     function performUpkeep(bytes calldata /* performData */) external override {
         if (msg.sender != forwarder) {
             revert Games__onlyChainlinkForwarder(); 
         }
         if ((
-            block.timestamp - startTournamentTimeStamp) > tournamentDuration && 
-            statusTournament == Status.Active
+            block.timestamp - startTournamentTimeStamp) > tournamentDuration
             ) {
             _stopTournament(); 
         }
@@ -191,6 +192,34 @@ contract Games is AutomationCompatibleInterface {
 
 
     /* public */
+    /**
+     * @notice Stops a tournament by the owner.
+     *
+     * @dev It sets the statusTournament to completed and returns the ranking of players. 
+     *
+     * @dev Does not take any params. 
+     * @dev This function is only callable by owner. 
+     *
+     */
+    function stopTournament() public onlyOwner {
+        _stopTournament(); 
+    }
+
+    /**
+     * @notice withdraws funds to beneficiary address.
+     *
+     * @dev It sets the statusTournament to completed and returns the ranking of players. 
+     *
+     * @dev Does not take any params. 
+     * @dev This function is only callable by owner. 
+     *
+     */
+    function withdrawFunds(address beneficiary) external onlyOwner {
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert Games_FailedToWithdrawEth(msg.sender, beneficiary, amount);
+    }
+
     /**
      * @notice Starts a tournament.  
      *
@@ -431,19 +460,7 @@ contract Games is AutomationCompatibleInterface {
     } 
 
     /* internal */
-    /**
-     * @notice Stops a tournament.
-     *
-     * @dev It sets the statusTournament to completed and returns the ranking of players. 
-     *
-     * @dev Does not take any params. 
-     * @dev Is called via Chainlink timebased automation. 
-     *
-     * @return rankings - the rankings of players at the moment the tournament was stopped.  
-     * 
-     * emits an EndedTournament event. 
-     *
-     */
+
     function _stopTournament() internal returns (uint256[] memory rankings) {
         (,, rankings) = getRankings();
         statusTournament = Status.Completed;

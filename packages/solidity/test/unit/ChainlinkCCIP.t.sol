@@ -78,9 +78,6 @@ contract ChainlinkCCIPTest is Test {
       vm.deal(address(optPlayers), 10 ether); 
       vm.deal(address(optABA), 10 ether); 
 
-      vm.prank(optPlayers.OWNER()); 
-      optPlayers.setL1_playersAddress(address(ethPlayers)); 
-
       assert(address(optPlayers) == address(ethPlayers)); 
       assert(address(ethABA) == address(optABA));
     }

@@ -123,7 +123,19 @@ forge test
 [AvatarBasedAccount.sol L2]()  0x237832... <br>
 
 ## Checkout proofs of state change:
+Creation ERC6551 Avatar Based Account
+├── [HASH](hash) Call to Players.sol                    
+├── [HASH](hash) Call to ERC-6551 registry to create player.                          
+└── [ADDRESS](address) Player address. (note non-verified address)    
 
+Creation Avatar Based Account calls Cards.sol to request cards. (Chainlink VRF)
+├── [0x0093e7dd5cbfba94853f0b8ce1b8bba94749ec22e7419e02674e58fba69aba9d](hash) Call to Players.sol  
+├── [0x2af50c254fab75eda05452e91507ab466958d7612bb94d321a6ff7d3a056d277](hash) Call to Players.sol                         
+├── [0x8ae6a6430c6f9bc650ba0d171e15438daeff1253547b29bd75129b58e4fb3032](hash) Call to Players.sol  
+└── [0x52a1648d8a602441f2d22cbfc793bcf8619d5b215e776bf6421669844792c815](address) Player address. (note non-verified address)    
+
+
+[Creation ERC6551 Avatar Based Account]()[] 
 [Chainlink VRF]() Random selection of cards in card pack. <br>
 [Chainlink Automation]() Automated ending of tournaments. <br>
 [Chainlink CCIP L2]() Creation player optimism sepolia. <br>

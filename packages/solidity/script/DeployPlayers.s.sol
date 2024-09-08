@@ -11,7 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 contract DeployPlayers is Script {
     Players players;
     AvatarBasedAccount avatarBasedAccount; 
-    bytes32 SALT = 0x7ceda52a00000000000000000000000000000000000000000000000000000002; 
+    bytes32 SALT = 0x7ceda52a00000000000000000000000000000000000000000000000000000003; 
 
     // £note1: see for a convenient overview of addresses: https://tokenbound-v3-deployer.vercel.app/ 
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 
@@ -34,8 +34,7 @@ contract DeployPlayers is Script {
         players = new Players{salt: SALT}(
                 version,
                 address(erc6551account),  // on ethSepolia deployed @ 0x27027C7F5B357aE339f25A421A7F159A58394cE0 -- use config? £bug Had to hard code because deterministic deployment in foundry is not determinsitic. 
-                address(registry), 
-                address(0)
+                address(registry)
             );
         vm.stopBroadcast();
 
