@@ -47,7 +47,7 @@ contract AvatarBasedAccount is IERC165, IERC1271, IAvatarAccount, IAvatarExecuta
     address constant optimismRouter = address(0); // insert address here
     
     uint256 public state;
-    address constant SENDER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
     address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint64 constant DESTINATION_CHAIN_ID = 11155111; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 

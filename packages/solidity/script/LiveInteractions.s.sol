@@ -14,9 +14,9 @@ import {DeployedContracts} from "../src/lib/DeployedContracts.sol";
 contract LiveInteractions is Script {
     DeployedContracts deployedContracts = new DeployedContracts(); 
     AvatarBasedAccount avatarBasedAccount = AvatarBasedAccount(payable(deployedContracts.avatarBasedAccounts())); 
-    Players players = Players(deployedContracts.players());
-    // Cards cards = Cards(payable(deployedContracts.cards()));
-    // Games games = Games(deployedContracts.games());
+    Players players = Players(payable(deployedContracts.players()));
+    Cards cards = Cards(payable(deployedContracts.cards()));
+    Games games = Games(payable(deployedContracts.games()));
     
     // string avatarUri =
     //     "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
@@ -31,20 +31,27 @@ contract LiveInteractions is Script {
 
     // }
 
-    // uint256 cardPackNumber = 5; 
-    // uint256 priceCardPack = (1 ether / 1000) + 100; 
-    // bytes callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
-    // address avatarAddress = 0x40aCE4e246C61707219aE16eC4771C4D67bF23BC;
-    // AvatarBasedAccount avatarAccount = AvatarBasedAccount(payable(avatarAddress)); 
+    uint256 cardPackNumber = 5; 
+    uint256 priceCardPack = (1 ether / 1000) + 100; 
+    bytes callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
+    address avatarAddress = 0x97C59FaE5ab11B8776550aF48EbaC9D59C9796cD;
+    AvatarBasedAccount avatarAccount = AvatarBasedAccount(payable(avatarAddress)); 
 
     function run() external {
         vm.startBroadcast();
-        address(players).call{value: 1 ether / 10}(""); 
-        address(players).call{value: 1 ether / 10}(""); 
-        // players.createPlayer(0);
-        // bytes memory result = avatarAccount.execute(address(cards), priceCardPack, callData, 0);
-        // uint256 requestId = uint256(bytes32(result)); 
-        // console2.log("requestID:", requestId); 
+        // players.createPlayer(2);
+
+        // deployedContracts.players().call{value: 1 ether / 10}(""); 
+        // deployedContracts.avatarBasedAccounts().call{value: 1 ether / 10}(""); 
+
+
+        // avatarAddress.call{value: 1 ether / 5}(""); 
+        // address(cards).call{value: 1 ether / 5}(""); 
+        // players.createPlayer(1);
+
+        bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
+
+        avatarAccount.ccipExecute(address(cards), 0, callData, 0);
         vm.stopBroadcast();
     } 
 }

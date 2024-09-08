@@ -25,6 +25,7 @@ contract Players is ERC721URIStorage {
     error Players__AvatarDoesNotExist();
     error Players__OnlyOwner(); 
     error Players__L2andL1AvatarIdsDoNotAlign(uint256 expectedId, uint256 actualId);  
+    error Players_FailedToWithdrawEth(address sender, address beneficiary, uint256 amount);
 
     /* events */
     event DeployedPlayersContract(address indexed owner, uint256 indexed version, address indexed erc6551_account);
@@ -39,8 +40,7 @@ contract Players is ERC721URIStorage {
     bytes32 private constant SALT = bytes32(hex"7ceda5");
     address private immutable ERC6551_REGISTRY;
     address public erc6551_account;
-    address public l1_players; 
-    address constant SENDER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant SENDER_ROUTER = 0x114A20A10b43D4115e5aeef7345a1A71d2a60C57; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
     address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint256 public constant DESTINATION_CHAIN_ID = 11155111; 
@@ -78,16 +78,18 @@ contract Players is ERC721URIStorage {
      * emits a DeployedPlayersContract event.
      *
      */
-    constructor(uint256 version, address _erc6551_account, address erc6551_registry, address _l1_players)
+    constructor(uint256 version, address _erc6551_account, address erc6551_registry)
         ERC721("Cats, Dogs and Memes Avatar", "CDM")
     {
         OWNER = msg.sender;
         ERC6551_REGISTRY = erc6551_registry;
         erc6551_account = _erc6551_account;
-        l1_players = _l1_players; 
 
         emit DeployedPlayersContract(msg.sender, version, erc6551_account);
     }
+
+    // fallback and receive functions
+    receive() external payable {}
 
     /* external */
     function setErc6551Account(address _erc6551_account) external onlyOwner {
@@ -96,10 +98,10 @@ contract Players is ERC721URIStorage {
         emit ChangedErc6551Account(oldAccount, erc6551_account); 
     }
 
-    function setL1_playersAddress(address _l1_players) external onlyOwner {
-        address oldAccount = l1_players;  
-        l1_players = _l1_players; 
-        emit ChangedL1PlayersAddress(oldAccount, l1_players); 
+    function withdrawFunds(address beneficiary) external onlyOwner {
+        uint256 amount = address(this).balance;
+        (bool sent, ) = beneficiary.call{value: amount}("");
+        if (!sent) revert Players_FailedToWithdrawEth(msg.sender, beneficiary, amount);
     }
 
     /* public */
@@ -142,7 +144,7 @@ contract Players is ERC721URIStorage {
             bytes memory avatarIdData = abi.encode(avatarId);
             
             Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-                receiver: abi.encode(l1_players),
+                receiver: abi.encode(address(this)),
                 data: avatarIdData,
                 tokenAmounts: new Client.EVMTokenAmount[](0),
                 extraArgs: "",

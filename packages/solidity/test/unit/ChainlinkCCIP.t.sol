@@ -54,8 +54,8 @@ contract ChainlinkCCIPTest is Test {
 
       ccipLocalSimulatorFork = new CCIPLocalSimulatorFork();
       vm.makePersistent(address(ccipLocalSimulatorFork));
-      // Register.NetworkDetails 
-      //   memory destinationNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(11155420); // optimism sepolia id = 11155420
+      Register.NetworkDetails 
+        memory destinationNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(11155420); // optimism sepolia id = 11155420
 
       vm.selectFork(ethSepoliaFork); // deploy contracts on sepolia mainnet
       assert(block.chainid == 11155111); // check if correct chain is selected
@@ -78,11 +78,6 @@ contract ChainlinkCCIPTest is Test {
       vm.deal(address(optPlayers), 10 ether); 
       vm.deal(address(optABA), 10 ether); 
 
-      vm.prank(optPlayers.OWNER()); 
-      optPlayers.setL1_playersAddress(address(ethPlayers)); 
-
-      console.log("gasleft 2", gasleft());  
-
       assert(address(optPlayers) == address(ethPlayers)); 
       assert(address(ethABA) == address(optABA));
     }
@@ -95,6 +90,7 @@ contract ChainlinkCCIPTest is Test {
     }
 
     function testPlayerIsCreatedOnTwoChainsWithSameAddress() public {
+      vm.pauseGasMetering(); 
       // note: We read the current counter for avatarIds from the Eth sepolia chain. 
       // this is because the state of the game is set at this chain.
       vm.selectFork(ethSepoliaFork);
@@ -116,7 +112,7 @@ contract ChainlinkCCIPTest is Test {
     }
 
     function testPlayerOnL2canOpenCardPackOnL1() public noGasMetering createAvatarBasedAccount  {
-      console.log("gasleft 3", gasleft()); 
+      vm.pauseGasMetering(); 
 
       // step 1: create call to draw cards at Cards.sol. 
       uint256 cardPackNumber = 1;
@@ -131,8 +127,6 @@ contract ChainlinkCCIPTest is Test {
       vm.startPrank(userOne); 
       AvatarBasedAccount(payable(avatarAccountAddress)).ccipExecute(address(cards), priceCardPack, callData, 0);
       vm.stopPrank(); 
-
-      console.log("gasleft 4", gasleft()); 
 
       // step 3: check if avatar based account received cards. 
       vm.selectFork(ethSepoliaFork);

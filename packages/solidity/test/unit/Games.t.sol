@@ -159,24 +159,6 @@ contract GamesTest is Test {
         assert(games.statusTournament() == Games.Status.Active);
     }
 
-    // function testStopTournamentWithoutGamesIsPossible() public {
-    //     uint256 expectedTournamentCounter = 1;
-    //     address[] memory emptyArray = new address[](0);
-
-    //     vm.prank(ownerGames);
-    //     games.startTournament();
-    //     // check if correctly deployed.
-    //     assert(games.statusTournament() == Games.Status.Active);
-
-    //     (address[] memory winners, uint256[] memory scores, uint256[] memory rankings) = games.getRankings();
-
-    //     // ACT: stop tournament.
-    //     vm.prank(ownerGames);
-    //     vm.expectEmit(true, false, false, false);
-    //     emit EndedTournament(expectedTournamentCounter);
-    //     games.stopTournament();
-    // }
-
     function testInitialiseGameNotPossibleIfTournamentNotActive() public setupAvatarBasedAccounts {
         uint256[] memory collection = cards.getCollection(player0);
         uint256[] memory cardDeck = _createCardDeckFromCollection(collection);

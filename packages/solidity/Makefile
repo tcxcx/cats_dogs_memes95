@@ -39,16 +39,26 @@ anvil :; anvil --steps-tracing --block-time 1
 
 ETH_SEPOLIA_TEST_ARGS := --fork-url $(SEPOLIA_RPC_URL) 
 ETH_SEPOLIA_DEPLOY_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${WALLET_ADDRESS} --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+ETH_SEPOLIA_INTERACTIONS_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --account dev_2 --sender ${WALLET_ADDRESS} --broadcast -vvvv
 
 OPT_SEPOLIA_TEST_ARGS := --fork-url $(OPT_SEPOLIA_RPC_URL) 
 OPT_SEPOLIA_DEPLOY_ARGS := --rpc-url $(OPT_SEPOLIA_RPC_URL) --account dev_2 --sender ${WALLET_ADDRESS} --broadcast --verify --etherscan-api-key $(OPT_ETHERSCAN_API_KEY) -vvvv
+OPT_SEPOLIA_INTERACTIONS_ARGS := --rpc-url $(OPT_SEPOLIA_RPC_URL) --account dev_2 --sender ${WALLET_ADDRESS} --broadcast --verify -vvvv
 
 testDeploy: 
-	@forge script script/DeployGames.s.sol $(ETH_SEPOLIA_TEST_ARGS)
+#	@forge script script/DeployGames.s.sol $(ETH_SEPOLIA_TEST_ARGS)
 	@forge script script/DeployPlayers.s.sol $(ETH_SEPOLIA_TEST_ARGS)
 	@forge script script/DeployPlayers.s.sol $(OPT_SEPOLIA_TEST_ARGS)
 
 deploy:
-	@forge script script/DeployGames.s.sol $(ETH_SEPOLIA_DEPLOY_ARGS)
+#	@forge script script/DeployGames.s.sol $(ETH_SEPOLIA_DEPLOY_ARGS)
 	@forge script script/DeployPlayers.s.sol $(ETH_SEPOLIA_DEPLOY_ARGS)
 	@forge script script/DeployPlayers.s.sol $(OPT_SEPOLIA_DEPLOY_ARGS)
+
+testInteractions: 
+	@forge script script/LiveInteractions.s.sol $(ETH_SEPOLIA_TEST_ARGS) -vvvv
+	@forge script script/LiveInteractions.s.sol $(OPT_SEPOLIA_TEST_ARGS) -vvvv
+
+interactions: 
+#	@forge script script/LiveInteractions.s.sol $(ETH_SEPOLIA_INTERACTIONS_ARGS) -vvvv
+	@forge script script/LiveInteractions.s.sol $(OPT_SEPOLIA_INTERACTIONS_ARGS) -vvvv
