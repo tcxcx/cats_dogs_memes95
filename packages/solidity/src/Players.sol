@@ -40,8 +40,8 @@ contract Players is ERC721URIStorage {
     address private immutable ERC6551_REGISTRY;
     address public erc6551_account;
     address public l1_players; 
-    address constant SENDER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
-    address constant RECEIVER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Eth sepolia router. -- 
+    address constant SENDER_ROUTER = 0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59; // Opt sepolia router. -- because ERC-6551 accounts cannot have a constructor, this value is hard coded as a constant. 
+    address constant RECEIVER_ROUTER = 0x2a9C5afB0d0e4BAb2BCdaE109EC4b0c4Be15a165; // Eth sepolia router. -- 
     uint64 constant DESTINATION_CHAIN_SELECTOR = 16015286601757825753; // there is only one direction that this ERC-6551 gateway works. Hence hardcoded onRamp Address. 
     uint256 public constant DESTINATION_CHAIN_ID = 11155111; 
     string public avatarURI = "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ"; 
