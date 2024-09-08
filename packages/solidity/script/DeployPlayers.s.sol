@@ -11,7 +11,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 contract DeployPlayers is Script {
     Players players;
     AvatarBasedAccount avatarBasedAccount; 
-    bytes32 SALT = 0x7ceda52a00000000000000000000000000000000000000000000000000000003; 
+    bytes32 SALT = 0x7ceda52a00000000000000000000000000000000000000000000000000000004; 
 
     // £note1: see for a convenient overview of addresses: https://tokenbound-v3-deployer.vercel.app/ 
     // £note1: for somekind of reason the deterministic address on my Anvil chain is not the correct (...6551...) one. Hence the quick conditional setup here. 

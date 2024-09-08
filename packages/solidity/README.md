@@ -112,31 +112,32 @@ make
 forge test 
 ```
 
-## Checkout the deployments:
+## Checkout the deployed contracts:
 
-[Cards.sol]() 0x237832... <br>
-[Games.sol]() 0x237832... <br>
-[Coins.sol]() 0x237832... <br>
-[Players.sol L1]() 0x237832... <br>
-[Players.sol L2]() 0x237832... <br>
-[AvatarBasedAccount.sol L1]() 0x237832... <br>
-[AvatarBasedAccount.sol L2]()  0x237832... <br>
+[Cards.sol]() 0x37FD9cA01307708E29812621991eA7DF04e3E539 <br>
+[Games.sol]() 0x0f0D9F12143eBCa798E3873CE5350eE71AcDC03b <br>
+[Players.sol L1 & L2]() 0xb7dF35B05401e6d338832247C752dC298648Cc99 <br>
+[AvatarBasedAccount.sol L1 & L2]() 0x8d59b934BEb304464E80c2F18693d5cf9dF627F6 <br>
 
-## Checkout proofs of state change:
-Creation ERC6551 Avatar Based Account
-├── [HASH](hash) Call to Players.sol                    
-├── [HASH](hash) Call to ERC-6551 registry to create player.                          
-└── [ADDRESS](address) Player address. (note non-verified address)    
+## Checkout state change hashes:
 
-Creation Avatar Based Account calls Cards.sol to request cards. (Chainlink VRF)
-├── [0x0093e7dd5cbfba94853f0b8ce1b8bba94749ec22e7419e02674e58fba69aba9d](hash) Call to Players.sol  
-├── [0x2af50c254fab75eda05452e91507ab466958d7612bb94d321a6ff7d3a056d277](hash) Call to Players.sol                         
-├── [0x8ae6a6430c6f9bc650ba0d171e15438daeff1253547b29bd75129b58e4fb3032](hash) Call to Players.sol  
-└── [0x52a1648d8a602441f2d22cbfc793bcf8619d5b215e776bf6421669844792c815](address) Player address. (note non-verified address)    
+```
+
+Creation ERC6551 Avatar Based Account. 
+└── 0x530928989346bb15caa5288ba2dcecb1cd351b20401a87a9e63b556ea386f11e
+
+Random selection of cards in card pack (Chainlink VRF)
+├── 0x0093e7dd5cbfba94853f0b8ce1b8bba94749ec22e7419e02674e58fba69aba9d
+├── 0x2af50c254fab75eda05452e91507ab466958d7612bb94d321a6ff7d3a056d277                      
+├── 0x8ae6a6430c6f9bc650ba0d171e15438daeff1253547b29bd75129b58e4fb3032
+└── 0x52a1648d8a602441f2d22cbfc793bcf8619d5b215e776bf6421669844792c815  
+
+CCIP, creation Multi-Chain ERC-6551 Avatar Based Account. Two examples. 
+├── 0x3472bd377bf0d1b6d7fa5b4f2a082d5aba69772fb513020e9c979945bc0f0365
+└── 0xb62a2b87c23964d751671a41de7d1fe12bebc30489c838bbc016df9deaf1d9d1                      
+
+```
 
 
-[Creation ERC6551 Avatar Based Account]()[] 
-[Chainlink VRF]() Random selection of cards in card pack. <br>
-[Chainlink Automation]() Automated ending of tournaments. <br>
-[Chainlink CCIP L2]() Creation player optimism sepolia. <br>
-[Chainlink CCIP L1]() Creation mirror player at mainnet sepolia. <br>
+
+

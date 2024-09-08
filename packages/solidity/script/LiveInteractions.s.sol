@@ -34,18 +34,24 @@ contract LiveInteractions is Script {
     uint256 cardPackNumber = 5; 
     uint256 priceCardPack = (1 ether / 1000) + 100; 
     bytes callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
-    address avatarAddress = 0xb04b25703988001838d0316bC2c56938c8E6eA56;
+    address avatarAddress = 0x97C59FaE5ab11B8776550aF48EbaC9D59C9796cD;
     AvatarBasedAccount avatarAccount = AvatarBasedAccount(payable(avatarAddress)); 
 
     function run() external {
         vm.startBroadcast();
-        // address(players).call{value: 1 ether / 10}(""); 
-        // address(players).call{value: 1 ether / 10}(""); 
-        avatarAddress.call{value: 1 ether / 5}(""); 
-        address(cards).call{value: 1 ether / 5}(""); 
-        players.createPlayer(1);
+        // players.createPlayer(2);
 
-        avatarAccount.execute(address(cards), priceCardPack, callData, 0);
+        // deployedContracts.players().call{value: 1 ether / 10}(""); 
+        // deployedContracts.avatarBasedAccounts().call{value: 1 ether / 10}(""); 
+
+
+        // avatarAddress.call{value: 1 ether / 5}(""); 
+        // address(cards).call{value: 1 ether / 5}(""); 
+        // players.createPlayer(1);
+
+        bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
+
+        avatarAccount.ccipExecute(address(cards), 0, callData, 0);
         vm.stopBroadcast();
     } 
 }
