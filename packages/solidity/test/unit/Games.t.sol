@@ -25,7 +25,8 @@ contract GamesTest is Test {
     Coins coins;
     HelperConfig helperConfig;
     Players players;
-
+    
+    uint256 ethSepoliaFork;
     address ownerGames;
     address ownerCards;
     address vrfWrapper;
@@ -70,7 +71,7 @@ contract GamesTest is Test {
 
             // 1: create an address and AvatarBasedAccount
             vm.prank(users[i]);
-            (, address avatarAccountAddress) = players.createPlayer(avatarUri);
+            (, address avatarAccountAddress) = players.createPlayer(0);
 
             // 2: save the AvatarBasedAccountAddress in an array and provide it with funds.
             avatarBasedAccounts[users[i]] = avatarAccountAddress;
@@ -105,6 +106,9 @@ contract GamesTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+        
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players,,) = deployerPlayers.run();
 
@@ -127,6 +131,7 @@ contract GamesTest is Test {
 
         // need to fund the contract itself for Chainlink VRF - direct payments.
         vm.deal(address(cards), 100 ether);
+        vm.txGasPrice(1);
     }
 
     ///////////////////////////////////////////////
@@ -154,23 +159,23 @@ contract GamesTest is Test {
         assert(games.statusTournament() == Games.Status.Active);
     }
 
-    function testStopTournamentWithoutGamesIsPossible() public {
-        uint256 expectedTournamentCounter = 1;
-        address[] memory emptyArray = new address[](0);
+    // function testStopTournamentWithoutGamesIsPossible() public {
+    //     uint256 expectedTournamentCounter = 1;
+    //     address[] memory emptyArray = new address[](0);
 
-        vm.prank(ownerGames);
-        games.startTournament();
-        // check if correctly deployed.
-        assert(games.statusTournament() == Games.Status.Active);
+    //     vm.prank(ownerGames);
+    //     games.startTournament();
+    //     // check if correctly deployed.
+    //     assert(games.statusTournament() == Games.Status.Active);
 
-        (address[] memory winners, uint256[] memory scores, uint256[] memory rankings) = games.getRankings();
+    //     (address[] memory winners, uint256[] memory scores, uint256[] memory rankings) = games.getRankings();
 
-        // ACT: stop tournament.
-        vm.prank(ownerGames);
-        vm.expectEmit(true, false, false, false);
-        emit EndedTournament(expectedTournamentCounter);
-        games.stopTournament();
-    }
+    //     // ACT: stop tournament.
+    //     vm.prank(ownerGames);
+    //     vm.expectEmit(true, false, false, false);
+    //     emit EndedTournament(expectedTournamentCounter);
+    //     games.stopTournament();
+    // }
 
     function testInitialiseGameNotPossibleIfTournamentNotActive() public setupAvatarBasedAccounts {
         uint256[] memory collection = cards.getCollection(player0);

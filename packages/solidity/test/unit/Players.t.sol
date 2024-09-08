@@ -9,7 +9,8 @@ import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
 contract PlayersTest is Test {
     Players players;
     AvatarBasedAccount avatarBasedAccount;
-
+    
+    uint256 ethSepoliaFork;
     address userOne = makeAddr("UserOne");
     string avatarUri =
         "https://aqua-famous-sailfish-288.mypinata.cloud/ipfs/QmZQUeuaE52HjsBxVZFxTb7KoymW2TErQQJzHFribZStnZ";
@@ -18,6 +19,9 @@ contract PlayersTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+        
         DeployPlayers deployer = new DeployPlayers();
         (players, avatarBasedAccount,) = deployer.run();
     }
@@ -34,7 +38,7 @@ contract PlayersTest is Test {
     function testPlayersCanDeployNewPlayer() public {
         // action
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         console2.log("avatarId:", avatarId);
         console2.log("avatarAccountAddress:", avatarAccountAddress);
@@ -46,7 +50,7 @@ contract PlayersTest is Test {
 
     function testPlayersGivesAddressOfExistingAvatar() public {
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         address avatarAccountAddressChecked = players.getAvatarAddress(avatarId);
 

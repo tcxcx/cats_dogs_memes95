@@ -22,6 +22,8 @@ contract ChainLinkVRFTest is Test {
     HelperConfig helperConfig;
     AvatarBasedAccount avatarBasedAccount;
     address vrfWrapper;
+    uint256 ethSepoliaFork;
+
     uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
 
     address userOne = makeAddr("UserOne");
@@ -33,6 +35,9 @@ contract ChainLinkVRFTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+        
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
@@ -61,7 +66,7 @@ contract ChainLinkVRFTest is Test {
         uint256 cardPackNumber = 1;
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (, address avatarAccountAddress) = players.createPlayer(0);
         vm.deal(avatarAccountAddress, 1 ether);
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();

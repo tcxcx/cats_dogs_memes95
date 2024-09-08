@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 /**
  * Manages tournaments, games and rankings of players.
  *
- * The owner of the contract can start and stop a tournament.
+ * The owner of the contract can start a tournament.
+ * Chainlink's time-based automation will stop the tournament after a certain amount of time. 
  * If a tournament is active, Avatar Based Accounts can:
  *    - initialise a game with a deck of ten cards. Setting the game's status to 'Pending'.
  *    - join a 'pending' game with a deck of ten cards. This will set the game's status to active.
@@ -21,16 +22,22 @@ pragma solidity ^0.8.0;
  * Detailed natspecs are in the contract below. 
  *
  * Authors: Argos, CriptoPoeta, 7cedars
+ *
+ * address of the automation upkeep: https://automation.chain.link/sepolia/45169386249656034327347769669730716545228673563306895534577404978448411438051
+ * 
  */
 import {Cards} from "./Cards.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IAvatarExecutable} from "./AvatarBasedAccount.sol";
 
-contract Games {
+import {AutomationCompatibleInterface} from "../lib/chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";  
+
+contract Games is AutomationCompatibleInterface {
     /* errors */
     error Games__OnlyAvatarBasedAccount();
     error Games__OnlyOwner();
     error Games__OnlyDuringActiveTournament();
+    error Games__onlyChainlinkForwarder(); 
 
     error Games__TournamentNotIdleOrCompleted();
 
@@ -83,6 +90,10 @@ contract Games {
     address[] public playersInTournament; // an array of player participating in the current tournament. Acts as counter and used to calculate rankings.
     Status public statusTournament; // the status of the current tournament.
 
+    uint256 public immutable tournamentDuration;
+    uint256 public startTournamentTimeStamp;
+    address private forwarder; 
+
     /* Events */
     event DeployedGamesContract(address indexed owner);
     event PlayerRegisteredInTournament(address indexed playerAccount);
@@ -109,7 +120,9 @@ contract Games {
     }
 
     modifier onlyAvatarBasedAccount() {
-        if (!ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)) {
+        if (
+            !ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)
+            ) {
             revert Games__OnlyAvatarBasedAccount();
         }
         _;
@@ -126,13 +139,56 @@ contract Games {
      * @dev Currently there are no checks on the address being added. This should be added later.  
      *
      */
-    constructor(address cardsContract) {
+    constructor(address cardsContract, uint256 updateTournamentDuration) {
         OWNER = msg.sender;
         CARDS_CONTRACT = cardsContract;
         statusTournament = Status.Idle;
+        
+        tournamentDuration = updateTournamentDuration;
 
         emit DeployedGamesContract(msg.sender);
     }
+
+    /* external */ 
+    /*
+    *
+    *
+    *
+    *
+    */ 
+    // from:  https://docs.chain.link/chainlink-automation/guides/compatible-contracts
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory /* performData */)
+    {
+        upkeepNeeded = (
+            (block.timestamp - startTournamentTimeStamp) > tournamentDuration && 
+            statusTournament == Status.Active
+        );
+    }
+
+    /*
+    *
+    *
+    *
+    *
+    */ 
+    function performUpkeep(bytes calldata /* performData */) external override {
+        if (msg.sender != forwarder) {
+            revert Games__onlyChainlinkForwarder(); 
+        }
+        if ((
+            block.timestamp - startTournamentTimeStamp) > tournamentDuration && 
+            statusTournament == Status.Active
+            ) {
+            _stopTournament(); 
+        }
+    }
+
 
     /* public */
     /**
@@ -142,7 +198,8 @@ contract Games {
      * Subsequent functions are constrained by both the state and counter of the tournament.  
      *
      * @dev Does not take any params. 
-     * @dev Can only be called by the owner of the contract.   
+     * @dev Can only be called by the owner of the contract.  
+     * @dev It starts the counter for chainlinks time based automation.  
      */
     function startTournament() public onlyOwner {
         if (statusTournament != Status.Idle && statusTournament != Status.Completed) {
@@ -151,30 +208,9 @@ contract Games {
 
         tournamentCounter++;
         statusTournament = Status.Active;
+        startTournamentTimeStamp = block.timestamp; 
 
         emit StartedNewTournament(tournamentCounter);
-    }
-
-    /**
-     * @notice Stops a tournament.
-     *
-     * @dev It sets the statusTournament to completed and returns the ranking of players. 
-     *
-     * @dev Does not take any params. 
-     * @dev Can only be called by the owner of the contract. 
-     *
-     * @return rankings - the rankings of players at the moment the tournament was stopped.  
-     * 
-     * emits an EndedTournament event. 
-     *
-     */
-    function stopTournament() public onlyOwner returns (uint256[] memory rankings) {
-        (,, rankings) = getRankings();
-        statusTournament = Status.Completed;
-
-        emit EndedTournament(tournamentCounter);
-
-        return rankings;
     }
 
     /**
@@ -385,7 +421,37 @@ contract Games {
         }
     }
 
+    /**
+     *
+     *
+     *
+     */
+    function setForwarder(address _forwarder) public onlyOwner {
+        forwarder = _forwarder; 
+    } 
+
     /* internal */
+    /**
+     * @notice Stops a tournament.
+     *
+     * @dev It sets the statusTournament to completed and returns the ranking of players. 
+     *
+     * @dev Does not take any params. 
+     * @dev Is called via Chainlink timebased automation. 
+     *
+     * @return rankings - the rankings of players at the moment the tournament was stopped.  
+     * 
+     * emits an EndedTournament event. 
+     *
+     */
+    function _stopTournament() internal returns (uint256[] memory rankings) {
+        (,, rankings) = getRankings();
+        statusTournament = Status.Completed;
+
+        emit EndedTournament(tournamentCounter);
+
+        return rankings;
+    }
 
     /**
      * @notice checks if an array of cards are present in a collection of a player. 

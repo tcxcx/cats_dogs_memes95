@@ -8,7 +8,6 @@ import {Games} from "../../src/Games.sol";
 import {AvatarBasedAccount} from "../../src/AvatarBasedAccount.sol";
 import {DeployPlayers} from "../../script/DeployPlayers.s.sol";
 import {DeployGames} from "../../script/DeployGames.s.sol";
-// import {DeployRegistry} from "@reference/script/DeployRegistry.s.sol";
 
 contract AvatarBasedAccountTest is Test {
     /* Type declarations */
@@ -16,7 +15,8 @@ contract AvatarBasedAccountTest is Test {
     Games games;
     Players players;
     AvatarBasedAccount avatarBasedAccount;
-
+    uint256 ethSepoliaFork;
+    
     address userOne = makeAddr("UserOne");
     address userTwo = makeAddr("UserTwo");
     string avatarUri =
@@ -26,6 +26,9 @@ contract AvatarBasedAccountTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
@@ -42,7 +45,7 @@ contract AvatarBasedAccountTest is Test {
     function testAvatarBasedAccountCanExecuteFunction() public {
         // setup:
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         bytes memory callData = abi.encodeWithSelector(Cards.getCollection.selector, userOne);
 
@@ -55,7 +58,7 @@ contract AvatarBasedAccountTest is Test {
     function testAvatarBasedAccountRevertsIfNotOwned() public {
         // setup:
         vm.prank(userOne);
-        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (uint256 avatarId, address avatarAccountAddress) = players.createPlayer(0);
 
         bytes memory callData = abi.encodeWithSelector(Cards.getCollection.selector, userOne);
 

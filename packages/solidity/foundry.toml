@@ -2,8 +2,11 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+gas_limit = "18446744073709551615"
+memory_limit = 935544320
 
 remappings = [
+  "@chainlink/contracts-ccip/=lib/chainlink/contracts/", 
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "@ds-test/=lib/forge-std/lib/ds-test/src/",
   "@forge-std/=lib/forge-std/src/",
@@ -14,13 +17,13 @@ remappings = [
   "@layerzerolabs/lz-evm-v1-0.7/=lib/LayerZero/",
   "solidity-bytes-utils/=lib/solidity-bytes-utils/",
   "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+  "@chainlink/contracts-ccip/=lib/chainlink/contracts/", 
   "@chainlink/=lib/chainlink/", 
 ]
 
-
 [fuzz]
-runs = 4
-depth = 4
+runs = 16
+depth = 16
 fail_on_revert = true 
 
 [invariant] 

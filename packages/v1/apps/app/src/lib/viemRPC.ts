@@ -15,7 +15,7 @@ import { mainnet, polygonAmoy, sepolia } from "viem/chains";
 import type { IProvider } from "@web3auth/base";
 import { TypedDataField } from "ethers";
 import { ActionSchema, AllowedInputTypes } from "@stackr/sdk";
-import { TypedDataDomain } from "viem";
+import { TypedDataDomain, encodeFunctionData } from "viem";
 import { Domain, Schema } from "@/app/api/rollup/types";
 import playersABI from "./abis/Players.json";
 
@@ -246,8 +246,10 @@ export default class EthereumRpc {
         transport: custom(this.provider),
       });
 
+      const wcAddresses = await walletClient.getAddresses(); 
+
       // Data for the transaction
-      const destination = "0x40e1c367Eca34250cAF1bc8330E9EddfD403fC56";
+      const destination = "0x1ABe345C38Abf38799Cc5248d747b4ec1B8429dE";
       const amount = parseEther("0.0001");
       const address = await this.getAccounts();
 
@@ -284,8 +286,6 @@ export default class EthereumRpc {
         message: originalMessage,
       });
 
-      console.log(`Message signed with signature: ${signature}`);
-
       return signature;
     } catch (error) {
       console.error("Error signing message:", error);
@@ -312,7 +312,7 @@ export default class EthereumRpc {
       throw error;
     }
   }
-
+  
   async writeContract(): Promise<TransactionReceipt> {
     try {
       const walletClient = createWalletClient({
@@ -425,7 +425,6 @@ export default class EthereumRpc {
   }
 
   // * Opening Card Packs: *
-
   // * The openCardPack function manages the purchasing and opening of card packs, which are represented as ERC-1155 tokens. Each pack contains multiple cards (likely ERC-1155 tokens themselves). *
   // * The function handles both the transaction to open the pack and the retrieval of transaction receipts, ensuring the process is smooth and the game logic can proceed based on the outcome. *
 
@@ -448,7 +447,7 @@ export default class EthereumRpc {
 
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
-        address: "0xCardsContractAddressHere",
+        address: cardsContract,
         abi: this.cardsContractABI,
         functionName: "openCardPack",
         args: [cardPackNo],
@@ -471,7 +470,7 @@ export default class EthereumRpc {
       });
 
       const result = await publicClient.readContract({
-        address: "0xCardsContractAddressHere",
+        address: cardsContract,
         abi: this.cardsContractABI,
         functionName: "getCollection",
         args: [avatarAccountAddress],
@@ -485,7 +484,6 @@ export default class EthereumRpc {
   }
 
   // * Coin Share Minting: *
-
   // * The mintCoinShare function ties in with your game's reward system, where purchasing packs or other in-game actions grant players coin shares. *
   // * This function correctly handles the transaction process, ensuring players receive their allocated coin shares based on their actions. *
 
@@ -505,7 +503,7 @@ export default class EthereumRpc {
 
       const hash = await walletClient.writeContract({
         account: address[0] as `0x${string}` | Account,
-        address: "0xCoinsContractAddressHere",
+        address: coinsContract,
         abi: this.coinsContractABI,
         functionName: "mintCoinShare",
         args: [],
@@ -519,8 +517,6 @@ export default class EthereumRpc {
     }
   }
 
-  // * Creating a player (an ERC-6551 wallet) *
-
   // * Player Creation (ERC-6551 Wallet): *
 
   // * The createPlayer function allows the creation of a player associated with an ERC-6551 account. The process involves sending a transaction, waiting for its confirmation, and decoding the logs to extract the avatarId and corresponding avatarAddress. *
@@ -528,7 +524,8 @@ export default class EthereumRpc {
 
   async createPlayer(
     avatarURI: string
-  ): Promise<{ avatarId: number; avatarAddress: string }> {
+  ): Promise<{ avatarId: number | undefined; avatarAddress: string | undefined }> {
+    console.log("waypoint 3"); 
     try {
       const walletClient = createWalletClient({
         chain: this.getViewChain(),
@@ -538,7 +535,7 @@ export default class EthereumRpc {
       const publicClient = createPublicClient({
         chain: this.getViewChain(),
         transport: custom(this.provider),
-      });
+      }); 
 
       const address = await this.getAddresses();
 
@@ -553,16 +550,17 @@ export default class EthereumRpc {
 
       // Submit the transaction to create the player
       const hash = await walletClient.writeContract({
-        account: address[0] as `0x${string}`,
-        address: "0xA070608Bc65116D860f3aCF3086Bc345DccA484C",
+        account: address[0] as `0x${string}` | Account, // does this go wrong? 
+        address: playersContract, // "0xPlayersContractAddressHere",
         abi: this.playersContractABI,
         functionName: "createPlayer",
         args: [avatarURI],
       });
 
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      const receiptRaw = await publicClient.waitForTransactionReceipt({ hash });
+      const receipt = this.toObject(receiptRaw) as TransactionReceipt;
 
-      // Manually decode the event logs
+      // Manually decode the event logs. And works perfectly! 
       const events = receipt.logs
         .map((log) => {
           try {
@@ -576,22 +574,94 @@ export default class EthereumRpc {
             return null;
           }
         })
-        .filter(Boolean);
+        .filter(Boolean); 
 
-      if (events.length === 0 || !events[0]?.args) {
-        throw new Error("No valid events found in transaction receipt");
+        if (events.length === 0 || !events[0]?.args) {
+          throw new Error("No valid events found in transaction receipt");
+        }
+
+        // Accessing the avatarId and address safely
+        if (
+          'avatarId' in events[0].args && 
+          'avatarAccountAddress' in events[0].args
+        ) {
+          const avatarId = events[0].args.avatarId as number;
+          const avatarAddress = events[0].args.avatarAccountAddress as string // `0x${string}`; 
+
+          return { avatarId, avatarAddress };
+        } else {
+          throw new Error("No valid arguments found in transaction receipt");
+        }
+        
+      } catch (error) {
+        console.error("Error creating player:", error);
+        throw error;
       }
+  }
 
-      // Accessing the avatarId safely
-      const avatarId = events[0].args?.[0] as number;
-      const avatarAddress = await this.getAvatarAddress(avatarId);
+  async playerAction(
+    to: string,
+    value: number,
+    calldata: string
+  ): Promise<{ reply: string }> {
+    try {
+      const address = await this.getAccounts();
 
-      return { avatarId, avatarAddress };
+      const walletClient = createWalletClient({
+        account: address[0] as `0x${string}`, 
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+      // console.log("walletClient: ", walletClient); 
+
+      const publicClient = createPublicClient({
+        chain: this.getViewChain(),
+        transport: custom(this.provider),
+      });
+      // console.log("publicClient: ", publicClient); 
+
+      const tokenboundClient = new TokenboundClient({
+        walletClient: walletClient,
+        chainId: 11155111, // NB hardcoded chainId!  
+        implementationAddress: "0x27027C7F5B357aE339f25A421A7F159A58394cE0" // NB hardcoded address!  
+      })
+      // console.log("tokenboundClient: ", tokenboundClient); 
+
+      const avatarId = await publicClient.readContract({
+        address: playersContract,
+        abi: this.playersContractABI,
+        functionName: "s_avatarIds",
+        args: [address[0] as `0x${string}`],
+      });
+      console.log("avatarId: ", avatarId); 
+
+      const result = await publicClient.readContract({
+        address: playersContract, 
+        abi: this.playersContractABI,
+        functionName: "getAvatarAddress",
+        args: [avatarId],
+      });
+      const avatarBasedAddress = result as `0x${string}`; 
+      console.log("avatarBasedAddress: ", avatarBasedAddress); 
+
+      const hash = await tokenboundClient.execute({
+        account: avatarBasedAddress, // avatarBasedAddress as `0x${string}`,
+        to: to as `0x${string}`,
+        value: BigInt(value),
+        data: calldata
+      })
+      // console.log("hash: ", hash); 
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      return { reply: `Transaction successful with hash: ${hash}` };
+      
     } catch (error) {
-      console.error("Error creating player:", error);
+      console.error("Error performing player action:", error);
       throw error;
     }
   }
+
 
   // * Get Avatar Address: *
 
@@ -609,7 +679,7 @@ export default class EthereumRpc {
       // Call the getAvatarAddress function on the Players contract to get the avatar's address
 
       const result = await publicClient.readContract({
-        address: "0xPlayersContractAddressHere",
+        address: playersContract, 
         abi: this.playersContractABI,
         functionName: "getAvatarAddress",
         args: [avatarId],

@@ -19,7 +19,8 @@ contract CardsTest is Test {
     Players players;
     AvatarBasedAccount avatarBasedAccount;
     HelperConfig helperConfig;
-
+    uint256 ethSepoliaFork;
+    
     address vrfWrapper;
     uint256[] mockRandomWords = [349287342, 4323452, 4235323255, 234432432432, 78978997];
     address userOne = makeAddr("UserOne");
@@ -31,6 +32,9 @@ contract CardsTest is Test {
     ///                   Setup                 ///
     ///////////////////////////////////////////////
     function setUp() external {
+        string memory SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL");
+        ethSepoliaFork = vm.createSelectFork(SEPOLIA_RPC_URL);
+
         DeployPlayers deployerPlayers = new DeployPlayers();
         (players, avatarBasedAccount,) = deployerPlayers.run();
 
@@ -56,13 +60,6 @@ contract CardsTest is Test {
         assert(owner != address(0));
     }
 
-    function testCardsPackHasPrice() public view {
-        uint256 price = cards.PRICE_CARD_PACK();
-
-        console.log("price cardsPack:", price);
-        assert(price != 0);
-    }
-
     function testCardsContractCanReceiveFunds() public {
         vm.deal(userOne, 1 ether);
         uint256 balanceStart = address(cards).balance;
@@ -74,36 +71,6 @@ contract CardsTest is Test {
         }
     }
     
-    // NB! currently the price of a pack of cards does NOT cover the gas cost of minting them :D 
-    function testWhenPackOfCardsBoughtBalanceContractChanges() public {
-        // PREP
-        uint256 cardPackNumber = 2;
-        uint256 balanceStart = address(cards).balance;
-
-        // 1: create Avatar Based Account
-        vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
-        // 2: get price pack
-        uint256 priceCardPack = cards.PRICE_CARD_PACK();
-        // 3: give userOne funds.
-
-        vm.deal(avatarAccountAddress, 1 ether);
-        // 4: open pack of cards.
-        bytes memory callData = abi.encodeWithSelector(cards.openCardPack.selector, cardPackNumber);
-        vm.prank(userOne);
-        bytes memory result =
-            AvatarBasedAccount(payable(avatarAccountAddress)).execute(address(cards), priceCardPack, callData, 0);
-        uint256 requestId = uint256(bytes32(result));
-
-        // Mock callback from vrfWrapper
-        vm.prank(vrfWrapper);
-        cards.rawFulfillRandomWords(requestId, mockRandomWords);
-
-        uint256 balanceEnd = address(cards).balance;
-        console.log("balanceEnd", balanceEnd);
-        assert(balanceEnd != balanceStart);
-    }
-
     function testOwnerCanRetrieveFunds() public {
         address ownerCardsContract = cards.owner();
         uint256 initialCardsBalance = address(cards).balance;
@@ -186,7 +153,7 @@ contract CardsTest is Test {
 
         // 1: create Avatar Based Account
         vm.prank(userOne);
-        (, address avatarAccountAddress) = players.createPlayer(avatarUri);
+        (, address avatarAccountAddress) = players.createPlayer(0);
 
         // 2: get price pack
         uint256 priceCardPack = cards.PRICE_CARD_PACK();
@@ -206,18 +173,4 @@ contract CardsTest is Test {
 
         uint256[] memory collection = cards.getCollection(avatarAccountAddress);
     }
-
-    // test tbi: //
-
-    // function testOpenCardPackRevertsIfNotFromAvatarBasedAccount() public {
-
-    // }
-
-    // function testOpenCardPackRevertsIfInssufficientPayment() public {
-
-    // }
-
-    // function testGetCollectionReturnsCorrectCollection() public {
-
-    // }
 }

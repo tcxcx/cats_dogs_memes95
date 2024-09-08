@@ -538,6 +538,7 @@ export default function TournamentTable() {
           </motion.div>
         </AnimatePresence>
       </Tabs>
+      
     </div>
   );
 }

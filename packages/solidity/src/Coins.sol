@@ -30,7 +30,9 @@ contract Coins is ERC20 {
 
     /* Modifiers */
     modifier onlyAvatarBasedAccount(address user) {
-        if (!ERC165Checker.supportsInterface(user, type(IAvatarExecutable).interfaceId)) {
+        if (
+            !ERC165Checker.supportsInterface(msg.sender, type(IAvatarExecutable).interfaceId)
+            ) {
             revert Coins__OnlyAvatarBasedAccount(user);
         }
         _;
