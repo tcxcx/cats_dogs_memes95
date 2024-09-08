@@ -139,7 +139,6 @@ contract Players is ERC721URIStorage {
 
         // if this contract is not deployed on Mainnet, rerun createPlayer on mainnet. 
         if (block.chainid != DESTINATION_CHAIN_ID) {
-            console.log("chainid:",  block.chainid); 
             bytes memory avatarIdData = abi.encode(avatarId);
             
             Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({

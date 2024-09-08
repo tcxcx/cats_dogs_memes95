@@ -1,219 +1,130 @@
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+![hero](image.png) 
 
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <a href="https://github.com/7Cedars/loyalty-program-contracts"> 
-    <img src="public/iconLoyaltyProgram.svg" alt="Logo" width="200" height="200">
-  </a>
-
-<h3 align="center">Cats, Dogs & Memes </h3>
-
-  <p align="center">
-    A game ... 
-    <br />
-    <a href="https://github.com/7Cedars/loyalty-program-contracts"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <!--NB: TO DO --> 
-    <a href="https://loyalty-program-psi.vercel.app">View Demo of a dApp interacting with the protocol.</a>
-    ·
-    <a href="https://github.com/7Cedars/loyalty-program-contracts/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/7Cedars/loyalty-program-contracts/issues">Request Feature</a>
-  </p>
-</div>
-
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-
-- [About](#about)
-  - [Contracts](#contracts)
-- [To note](#to-note)
-  - [Diagram](#diagram)
-  - [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Quickstart](#quickstart)
-- [Usage](#usage)
-  - [Test](#test)
-  - [Test coverage](#test-coverage)
-  - [Build](#build)
-  - [Deploy](#deploy)
-  - [Live example](#live-example)
-- [Known Issues](#known-issues)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+<p align="center">
   
-</details>
+  <h1 align="center"><b>Cats, Dogs, Memes, etc: Solidity Protocol</b></h1>
+<p align="center">
+    <br />
+    <br />
+    <a href="#whats-included"><strong>What's included</strong></a> ·
+    <a href="#prerequisites"><strong>Prerequisites</strong></a> ·
+    <a href="#getting-started"><strong>Getting Started</strong></a> ·
+  </p>
+</p>
 
-<!-- ABOUT  -->
-## About
+A protocol that combines Chainlink's direct funded VRF 2.5, automation v2.1 and CCIP in a Proof-of-Concept of omnichain gaming around tokenised, multi-chain, 'Avatar Based Accounts'. Avatar Based Accounts provide gated access at L2 (in this case we used optimism sepolia) to games deployed at L1s (in this case mainnet sepolia). 
 
-### Contracts
-The contracts that make up the Loyalty protocol: 
- - `LoyaltyProgram.sol`: Mints loyalty points and loyalty cards, distributes points to cards and (de)selects external gift programs. 
- - `LoyaltyCard6551Account.sol`: a bespoke ERC6551 account implementation optimised for the use with ERC1155 tokens. It acts as loyalty card and collects loyalty points and vouchers.
- - `ILoyaltyGift.sol` and `LoyaltyGift.sol`: The interface and base implementation of an, ERC-1155 based, gift contract. Loyalty Gifts are external contracts, examples can be found in the dedicated repository for [gift contracts](https://github.com/7Cedars/loyalty-gifts-contracts). These contracts exchange loyalty points to  
-   - either a boolean `true` result. This signals that requirements for the gift have been met and the vendor can give a gift to the customer. 
-   - or a loyalty voucher. A semi-fungible token minted at an external gift contract that allows the exchange for a gift at a later stage. 
+This allows: 
+- omnichain agents to be integrated with games building on mainnet services (such as chainlink VRF, stackr mirco rollups, etc). 
+- multi-chain tokenised access to web3 games
+- simplify the development of omnichain games by abstracting chain-interactions away from dApp to user accounts.  
 
-## To note 
-https://eips.ethereum.org/EIPS/eip-6551
- Cross-chain Compatibility
-A singleton registry with a known address enables each token bound account to exist on multiple chains. The inclusion of chainId as a parameter to createAccount allows the contract for a token bound account to be deployed at the same address on any supported chain. Account implementations are therefore able to support cross-chain account execution, **where an NFT on one chain can control its token bound account on another chain.** 
+## What's included
+
+### Deployed @L1 mainnet sepolia: 
+
+[Chainlink direct funded VRF v2.5](https://docs.chain.link/vrf/v2-5/overview/direct-funding) - randomisation of cards in card packs. <br>
+[Chainlink Automation v2.1](https://docs.chain.link/chainlink-automation) - Automated ending of tournaments. <br>
+[OpenZeppelin's ERC20](https://docs.openzeppelin.com/contracts/4.x/erc20) - Game meme coin.  <br>
+[OpenZeppelin's ERC1155](https://docs.openzeppelin.com/contracts/4.x/erc1155) - cards and card distribution.<br>
+
+### Deployed @L1 mainnet sepolia and @L2 optimism sepolia: 
+
+[Chainlink CCIP](https://docs.chain.link/ccip) - Multichain ERC-6551 players. <br>
+[Tokenbound's ERC-6551](https://docs.tokenbound.org/guides/deploy-account-implementation) - ERC-6551 'Avatar Based Accounts'.  <br>
+[OpenZeppelin's ERC721](https://docs.openzeppelin.com/contracts/4.x/erc721) - Avatar NFT as basis for ERC-6551 'Avatar Based Accounts'. <br>
+
+## Directory Structure
+
+```
+.
+├── lib                                 # Installed dependencies. 
+│    ├── ccip-starter-kit-foundry       # Supabase (API, Auth, Storage, Realtime, Edge Functions)
+│    ├── chainlink                      # App - Cats, Dogs, Memes. etc UI
+│    ├── chainlink-local                # Marketing site or Landing Page
+│    └── ...
+|
+├── script                              # Deployment scripts
+│    ├── DeployGames.s.sol              # Deploys Games.sol, Cards.sol, Coins.sol also uploads a test set of cards. 
+│    ├── DeployPlayers.s.sol            # Deploys Players.sol and AvatarBasedAccounts.sol 
+│    └── HelperConfig.s.sol        
+|
+├── src                                 # Protocol resources
+│    ├── lib                            # Address of deployed contracts on L1 and L2. 
+│    ├── metadata                       # Metadata of cards. 
+│    ├── AvatarBasedAccount.sol         # ERC-6551 omni-chain token based account. Uses Chainlink's CCIP. 
+│    ├── Cards.sol                      # ERC-1155 cards manager. Uses Chainlink's direct funded VRF 2.5.
+│    ├── Coins.sol                      # ERC-20 memecoin minter and distributer. 
+│    ├── Games.sol                      # Manages games and tournaments. Uses Chainlink automation. 
+│    └── Players.sol                    # Creates ERC-6551 Avatar based accounts. Uses Chainlink's CCIP. 
+|
+├── test                                # Tests 
+│    ├── fuzz                           # Fuzz tests
+│         └── Games_fuzz.t.sol          # Fuzz test of games, card dispenser and tournament logic. 
+│    ├── resources                      # Card metadata used in tests.  
+│    └── unit                           # Unit tests
+│         ├── AvatarBasedAccount.t.sol  
+│         ├── Cards.t.sol               
+│         ├── ChainlinkCCIP.t.sol       # Local test of Chainlink CCIP. Uses ccip-starter-kit-foundry. 
+│         ├── ChainlinkVRF.t.sol        # Local test of chainlink VRF. 
+│         └── ...               
+|        
+├── .env.example                   
+├── foundry.toml                   
+├── LICENSE
+├── README.md
+├── Makefile.md                         # Commands to deploy contracts on mainnet sepolia and optimism sepolia.  
+├── remappings.txt
+└── ...
 
 
+```
 
-### Diagram
-See the following schema for more detail: 
-  <!-- <a href="https://github.com/7Cedars/loyalty-program-contracts/blob/master/public/PoCModularLoyaltyProgram.png"> (Export? )
-    <img src="public/PoCModularLoyaltyProgram.png" alt="Schema Protocol" width="100%" height="100%">
-  </a> -->
+## Prerequisites
 
-### Built With
-- Solidity 0.8.19
-- Foundry 0.2.0
-- OpenZeppelin 5.0
-- TokenBound omnichain ERC-6551
-- Chainlink Direct Funded VRF 2.5
+Foundry<br>
+Docker<br>
 
-
-<!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running do the following.
+1. Clone this repo locally and move to the solidity folder:
 
-### Prerequisites
+```sh
+git clone https://github.com/tcxcx/cats_dogs_memes95
+cd cats_dogs_memes95/packages/solidity 
+```
 
-Foundry
-  - Install following the directions at [getfoundry.sh](https://getfoundry.sh/).
-  - You'll know you did it right if you can run `forge --version` and you see a response like `forge 0.2.0 (816e00b 2023-03-16T00:05:26.396218Z)`
+2. Copy `.env.example` to `.env` and update the variables.
 
-A blockchain with an ERC-6551 registry (v.0.3.1) deployed at address 0x000000006551c19487814612e58FE06813775758. 
-  - To check what chains have an ERC-6551 registry deployed, see [tokenbound.org](https://docs.tokenbound.org/contracts/deployments). 
-  - To deploy yourself (or on a local chain) follow the steps at [tokenbound.org](https://docs.tokenbound.org/guides/deploy-registry).
+```sh
+cp env.example .env
+```
 
-### Quickstart
-1. Clone the repo
-    ```
-    git clone https://github.com/7Cedars/loyalty-program-contracts.git
-    ```
-2. navigate to the folder
-    ```
-    cd loyalty-program-contracts
-    ```
-3. create a .env file and add the following:
-     ```
-     SELECTED_RPC_URL = <PATH_TO_RPC> 
-     ```
-   
-  Where <PATH_TO_RPC> is the url to your rpc provider, for example: https://eth-sepolia.g.alchemy.com/v2/... or http://localhost:8545 for a local anvil chain. 
+3. run make. This will install all dependencies and run the tests. 
 
-  Note that tests will not run on a chain that does not have an ERC-6551 registry deployed. Due to compiler conflicts, it is not possible to deterministically deploy the erc6511 registry inside the test suite itself.    
+```sh
+make
+```
 
-4. run make
-    ```
-    make
-    ```
+4. Run the tests without installing packages: 
 
-## Usage
-### Test 
-  ```sh
-  $ forge test
-   ```
+```sh
+forge test 
+```
 
-### Test coverage
-  ```sh
-  forge coverage
-  ```
+## Checkout the deployments:
 
-and for coverage based testing: 
-  ```sh
-  forge coverage --report debug
-  ```
+[Cards.sol]() 0x237832... <br>
+[Games.sol]() 0x237832... <br>
+[Coins.sol]() 0x237832... <br>
+[Players.sol L1]() 0x237832... <br>
+[Players.sol L2]() 0x237832... <br>
+[AvatarBasedAccount.sol L1]() 0x237832... <br>
+[AvatarBasedAccount.sol L2]()  0x237832... <br>
 
-### Build
-  ```sh
-   $ forge build
-   ```
+## Checkout proofs of state change:
 
-### Deploy
-  ```sh
-   $ forge script --fork-url <RPC_URL> script/DeployLoyaltyProgram.s.sol --broadcast
-   ```
-Where <RPC_URL> is the url to your rpc provider, for example: https://eth-sepolia.g.alchemy.com/v2/...  
-
-
-<!-- USAGE EXAMPLES -->
-### Live example
-A front-end dApp demonstration of this web3 protocol has been deployed on vercel.com. 
-Try it out at [https://loyalty-program-psi.vercel.app/](https://loyalty-program-psi.vercel.app/). 
-
-
-<!-- KNOWN ISSUES -->
-## Known Issues
-This contract has not been audited. Do not deploy on anything else than a test chain. More specifically:
-- Testing coverage is still low. Fuzz tests especially are still underdeveloped.   
-- ERC-1155 and ERC-6551 combination ... WIP 
-- Centralisation. Owner has core priviledges in a consumer program. 
-- I use a simple self build onlyOwner() modifier, instead of OpenZeppelin's implemntation. Keep gas cost down. 
-- Owner of a loyalty program is set at construction, cannot be changed later on. 
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [ ] 
-
-See the [open issues](https://github.com/7Cedars/loyalty-program-contracts/issues) for a full list of proposed features (and known issues).
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-Contributions and suggestions are more than welcome. If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement". Thank you! 
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-
-
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-
-<!-- CONTACT -->
-## Contact
-
-Seven Cedars - [@7__Cedars](https://twitter.com/7__Cedars) - cedars7@proton.me
-
-GitHub profile [https://github.com/7Cedars](https://github.com/7Cedars)
-
-
-[issues-shield]: https://img.shields.io/github/issues/7Cedars/loyalty-program-contracts.svg?style=for-the-badge
-[issues-url]: https://github.com/7Cedars/loyalty-program-contracts/issues/
-[license-shield]: https://img.shields.io/github/license/7Cedars/loyalty-program-contracts.svg?style=for-the-badge
-[license-url]: https://github.com/7Cedars/loyalty-program-contracts/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/linkedin_username
-[product-screenshot]: images/screenshot.png
-<!-- See list of icons here: https://hendrasob.github.io/badges/ -->
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
-[Tailwind-css]: https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white
-[Tailwind-url]: https://tailwindcss.com/
-[Vue.js]: https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D
-[Redux]: https://img.shields.io/badge/Redux-593D88?style=for-the-badge&logo=redux&logoColor=white
-[Redux-url]: https://redux.js.org/
+[Chainlink VRF]() Random selection of cards in card pack. <br>
+[Chainlink Automation]() Automated ending of tournaments. <br>
+[Chainlink CCIP L2]() Creation player optimism sepolia. <br>
+[Chainlink CCIP L1]() Creation mirror player at mainnet sepolia. <br>
